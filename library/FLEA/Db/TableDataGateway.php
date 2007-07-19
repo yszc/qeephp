@@ -13,7 +13,7 @@
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author 廖宇雷 dualface@gmail.com
- * @package Core
+ * @package Database
  * @version $Id$
  */
 
@@ -59,6 +59,20 @@ define('MANY_TO_MANY',  4);
 class FLEA_Db_TableDataGateway
 {
     /**
+     * 指示是否自动开启事务
+     *
+     * @var boolean
+     */
+    public $autoStartTrans = true;
+
+    /**
+     * 数据表所处 schema
+     *
+     * @var string
+     */
+    public $schema = null;
+
+    /**
      * 数据表名（没有添加前缀）
      *
      * @var string
@@ -73,9 +87,9 @@ class FLEA_Db_TableDataGateway
     public $fullTableName = null;
 
     /**
-     * 主键字段名，或者是包含多个主键字段名的数组
+     * 主键字段名
      *
-     * @var sring|array
+     * @var sring
      */
     public $primaryKey = null;
 
@@ -110,8 +124,7 @@ class FLEA_Db_TableDataGateway
     /**
      * 当前数据表的元数据
      *
-     * 元数据是一个二维数组，每一个元素的键名就是全大写的字段名，
-     * 而键值则是该字段的数据表定义。
+     * 元数据是一个二维数组，每一个元素的键名就是全大写的字段名，而键值则是该字段的数据表定义。
      *
      * @var array
      */
@@ -120,7 +133,7 @@ class FLEA_Db_TableDataGateway
     /**
      * 指示是否对数据进行自动验证
      *
-     * 当 autoValidating 为 true 时，create() 和 update() 方法将对数据进行验证。
+     * 当 autoValidating 为 true 时，create()、save() 和 update() 方法将对数据进行验证。
      *
      * @var boolean
      */
@@ -175,7 +188,7 @@ class FLEA_Db_TableDataGateway
      * 开发者不应该直接访问该成员变量，而是通过 setDBO() 和 getDBO() 方法
      * 来访问表数据入口使用数据访问对象。
      *
-     * @var FLEA_Db_Driver_Prototype
+     * @var FLEA_Db_Driver_Abstract
      */
     public $dbo = null;
 
@@ -231,15 +244,18 @@ class FLEA_Db_TableDataGateway
      * 构造 FLEA_Db_TableDataGateway 实例
      *
      * $params 参数允许有下列选项：
-     * 1. tableName: 指定数据表的名称；
-     * 2. primaryKey: 指定主键字段名
-     * 3. autoValidating: 指示是否使用自动验证；
-     * 4. verifierProvider: 指定要使用的数据验证服务对象。
-     *    如果未指定。则使用应用程序设置 helper.verifier 指定的验证服务提供对象；
-     * 5. skipConnect: 指示初始化表数据入口对象时是否不连接到数据库；
-     * 6. dbDSN: 指定连接数据库要使用的 DSN，如果未指定则使用默认的 DSN 设置；
-     * 7. dbo: 指定要使用的数据库访问对象;
-     * 8. skipCreateLinks: 指示初始化表数据入口时，是否不建立关联关系
+     *
+     * 'autoStartTrans', 'schema', 'tableName', 'primaryKey',
+     * 'hasOne', 'belongsTo', 'hasMany', 'manyToMany', 'autoValidating',
+     * 'verifier', 'validateRules', 'createdTimeFields', 'updatedTimeFields', 'autoLink'
+     *
+     * 以及：
+     *
+     * verifierProvider: 指定要使用的数据验证服务对象。如果未指定。则使用应用程序设置 helper.verifier 指定的验证服务提供对象；
+     * skipConnect: 指示初始化表数据入口对象时是否不连接到数据库；
+     * dbDSN: 指定连接数据库要使用的 DSN，如果未指定则使用默认的 DSN 设置；
+     * dbo: 指定要使用的数据库访问对象;
+     * skipCreateLinks: 指示初始化表数据入口时，是否不建立关联关系。
      *
      * @param array $params
      *
@@ -247,51 +263,39 @@ class FLEA_Db_TableDataGateway
      */
     public function __construct(array $params = array())
     {
-        // 确定数据表名称
-        if (isset($params['tableName'])) {
-            $this->tableName = $params['tableName'];
+        static $opts = array(
+                'autoStartTrans', 'schema', 'tableName', 'primaryKey',
+                'hasOne', 'belongsTo', 'hasMany', 'manyToMany', 'autoValidating',
+                'verifier', 'validateRules', 'createdTimeFields', 'updatedTimeFields',
+                'autoLink'
+        );
+
+        foreach ($opts as $key) {
+            if (isset($params[$key])) {
+                $this->{$key} = $params[$key];
+            }
         }
 
-        if (isset($params['primaryKey'])) {
-            $this->primaryKey = $params['primaryKey'];
+        if (isset($params['verifierProvider'])) {
+            $provider = $params['verifierProvider'];
+            $this->verifier = FLEA::getSingleton($provider);
+        }
+        if ($this->autoValidating && $this->verifier == null) {
+            $provider = FLEA::getAppInf('helper.verifier');
+            $this->verifier = FLEA::getSingleton($provider);
         }
 
-        // 初始化验证服务对象
-        if (isset($params['autoValidating'])) {
-            $this->autoValidating = $params['autoValidating'];
-        }
-        if ($this->autoValidating) {
-            if (isset($params['verifierProvider'])) {
-                $provider = $params['verifierProvider'];
+        if (!isset($params['skipConnect']) || $params['skipConnect'] == false) {
+            if (!isset($params['dbo'])) {
+                $dsn = isset($params['dbDSN']) ? $params['dbDSN'] : 0;
+                $dbo = FLEA::getDBO($dsn);
             } else {
-                $provider = FLEA::getAppInf('helper.verifier');
+                $dbo = $params['dbo'];
             }
-            if ($provider != '') {
-                $this->verifier =& FLEA::getSingleton($provider);
+            $this->setDBO($dbo);
+            if (!isset($params['skipCreateLinks']) || $params['skipCreateLinks'] == false) {
+                $this->relink();
             }
-        }
-
-        // 当 skipInit 为 true 时，不初始化表数据入口对象
-        if (isset($params['skipConnect']) && $params['skipConnect'] != false) {
-            return;
-        }
-
-        // 初始化数据访问对象
-        if (!isset($params['dbo'])) {
-            if (isset($params['dbDSN'])) {
-                $dbo = FLEA::getDBO($params['dbDSN']);
-            } else {
-                $dbo = FLEA::getDBO(0);
-            }
-        } else {
-            $dbo = $params['dbo'];
-        }
-        $this->setDBO($dbo);
-
-        // 当 skipCreateLinks 不为 true 时，建立关联
-        if (!isset($params['skipCreateLinks']) || $params['skipCreateLinks'] == false)
-        {
-            $this->relink();
         }
     }
 
@@ -305,13 +309,9 @@ class FLEA_Db_TableDataGateway
     public function setDBO(FLEA_Db_Driver_Prototype $dbo)
     {
         $this->dbo = $dbo;
-
-        $this->fullTableName = $dbo->dsn['dbTablePrefix'] . $this->tableName;
-        $this->qtableName = $dbo->qtable($this->fullTableName);
-
-        if (!$this->_prepareMeta()) {
-            return false;
-        }
+        $this->fullTableName = $dbo->dsn['tablePrefix'] . $this->tableName;
+        $this->qtableName = $dbo->qtable($this->fullTableName, $this->schema);
+        $this->_prepareMeta();
 
         if (is_array($this->validateRules)) {
             foreach ($this->validateRules as $fieldName => $rules) {
@@ -333,22 +333,9 @@ class FLEA_Db_TableDataGateway
             }
         }
 
-        if (is_array($this->primaryKey)) {
-            $this->qpk = array();
-            $this->pka = array();
-            $this->qpka = array();
-            foreach ($this->primaryKey as $pk) {
-                $qpk = $dbo->qfield($pk, $this->fullTableName);
-                $this->qpk[$pk] = $qpk;
-                $pka = 'flea_pkref_' . $pk;
-                $this->pka[$pk] = $pka;
-                $this->qpka[$pk] = $qpk . ' AS ' . $pka;
-            }
-        } else {
-            $this->qpk = $dbo->qfield($this->primaryKey, $this->fullTableName);
-            $this->pka = 'flea_pkref_' . $this->primaryKey;
-            $this->qpka = $this->qpk . ' AS ' . $this->pka;
-        }
+        $this->qpk = $dbo->qfield($this->primaryKey, $this->fullTableName, $this->schema);
+        $this->pka = 'qee_pkref_' . strtolower($this->primaryKey);
+        $this->qpka = $this->qpk . ' AS ' . $this->pka;
 
         return true;
     }
@@ -364,7 +351,7 @@ class FLEA_Db_TableDataGateway
     }
 
     /**
-     * 返回符合条件的第一条记录及所有关联的数据，查询没有结果返回 false
+     * 返回符合条件的第一条记录及所有关联的数据，查询出错抛出异常
      *
      * @param mixed $conditions
      * @param string $sort
@@ -376,11 +363,7 @@ class FLEA_Db_TableDataGateway
     public function & find($conditions, $sort = null, $fields = '*', $queryLinks = true)
     {
         $rowset =& $this->findAll($conditions, $sort, 1, $fields, $queryLinks);
-        if (is_array($rowset)) {
-            $row = reset($rowset);
-        } else {
-            $row = false;
-        }
+        $row = reset($rowset);
         unset($rowset);
         return $row;
     }
@@ -411,7 +394,7 @@ class FLEA_Db_TableDataGateway
 
         // 构造从主表查询数据的 SQL 语句
         $enableLinks = count($this->links) > 0 && $this->autoLink && $queryLinks;
-        $fields = $this->dbo->qfields($fields, $this->fullTableName);
+        $fields = $this->dbo->qfields($fields);
         if ($enableLinks) {
             // 当有关联需要处理时，必须获得主表的主键字段值
             $sql = "SELECT {$distinct}{$this->qpka}, {$fields}\nFROM {$this->qtableName}{$whereby}{$sortby}";
@@ -520,11 +503,7 @@ class FLEA_Db_TableDataGateway
         }
 
         $result = $this->dbo->selectLimit($sql, $length, $offset);
-        if ($result) {
-            $rowset = $this->dbo->getAll($result);
-        } else {
-            $rowset = false;
-        }
+        $rowset = $this->dbo->getAll($result);
         return $rowset;
     }
 
@@ -573,11 +552,10 @@ class FLEA_Db_TableDataGateway
      */
     public function saveRowset(& $rowset, $saveLinks = true)
     {
-        $this->dbo->startTrans();
+        $tran = $this->autoStartTrans ? $tran = $this->dbo->beginTrans() : null;
         foreach ($rowset as $row) {
             $this->save($row, $saveLinks);
         }
-        $this->dbo->completeTrans();
     }
 
     /**
@@ -588,6 +566,7 @@ class FLEA_Db_TableDataGateway
      * @return mixed
      */
     public function replace(& $row) {
+        $tran = $this->autoStartTrans ? $tran = $this->dbo->beginTrans() : null;
         $this->_setCreatedTimeFields($row);
         $fields = '';
         $values = '';
@@ -598,8 +577,8 @@ class FLEA_Db_TableDataGateway
         }
         $fields = substr($fields, 0, -2);
         $values = substr($values, 0, -2);
-        $sql = "REPLACE INTO {$this->fullTableName}\n    ({$fields})\nVALUES ({$values})";
-        if (!$this->dbo->execute($sql)) { return false; }
+        $sql = "REPLACE INTO {$this->qtableName}\n    ({$fields})\nVALUES ({$values})";
+        $this->dbo->execute($sql);
 
         if (isset($row[$this->primaryKey]) && !empty($row[$this->primaryKey])) {
             return $row[$this->primaryKey];
@@ -617,17 +596,12 @@ class FLEA_Db_TableDataGateway
      */
     public function replaceRowset(& $rowset)
     {
+        $tran = $this->autoStartTrans ? $tran = $this->dbo->beginTrans() : null;
         $ids = array();
-        $this->dbo->startTrans();
         foreach ($rowset as $row) {
             $id = $this->replace($row);
-            if (!$id) {
-                $this->dbo->completeTrans(false);
-                return false;
-            }
             $ids[] = $id;
         }
-        $this->dbo->completeTrans();
         return $ids;
     }
 
@@ -1515,6 +1489,17 @@ EOT;
     function flushMeta()
     {
         $this->_prepareMeta(true);
+    }
+
+    /**
+     * 开启一个事务
+     */
+    function beginTrans() {
+        if ($this->autoStartTrans) {
+            return $this->dbo->beginTrans();
+        } else {
+            return null;
+        }
     }
 
     /**

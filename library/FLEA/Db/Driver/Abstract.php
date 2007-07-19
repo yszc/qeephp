@@ -9,7 +9,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 FLEA_Db_Driver_Prototype 驱动
+ * 定义 FLEA_Db_Driver_Abstract 类
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author 廖宇雷 dualface@gmail.com
@@ -17,218 +17,195 @@
  * @version $Id$
  */
 
+// includes
+require_once 'FLEA/Db/Transaction.php';
+
 /**
- * 数据库驱动的原型
+ * FLEA_Db_Driver_Abstract 是所有数据库驱动的基础类
  *
- * @package Core
+ * @package Database
  * @author 廖宇雷 dualface@gmail.com
- * @version 1.1
+ * @version 1.2
  */
-class FLEA_Db_Driver_Prototype
+abstract class FLEA_Db_Driver_Abstract
 {
     /**
      * 用于描绘 true、false 和 null 的数据库值
      */
-    var $TRUE_VALUE  = 1;
-    var $FALSE_VALUE = 0;
-    var $NULL_VALUE = 'NULL';
+    public $TRUE_VALUE  = 1;
+    public $FALSE_VALUE = 0;
+    public $NULL_VALUE  = 'NULL';
 
     /**
      * 数据库连接信息
      *
      * @var array
      */
-    var $dsn = null;
+    protected $_dsn = null;
 
     /**
      * 数据库连接句柄
      *
      * @var resource
      */
-    var $conn = null;
+    protected $_conn = null;
 
     /**
      * 所有 SQL 查询的日志
      *
      * @var array
      */
-    var $log = array();
+    protected $_log = array();
 
     /**
      * 最后一次数据库操作的错误信息
      *
      * @var mixed
      */
-    var $lasterr = null;
+    protected $_lasterr = null;
 
     /**
      * 最后一次数据库操作的错误代码
      *
      * @var mixed
      */
-    var $lasterrcode = null;
+    protected $_lasterrcode = null;
+
+    /**
+     * 最近一次插入操作或者 nextId() 操作返回的插入 ID
+     *
+     * @var mixed
+     */
+    protected $_insertId = null;
 
     /**
      * 构造函数
      *
-     * @param array $dsn
+     * @param array|string $dsn
      */
-    function FLEA_Db_Driver_Prototype($dsn = false)
+    public function __construct($dsn)
     {
+        $this->_dsn = $dsn;
         $this->enableLog = !defined('DEPLOY_MODE') || DEPLOY_MODE != true;
     }
 
     /**
-     * 连接数据库
-     *
-     * @param array $dsn
-     *
-     * @return boolean
+     * 连接数据库，失败时抛出异常
      */
-    function connect($dsn = false)
-    {
-    }
+    abstract public function connect();
 
     /**
-     * 关闭数据库连接
+     * 关闭数据库连接，失败时抛出异常
      */
-    function close()
-    {
-    }
+    abstract public function close();
 
     /**
-     * 执行一个查询，返回一个 resource 或者 boolean 值
+     * 执行一个查询，返回一个 resource 或者 boolean 值，出错时抛出异常
      *
      * @param string $sql
      * @param array $inputarr
-     * @param boolean $throw 指示查询出错时是否抛出异常
      *
      * @return resource|boolean
      */
-    function execute($sql, $inputarr = null, $throw = true)
-    {
-    }
+    abstract public function execute($sql, $inputarr = null);
 
     /**
-     * 转义字符串
+     * 转义值
      *
-     * @param string $value
+     * @param mixed $value
      *
-     * @return mixed
+     * @return string
      */
-    function qstr($value)
-    {
-    }
+    abstract public function qstr($value);
 
     /**
      * 将数据表名字转换为完全限定名
      *
      * @param string $tableName
+     * @param string $schema
      *
      * @return string
      */
-    function qtable($tableName)
-    {
-    }
+    abstract public function qtable($tableName, $schema = null);
 
     /**
      * 将字段名转换为完全限定名，避免因为字段名和数据库关键词相同导致的错误
      *
      * @param string $fieldName
      * @param string $tableName
+     * @param string $schema
      *
      * @return string
      */
-    function qfield($fieldName, $tableName = null)
-    {
-    }
+    abstract public function qfield($fieldName, $tableName = null, $schema = null);
 
     /**
      * 一次性将多个字段名转换为完全限定名
      *
      * @param string|array $fields
      * @param string $tableName
+     * @param string $schema
      *
      * @return string
      */
-    function qfields($fields, $tableName = null)
-    {
-    }
+    abstract public function qfields($fields, $tableName = null, $schema = null);
 
     /**
-     * 为数据表产生下一个序列值
+     * 为数据表产生下一个序列值，失败时抛出异常
      *
      * @param string $seqName
      * @param string $startValue
      *
      * @return int
      */
-    function nextId($seqName = 'sdboseq', $startValue = 1)
-    {
-    }
+    abstract public function nextId($seqName = 'sdboseq', $startValue = 1);
 
     /**
-     * 创建一个新的序列，成功返回 true，失败返回 false
+     * 创建一个新的序列，失败时抛出异常
      *
      * @param string $seqName
      * @param int $startValue
-     *
-     * @return boolean
      */
-    function createSeq($seqName = 'sdboseq', $startValue = 1)
-    {
-    }
+    abstract public function createSeq($seqName = 'sdboseq', $startValue = 1);
 
     /**
-     * 删除一个序列
-     *
-     * 具体的实现与数据库系统有关。
+     * 删除一个序列，失败时抛出异常
      *
      * @param string $seqName
      */
-    function dropSeq($seqName = 'sdboseq')
-    {
-    }
+    abstract public function dropSeq($seqName = 'sdboseq');
 
     /**
-     * 获取自增字段的最后一个值
+     * 获取自增字段的最后一个值或者 nextId() 方法产生的最后一个值
      *
      * @return mixed
      */
-    function insertId()
-    {
-    }
+    abstract public function insertId();
 
     /**
      * 返回最近一次数据库操作受到影响的记录数
      *
      * @return int
      */
-    function affectedRows()
-    {
-    }
+    abstract public function affectedRows();
 
     /**
-     * 从记录集中返回一行数据
+     * 从记录集中返回一行数据，失败抛出异常
      *
      * @param resouce $res
      *
      * @return array
      */
-    function fetchRow($res)
-    {
-    }
+    abstract public function fetchRow($res);
 
     /**
-     * 从记录集中返回一行数据，字段名作为键名
+     * 从记录集中返回一行数据，字段名作为键名，失败抛出异常
      *
      * @param resouce $res
      *
      * @return array
      */
-    function fetchAssoc($res)
-    {
-    }
+    abstract public function fetchAssoc($res);
 
     /**
      * 释放查询句柄
@@ -237,9 +214,7 @@ class FLEA_Db_Driver_Prototype
      *
      * @return boolean
      */
-    function freeRes($res)
-    {
-    }
+    abstract public function freeRes($res);
 
     /**
      * 进行限定记录集的查询
@@ -250,9 +225,7 @@ class FLEA_Db_Driver_Prototype
      *
      * @return resource
      */
-    function selectLimit($sql, $length = null, $offset = null)
-    {
-    }
+    abstract public function selectLimit($sql, $length = null, $offset = null);
 
     /**
      * 执行一个查询，返回查询结果记录集
@@ -261,9 +234,7 @@ class FLEA_Db_Driver_Prototype
      *
      * @return array
      */
-    function & getAll($sql)
-    {
-    }
+    abstract public function & getAll($sql);
 
     /**
      * 执行一个查询，返回分组后的查询结果记录集
@@ -276,9 +247,7 @@ class FLEA_Db_Driver_Prototype
      *
      * @return array
      */
-    function & getAllGroupBy($sql, & $groupBy)
-    {
-    }
+    abstract public function & getAllGroupBy($sql, & $groupBy);
 
     /**
      * 执行一个查询，返回查询结果记录集、指定字段的值集合以及以该字段值分组后的记录集
@@ -290,9 +259,7 @@ class FLEA_Db_Driver_Prototype
      *
      * @return array
      */
-    function getAllWithFieldRefs($sql, $field, & $fieldValues, & $reference)
-    {
-    }
+    abstract public function & getAllWithFieldRefs($sql, $field, & $fieldValues, & $reference);
 
     /**
      * 执行一个查询，并将数据按照指定字段分组后与 $assocRowset 记录集组装在一起
@@ -304,9 +271,7 @@ class FLEA_Db_Driver_Prototype
      * @param string $refKeyName
      * @param mixed $limit
      */
-    function assemble($sql, & $assocRowset, $mappingName, $oneToOne, $refKeyName, $limit = null)
-    {
-    }
+    abstract public function assemble($sql, & $assocRowset, $mappingName, $oneToOne, $refKeyName, $limit = null);
 
     /**
      * 执行查询，返回第一条记录的第一个字段
@@ -315,9 +280,7 @@ class FLEA_Db_Driver_Prototype
      *
      * @return mixed
      */
-    function getOne($sql)
-    {
-    }
+    abstract public function getOne($sql);
 
     /**
      * 执行查询，返回第一条记录
@@ -326,9 +289,7 @@ class FLEA_Db_Driver_Prototype
      *
      * @return mixed
      */
-    function & getRow($sql)
-    {
-    }
+    abstract public function & getRow($sql);
 
     /**
      * 执行查询，返回结果集的指定列
@@ -338,9 +299,7 @@ class FLEA_Db_Driver_Prototype
      *
      * @return mixed
      */
-    function & getCol($sql, $col = 0)
-    {
-    }
+    abstract public function & getCol($sql, $col = 0);
 
     /**
      * 返回指定表（或者视图）的元数据
@@ -366,25 +325,19 @@ class FLEA_Db_Driver_Prototype
      *
      * @return array
      */
-    function & metaColumns($table)
-    {
-    }
+    abstract public function & metaColumns($table);
 
     /**
      * 返回数据库可以接受的日期格式
      *
      * @param int $timestamp
      */
-    function dbTimeStamp($timestamp)
-    {
-    }
+    abstract public function dbTimeStamp($timestamp);
 
     /**
      * 启动事务
      */
-    function startTrans()
-    {
-    }
+    abstract public function startTrans();
 
     /**
      * 完成事务，根据查询是否出错决定是提交事务还是回滚事务
@@ -394,21 +347,25 @@ class FLEA_Db_Driver_Prototype
      *
      * @param $commitOnNoErrors 指示在没有错误时是否提交事务
      */
-    function completeTrans($commitOnNoErrors = true)
-    {
-    }
+    abstract public function completeTrans($commitOnNoErrors = true);
 
     /**
      * 强制指示在调用 completeTrans() 时回滚事务
      */
-    function failTrans()
-    {
-    }
+    abstract public function failTrans();
 
     /**
      * 反复事务是否失败的状态
      */
-    function hasFailedTrans()
+    abstract public function hasFailedTrans();
+
+    /**
+     * 开始一个事务，并且返回一个 FLEA_Db_Transaction 对象
+     *
+     * @return FLEA_Db_Transaction
+     */
+    final public function beginTrans()
     {
+        return new FLEA_Db_Transaction($this);
     }
 }
