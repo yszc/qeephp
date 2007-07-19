@@ -13,7 +13,7 @@
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author 廖宇雷 dualface@gmail.com
  * @package Core
- * @version $Id: Oracle.php 882 2007-07-01 13:43:05Z dualface $
+ * @version $Id$
  */
 
 /**

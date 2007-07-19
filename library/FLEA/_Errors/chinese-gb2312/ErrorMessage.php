@@ -14,7 +14,7 @@
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author ¡Œ”Ó¿◊ dualface@gmail.com
  * @package Core
- * @version $Id: ErrorMessage.php 861 2007-06-01 16:37:41Z dualface $
+ * @version $Id$
  */
 
 return array(

@@ -14,7 +14,7 @@
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author 廖宇雷 dualface@gmail.com
  * @package Core
- * @version $Id: Mysql.php 873 2007-06-07 05:12:11Z dualface $
+ * @version $Id$
  */
 
 /**

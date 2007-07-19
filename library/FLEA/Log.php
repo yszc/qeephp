@@ -14,7 +14,7 @@
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author 廖宇雷 dualface@gmail.com
  * @package Core
- * @version $Id: Log.php 879 2007-06-20 00:31:42Z dualface $
+ * @version $Id$
  */
 
 /**
