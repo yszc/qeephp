@@ -14,7 +14,7 @@
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author 廖宇雷 dualface@gmail.com
  * @package Exception
- * @version $Id: MetaColumnsFailed.php 869 2007-06-03 17:14:09Z dualface $
+ * @version $Id$
  */
 
 /**

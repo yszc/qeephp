@@ -13,7 +13,7 @@
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author 夜猫子 yangyi.cn.gz #AT# gmail.com
  * @package Core
- * @version $Id: Pgsql.php 869 2007-06-03 17:14:09Z dualface $
+ * @version $Id$
  */
 
 /**

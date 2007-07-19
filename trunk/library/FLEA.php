@@ -18,7 +18,7 @@
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author 廖宇雷 dualface@gmail.com
  * @package Core
- * @version $Id: FLEA.php 887 2007-07-05 10:05:15Z dualface $
+ * @version $Id$
  */
 
 /**

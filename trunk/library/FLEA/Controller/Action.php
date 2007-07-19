@@ -14,7 +14,7 @@
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author 廖宇雷 dualface@gmail.com
  * @package Core
- * @version $Id: Action.php 880 2007-06-21 13:59:32Z dualface $
+ * @version $Id$
  */
 
 /**
