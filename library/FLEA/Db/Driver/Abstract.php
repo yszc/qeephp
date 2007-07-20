@@ -17,9 +17,6 @@
  * @version $Id$
  */
 
-// includes
-require_once 'FLEA/Db/Transaction.php';
-
 /**
  * FLEA_Db_Driver_Abstract 是所有数据库驱动的基础类
  *
@@ -99,6 +96,13 @@ abstract class FLEA_Db_Driver_Abstract
      * 关闭数据库连接，失败时抛出异常
      */
     abstract public function close();
+
+    /**
+     * 选择要操作的数据库
+     *
+     * @param string $database
+     */
+    abstract public function selectDB($database);
 
     /**
      * 转义值
@@ -205,17 +209,12 @@ abstract class FLEA_Db_Driver_Abstract
     /**
      * 执行一个查询并返回记录集
      *
-     * 如果 $groupby 参数如果为字符串，表示结果集根据 $groupby 指定的字段进行分组。
-     * 如果 $groupby 参数为 true，则表示根据每行记录的第一个字段进行分组。
-     * 如果 $groupby 参数为 false，则表示不分组。
-     *
      * @param string $sql
      * @param array $inputarr
-     * @param string|boolean $groupby
      *
      * @return array
      */
-    abstract public function & getAll($sql, array $inputarr = null, $groupby = false);
+    abstract public function & getAll($sql, array $inputarr = null);
 
     /**
      * 执行一个查询，并且返回指定字段的值集合以及以该字段值分组后的记录集
@@ -251,7 +250,7 @@ abstract class FLEA_Db_Driver_Abstract
      *
      * @return mixed
      */
-    abstract public function & getOne($sql, array $inputarr = null);
+    abstract public function getOne($sql, array $inputarr = null);
 
     /**
      * 执行查询，返回第一条记录
@@ -261,7 +260,7 @@ abstract class FLEA_Db_Driver_Abstract
      *
      * @return mixed
      */
-    abstract public function & getRow($sql, array $inputarr = null);
+    abstract public function getRow($sql, array $inputarr = null);
 
     /**
      * 执行查询，返回结果集的指定列
@@ -272,7 +271,7 @@ abstract class FLEA_Db_Driver_Abstract
      *
      * @return mixed
      */
-    abstract public function & getCol($sql, $col = 0, array $inputarr = null);
+    abstract public function getCol($sql, $col = 0, array $inputarr = null);
 
     /**
      * 返回指定表（或者视图）的元数据
@@ -351,6 +350,7 @@ abstract class FLEA_Db_Driver_Abstract
      */
     final public function beginTrans()
     {
+        require_once 'FLEA/Db/Transaction.php';
         return new FLEA_Db_Transaction($this);
     }
 }
@@ -378,7 +378,7 @@ abstract class FLEA_Db_Driver_Handle_Abstract
      */
     public function __construct($handle)
     {
-        if (is_resource($handle)) {
+        if (is_resource($handle) || is_object($handle)) {
             $this->_handle = $handle;
         }
     }
@@ -419,15 +419,9 @@ abstract class FLEA_Db_Driver_Handle_Abstract
     /**
      * 从查询句柄中提取记录集
      *
-     * 如果 $groupby 参数如果为字符串，表示结果集根据 $groupby 指定的字段进行分组。
-     * 如果 $groupby 参数为 true，则表示根据每行记录的第一个字段进行分组。
-     * 如果 $groupby 参数为 false，则表示不分组。
-     *
-     * @param string|boolean $groupby
-     *
      * @return array
      */
-    abstract public function & getAll($groupby = false);
+    abstract public function & getAll();
 
     /**
      * 从查询句柄中提取记录集，并且返回指定字段的值集合以及以该字段值分组后的记录集
