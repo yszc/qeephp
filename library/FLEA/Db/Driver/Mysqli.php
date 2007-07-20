@@ -9,7 +9,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 FLEA_Db_Driver_Mysqli 类
+ * 定义 FLEA_Db_Driver_Mysqli 类和 FLEA_Db_Driver_Mysqli_Handle 类
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author 廖宇雷 dualface@gmail.com
@@ -31,17 +31,19 @@ require_once 'FLEA/Db/Driver/Abstract.php';
 class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
 {
     /**
+     * 指示查询参数的样式
+     *
+     * @var const
+     */
+    public $paramStyle = self::PARAM_QM;
+
+    /**
      * 用于 genSeq()、dropSeq() 和 nextId() 的 SQL 查询语句
      */
     const NEXT_ID_SQL    = "UPDATE %s SET id = LAST_INSERT_ID(id + 1)";
     const CREATE_SEQ_SQL = "CREATE TABLE %s (id INT NOT NULL)";
     const INIT_SEQ_SQL   = "INSERT INTO %s VALUES (%s)";
     const DROP_SEQ_SQL   = "DROP TABLE %s";
-
-    /**
-     * 用于获取元数据的 SQL 查询语句
-     */
-    const META_COLUMNS_SQL = "SHOW COLUMNS FROM %s";
 
     /**
      * 指示事务启动次数
@@ -55,7 +57,7 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
      *
      * @var boolean
      */
-    protected $_transCommit = true;
+    protected $_hasFailedTrans = true;
 
     /**
      * 连接数据库，失败时抛出异常
@@ -73,7 +75,7 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
         $password = empty($dsn['password']) ? null : $dsn['password'];
         $socket = empty($dsn['socket']) ? null : $dsn['socket'];
         $database = empty($dsn['database']) ? null : $dsn['database'];
-        $options = empty($dsn['options']) ? null : $dsn['options'];
+        $options = empty($dsn['options']) ? array() : (array)$dsn['options'];
         $flags = empty($dsn['flags']) ? null : $dsn['flags'];
 
         $this->_conn = mysqli_init();
@@ -92,8 +94,9 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
             throw new FLEA_Db_Exception_ConnectionFailed('MySQL', 'mysqli');
         }
 
-        $charset = empty($dsn['charset']) ? FLEA::getAppInf('databaseCharset') : $dsn['charset'];
-        $this->execute('SET NAMES ' . $this->qstr($charset));
+        if (!empty($dsn['charset'])) {
+            $this->execute('SET NAMES ' . $this->qstr($dsn['charset']));
+        }
     }
 
     /**
@@ -110,44 +113,7 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
         $this->_conn = null;
         $this->_insertId = null;
         $this->_transCount = 0;
-        $this->_transCommit = true;
-    }
-
-    /**
-     * 执行一个查询，返回一个 resource 或者 boolean 值，出错时抛出异常
-     *
-     * @param string $sql
-     * @param array $inputarr
-     *
-     * @return resource|boolean
-     */
-    public function execute($sql, $inputarr = null)
-    {
-        if ($this->enableLog) { $this->log[] = $sql; }
-
-        if (empty($inputarr)) {
-            $stmt = mysqli_prepare($this->_conn, $sql);
-            $types = '';
-            foreach ($inputarr as $v) {
-                if (is_string($v)) {
-                    $types .= 's';
-                } else if (is_int($v)) {
-                    $types .= 'i';
-                } else {
-                    $types .= 'd';
-                }
-            }
-            array_unshift($inputarr, array($stmt, $types));
-            call_user_func_array('mysqli_stmt_bind_param', $inputarr);
-            $ret = mysqli_stmt_execute($stmt);
-        } else {
-            $ret = mysqli_query($this->_conn, $sql);
-        }
-
-        if ($ret) { return $ret; }
-
-        require_once 'FLEA/Db/Exception/SqlQuery.php';
-        throw new FLEA_Db_Exception_SqlQuery($sql, mysqli_error($this->_conn), mysqli_errno($this->_conn));
+        $this->_hasFailedTrans = true;
     }
 
     /**
@@ -317,51 +283,55 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
     }
 
     /**
-     * 从记录集中返回一行数据，失败抛出异常
+     * 执行一个查询，返回一个 FLEA_Db_Driver_Handle_Abstract 或者 boolean 值，出错时抛出异常
      *
-     * @param resouce $res
+     * @param string $sql
+     * @param array $inputarr
      *
-     * @return array
+     * @return FLEA_Db_Driver_Handle_Abstract
      */
-    public function fetchRow($res)
+    public function execute($sql, $inputarr = null)
     {
-        return mysqli_fetch_row($res);
+        if ($this->enableLog) { $this->log[] = $sql; }
+
+        if (empty($inputarr)) {
+            $stmt = mysqli_prepare($this->_conn, $sql);
+            $types = '';
+            foreach ($inputarr as $v) {
+                if (is_string($v)) {
+                    $types .= 's';
+                } else if (is_int($v)) {
+                    $types .= 'i';
+                } else {
+                    $types .= 'd';
+                }
+            }
+            array_unshift($inputarr, array($stmt, $types));
+            call_user_func_array('mysqli_stmt_bind_param', $inputarr);
+            $ret = mysqli_stmt_execute($stmt);
+        } else {
+            $ret = mysqli_query($this->_conn, $sql);
+        }
+
+        if ($ret === false) {
+            require_once 'FLEA/Db/Exception/SqlQuery.php';
+            throw new FLEA_Db_Exception_SqlQuery($sql, mysqli_error($this->_conn), mysqli_errno($this->_conn));
+        }
+
+        return new FLEA_Db_Driver_Mysqli_Handle($ret);
     }
 
     /**
-     * 从记录集中返回一行数据，字段名作为键名，失败抛出异常
-     *
-     * @param resouce $res
-     *
-     * @return array
-     */
-    public function fetchAssoc($res)
-    {
-        return mysqli_fetch_assoc($res);
-    }
-
-    /**
-     * 释放查询句柄
-     *
-     * @param resource $res
-     *
-     * @return boolean
-     */
-    function freeRes($res)
-    {
-        return mysql_free_result($res);
-    }
-
-    /**
-     * 进行限定记录集的查询
+     * 进行限定范围的查询，并且返回 FLEA_Db_Driver_Handle_Abstract 对象
      *
      * @param string $sql
      * @param int $length
      * @param int $offset
+     * @param array $inputarr
      *
-     * @return resource
+     * @return FLEA_Db_Driver_Handle_Abstract
      */
-    function selectLimit($sql, $length = null, $offset = null)
+    public function selectLimit($sql, $length = null, $offset = null, array $inputarr = null)
     {
         if ($offset !== null) {
             $sql .= "\nLIMIT " . (int)$offset;
@@ -373,100 +343,41 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
         } elseif ($length !== null) {
             $sql .= "\nLIMIT " . (int)$length;
         }
-        return $this->execute($sql);
+        return $this->execute($sql, $inputarr);
     }
 
     /**
-     * 执行一个查询，返回查询结果记录集
+     * 执行一个查询并返回记录集
      *
-     * @param string|resource $sql
+     * 如果 $groupby 参数如果为字符串，表示结果集根据 $groupby 指定的字段进行分组。
+     * 如果 $groupby 参数为 true，则表示根据每行记录的第一个字段进行分组。
+     * 如果 $groupby 参数为 false，则表示不分组。
+     *
+     * @param string $sql
+     * @param array $inputarr
+     * @param string|boolean $groupby
      *
      * @return array
      */
-    function & getAll($sql)
+    public function & getAll($sql, array $inputarr = null, $groupby = false)
     {
-        if (is_resource($sql)) {
-            $res = $sql;
-        } else {
-            $res = $this->execute($sql);
-        }
-        $data = array();
-        while ($row = mysql_fetch_assoc($res)) {
-            $data[] = $row;
-        }
-        mysql_free_result($res);
-        return $data;
+        return $this->execute($sql, $inputarr)->getAll($groupby);
     }
 
     /**
-     * 执行一个查询，返回分组后的查询结果记录集
+     * 执行一个查询，并且返回指定字段的值集合以及以该字段值分组后的记录集
      *
-     * $groupBy 参数如果为字符串或整数，表示结果集根据 $groupBy 参数指定的字段进行分组。
-     * 如果 $groupBy 参数为 true，则表示根据每行记录的第一个字段进行分组。
-     *
-     * @param string|resource $sql
-     * @param string|int|boolean $groupBy
-     *
-     * @return array
-     */
-    function & getAllGroupBy($sql, $groupBy)
-    {
-        if (is_resource($sql)) {
-            $res = $sql;
-        } else {
-            $res = $this->execute($sql);
-        }
-        $data = array();
-
-        $row = mysql_fetch_assoc($res);
-        if ($row != false) {
-            if ($groupBy === true) {
-                $groupBy = key($row);
-            }
-            do {
-                $rkv = $row[$groupBy];
-                unset($row[$groupBy]);
-                $data[$rkv][] = $row;
-            } while ($row = mysql_fetch_assoc($res));
-        }
-
-        mysql_free_result($res);
-
-        return $data;
-    }
-
-    /**
-     * 执行一个查询，返回查询结果记录集、指定字段的值集合以及以该字段值分组后的记录集
-     *
-     * @param string|resource $sql
+     * @param string $sql
      * @param string $field
      * @param array $fieldValues
      * @param array $reference
+     * @param array $inputarr
      *
      * @return array
      */
-    function getAllWithFieldRefs($sql, $field, & $fieldValues, & $reference)
+    public function & getAllWithFieldRefs($sql, $field, & $fieldValues, & $reference, array $inputarr = null)
     {
-        if (is_resource($sql)) {
-            $res = $sql;
-        } else {
-            $res = $this->execute($sql);
-        }
-
-        $fieldValues = array();
-        $reference = array();
-        $offset = 0;
-        $data = array();
-        while ($row = mysql_fetch_assoc($res)) {
-            $fieldValue = $row[$field];
-            unset($row[$field]);
-            $data[$offset] = $row;
-            $fieldValues[$offset] = $fieldValue;
-            $reference[$fieldValue] =& $data[$offset];
-            $offset++;
-        }
-        mysql_free_result($res);
-        return $data;
+        return $this->execute($sql, $inputarr)->getAllWithFieldRefs($field, $fieldValues, $reference);
     }
 
     /**
@@ -478,80 +389,49 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
      * @param boolean $oneToOne
      * @param string $refKeyName
      * @param mixed $limit
+     * @param array $inputarr
      */
-    function assemble($sql, & $assocRowset, $mappingName, $oneToOne, $refKeyName, $limit = null)
+    function assemble($sql, & $assocRowset, $mappingName, $oneToOne, $refKeyName, $limit = null, array $inputarr = null)
     {
-        if (is_resource($sql)) {
-            $res = $sql;
-        } else {
-            if ($limit !== null) {
-                if (is_array($limit)) {
-                    list($length, $offset) = $limit;
-                } else {
-                    $length = $limit;
-                    $offset = 0;
-                }
-                $res = $this->selectLimit($sql, $length, $offset);
+        if ($limit) {
+            if (is_array($limit)) {
+                list($length, $offset) = $limit;
             } else {
-                $res = $this->execute($sql);
+                $length = $limit;
+                $offset = 0;
             }
-        }
-
-        if ($oneToOne) {
-            // 一对一组装数据
-            while ($row = mysql_fetch_assoc($res)) {
-                $rkv = $row[$refKeyName];
-                unset($row[$refKeyName]);
-                $assocRowset[$rkv][$mappingName] = $row;
-            }
+            $handle = $this->selectLimit($sql, $length, $offset, $inputarr);
         } else {
-            // 一对多组装数据
-            while ($row = mysql_fetch_assoc($res)) {
-                $rkv = $row[$refKeyName];
-                unset($row[$refKeyName]);
-                $assocRowset[$rkv][$mappingName][] = $row;
-            }
+            $handle = $this->execute($sql, $inputarr);
         }
 
-        mysql_free_result($res);
+        $handle->assemble($assocRowset, $mappingName, $oneToOne, $refKeyName);
     }
 
     /**
      * 执行查询，返回第一条记录的第一个字段
      *
-     * @param string|resource $sql
+     * @param string $sql
+     * @param array $inputarr
      *
      * @return mixed
      */
-    function getOne($sql)
+    public function & getOne($sql, array $inputarr = null)
     {
-        if (is_resource($sql)) {
-            $res = $sql;
-        } else {
-            $res = $this->execute($sql);
-        }
-        $row = mysql_fetch_row($res);
-        mysql_free_result($res);
-        return isset($row[0]) ? $row[0] : null;
+        return $this->execute($sql, $inputarr)->getOne();
     }
 
     /**
      * 执行查询，返回第一条记录
      *
-     * @param string|resource $sql
+     * @param string $sql
+     * @param array $inputarr
      *
      * @return mixed
      */
-    function & getRow($sql)
+    public function & getRow($sql, array $inputarr = null)
     {
-        if (is_resource($sql)) {
-            $res = $sql;
-        } else {
-            $res = $this->execute($sql);
-        }
-        $row = mysql_fetch_assoc($res);
-        mysql_free_result($res);
-        return $row;
+        return $this->execute($sql, $inputarr)->getRow();
     }
 
     /**
@@ -559,61 +439,53 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
      *
      * @param string|resource $sql
      * @param int $col 要返回的列，0 为第一列
+     * @param array $inputarr
      *
      * @return mixed
      */
-    function & getCol($sql, $col = 0)
+    public function & getCol($sql, $col = 0, array $inputarr = null)
     {
-        if (is_resource($sql)) {
-            $res = $sql;
-        } else {
-            $res = $this->execute($sql);
-        }
-        $data = array();
-        while ($row = mysql_fetch_row($res)) {
-            $data[] = $row[$col];
-        }
-        mysql_free_result($res);
-        return $data;
+        return $this->execute($sql, $inputarr)->getCol($col);
     }
 
     /**
      * 返回指定表（或者视图）的元数据
      *
-     * 部分代码参考 ADOdb 实现。
-     *
      * 每个字段包含下列属性：
      *
-     * name:            字段名
-     * scale:           小数位数
-     * type:            字段类型
-     * simpleType:      简单字段类型（与数据库无关）
-     * maxLength:       最大长度
-     * notNull:         是否不允许保存 NULL 值
-     * primaryKey:      是否是主键
-     * autoIncrement:   是否是自动增量字段
-     * binary:          是否是二进制数据
-     * unsigned:        是否是无符号数值
-     * hasDefault:      是否有默认值
-     * defaultValue:    默认值
+     * - name:            字段名
+     * - scale:           小数位数
+     * - type:            字段类型
+     * - simpleType:      简单字段类型（与数据库无关）
+     * - maxLength:       最大长度
+     * - notNull:         是否不允许保存 NULL 值
+     * - primaryKey:      是否是主键
+     * - autoIncrement:   是否是自动增量字段
+     * - binary:          是否是二进制数据
+     * - unsigned:        是否是无符号数值
+     * - hasDefault:      是否有默认值
+     * - defaultValue:    默认值
+     * - description:     字段描述
+     *
+     * simpleType 可能是下列值之一：
+     *
+     * - C 长度小于等于 250 的字符串
+     * - X 长度大于 250 的字符串
+     * - B 二进制数据
+     * - N 数值或者浮点数
+     * - D 日期
+     * - T TimeStamp
+     * - L 逻辑布尔值
+     * - I 整数
+     * - R 自动增量或计数器
      *
      * @param string $table
+     * @param string $schema
      *
      * @return array
      */
-    function & metaColumns($table)
+    public function & metaColumns($table, $schema = null)
     {
-        /**
-         *  C 长度小于等于 250 的字符串
-         *  X 长度大于 250 的字符串
-         *  B 二进制数据
-         *  N 数值或者浮点数
-         *  D 日期
-         *  T TimeStamp
-         *  L 逻辑布尔值
-         *  I 整数
-         *  R 自动增量或计数器
-         */
         static $typeMap = array(
             'BIT'           => 'I',
             'TINYINT'       => 'I',
@@ -655,11 +527,11 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
             'SET'           => 'C',
         );
 
-        $table = $this->qtable($table);
-        $rs = $this->execute(sprintf($this->META_COLUMNS_SQL, $table));
-        if (!$rs) { return false; }
+        $qtable = $this->qtable($table, $schema);
+        $handle = $this->execute("SHOW COLUMNS FROM {$qtable}");
+
         $retarr = array();
-        while (($row = mysql_fetch_row($rs))) {
+        while ($row = $handle->getRow()) {
             $field = array();
             $field['name'] = $row[0];
             $type = $row[1];
@@ -705,7 +577,6 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
             }
             $retarr[strtoupper($field['name'])] = $field;
         }
-        mysql_free_result($rs);
         return $retarr;
     }
 
@@ -714,7 +585,7 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
      *
      * @param int $timestamp
      */
-    function dbTimeStamp($timestamp)
+    public function dbTimeStamp($timestamp)
     {
         return date('Y-m-d H:i:s', $timestamp);
     }
@@ -722,8 +593,13 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
     /**
      * 启动事务
      */
-    function startTrans()
+    public function startTrans()
     {
+        if ($this->_transCount == 0) {
+            $this->execute('START TRANSACTION');
+            $this->_hasFailedTrans = false;
+        }
+        $this->_transCount++;
     }
 
     /**
@@ -732,146 +608,185 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
      * 如果 $commitOnNoErrors 参数为 true，当事务中所有查询都成功完成时，则提交事务，否则回滚事务
      * 如果 $commitOnNoErrors 参数为 false，则强制回滚事务
      *
-     * @param $commitOnNoErrors 指示在没有错误时是否提交事务
+     * @param $commitOnNoErrors
      */
-    function completeTrans($commitOnNoErrors = true)
+    public function completeTrans($commitOnNoErrors = true)
     {
-        return false;
+        if ($this->_transCount < 1) { return; }
+        if ($this->_transCount > 1) {
+            $this->_transCount--;
+            return;
+        }
+        $this->_transCount = 0;
+
+        if ($this->_hasFailedTrans == false && $commitOnNoErrors) {
+            $this->execute('COMMIT');
+        } else {
+            $this->execute('ROLLBACK');
+        }
     }
 
     /**
      * 强制指示在调用 completeTrans() 时回滚事务
      */
-    function failTrans()
+    public function failTrans()
     {
-        $this->_transCommit = false;
+        $this->_hasFailedTrans = true;
     }
 
     /**
-     * 反复事务是否失败的状态
+     * 检查事务过程中是否出现失败的查询
      */
-    function hasFailedTrans()
+    public function hasFailedTrans()
     {
-        return true;
-    }
-
-    /**
-     * 根据 SQL 语句和提供的参数数组，生成最终的 SQL 语句
-     *
-     * @param string $sql
-     * @param array $inputarr
-     *
-     * @return string
-     */
-    function _prepareSql($sql, & $inputarr)
-    {
-        $sqlarr = explode('?', $sql);
-        $sql = '';
-        $ix = 0;
-        foreach ($inputarr as $v) {
-            $sql .= $sqlarr[$ix];
-            $typ = gettype($v);
-            if ($typ == 'string') {
-                $sql .= $this->qstr($v);
-            } else if ($typ == 'double') {
-                $sql .= $this->qstr(str_replace(',', '.', $v));
-            } else if ($typ == 'boolean') {
-                $sql .= $v ? $this->TRUE_VALUE : $this->FALSE_VALUE;
-            } else if ($v === null) {
-                $sql .= 'NULL';
-            } else {
-                $sql .= $v;
-            }
-            $ix += 1;
-        }
-        if (isset($sqlarr[$ix])) {
-            $sql .= $sqlarr[$ix];
-        }
-        return $sql;
+        return $this->_transCount > 0 ? $this->_hasFailedTrans : false;
     }
 }
 
 /**
- * 与 FLEA_Db_Driver_Mysql 的唯一区别在于 FLEA_Db_Driver_Mysqlt 支持事务功能
+ * FLEA_Db_Driver_Mysqli_Handle 封装了一个查询句柄，便于释放资源
  *
- * 要求表的存储引擎为 InnoDB 或者 BDB。
- *
- * @package Core
+ * @package Database
  * @author 廖宇雷 dualface@gmail.com
- * @version 1.1
+ * @version 1.0
  */
-class FLEA_Db_Driver_Mysqlt extends FLEA_Db_Driver_Mysql
+
+class FLEA_Db_Driver_Mysqli_Handle extends FLEA_Db_Driver_Handle_Abstract
 {
     /**
-     * 指示事务启动次数
-     *
-     * @var int
+     * 释放句柄
      */
-    var $_transCount = 0;
-
-    /**
-     * 指示事务是否提交
-     *
-     * @var boolean
-     */
-    var $_transCommit = true;
-
-    /**
-     * 启动事务
-     */
-    function startTrans()
+    public function free()
     {
-        $this->_transCount += 1;
-        if ($this->_transCount == 1) {
-            $this->execute('SET AUTOCOMMIT=0');
-            $this->execute('BEGIN');
+        if ($this->_handle) {
+            mysqli_free_result($this->_handle);
         }
+        $this->_handle = null;
     }
 
     /**
-     * 完成事务，根据查询是否出错决定是提交事务还是回滚事务
+     * 从查询句柄中提取记录集
      *
-     * 如果 $commitOnNoErrors 参数为 true，当事务中所有查询都成功完成时，则提交事务，否则回滚事务
-     * 如果 $commitOnNoErrors 参数为 false，则强制回滚事务
+     * 如果 $groupby 参数如果为字符串，表示结果集根据 $groupby 指定的字段进行分组。
+     * 如果 $groupby 参数为 true，则表示根据每行记录的第一个字段进行分组。
+     * 如果 $groupby 参数为 false，则表示不分组。
      *
-     * @param $commitOnNoErrors 指示在没有错误时是否提交事务
+     * @param string|boolean $groupby
+     *
+     * @return array
      */
-    function completeTrans($commitOnNoErrors = true)
+    public function & getAll($groupby = false)
     {
-        if ($this->_transCount < 1) { return false; }
-        if ($this->_transCount > 1) {
-            $this->_transCount -= 1;
-            return true;
-        }
-        $this->_transCount = 0;
-
-        if ($this->_transCommit && $commitOnNoErrors) {
-            $ret = $this->execute('COMMIT');
-            $this->execute('SET AUTOCOMMIT=1');
-            return $ret;
+        $data = array();
+        if ($groupby === false) {
+            while ($row = mysqli_fetch_assoc($this->_handle)) {
+                $data[] = $row;
+            }
         } else {
-            $this->execute('ROLLBACK');
-            $this->execute('SET AUTOCOMMIT=1');
-            return false;
+            $row = mysqli_fetch_assoc($this->_handle);
+            if (!$row) { return $data; }
+
+            $key = is_string($groupby) ? $groupby : key($row);
+            do {
+                $rkv = $row[$groupBy];
+                $data[$rkv][] = $row;
+            } while ($row = mysqli_fetch_assoc($this->_handle));
+        }
+        return $data;
+    }
+
+    /**
+     * 从查询句柄中提取记录集，并且返回指定字段的值集合以及以该字段值分组后的记录集
+     *
+     * @param string $field
+     * @param array $fieldValues
+     * @param array $reference
+     *
+     * @return array
+     */
+    public function & getAllWithFieldRefs($field, & $fieldValues, & $reference)
+    {
+        $fieldValues = array();
+        $reference = array();
+        $offset = 0;
+        $data = array();
+        while ($row = mysqli_fetch_assoc($this->_handle)) {
+            $fieldValue = $row[$field];
+            unset($row[$field]);
+            $data[$offset] = $row;
+            $fieldValues[$offset] = $fieldValue;
+            $reference[$fieldValue] =& $data[$offset];
+            $offset++;
+        }
+        return $data;
+    }
+
+    /**
+     * 从查询句柄中提取记录集，并将数据按照指定字段分组后与 $assocRowset 记录集组装在一起
+     *
+     * @param array $assocRowset
+     * @param string $mappingName
+     * @param boolean $oneToOne
+     * @param string $refKeyName
+     */
+    public function assemble(array & $assocRowset, $mappingName, $oneToOne, $refKeyName)
+    {
+        if ($oneToOne) {
+            // 一对一组装数据
+            while ($row = mysqli_fetch_assoc($this->_handle)) {
+                $rkv = $row[$refKeyName];
+                unset($row[$refKeyName]);
+                $assocRowset[$rkv][$mappingName] = $row;
+            }
+        } else {
+            // 一对多组装数据
+            while ($row = mysqli_fetch_assoc($this->_handle)) {
+                $rkv = $row[$refKeyName];
+                unset($row[$refKeyName]);
+                $assocRowset[$rkv][$mappingName][] = $row;
+            }
         }
     }
 
     /**
-     * 强制指示在调用 completeTrans() 时回滚事务
+     * 从查询句柄提取一条记录，并返回该记录的第一个字段
+     *
+     * @return mixed
      */
-    function failTrans()
+    public function getOne()
     {
-        $this->_transCommit = false;
+        $row = mysqli_fetch_assoc($this->_handle);
+        return reset($row);
     }
 
     /**
-     * 反复事务是否失败的状态
+     * 从查询句柄提取一条记录
+     *
+     * @return array
      */
-    function hasFailedTrans()
+    public function getRow()
     {
-        if ($this->_transCount > 0) {
-            return $this->_transCommit === false;
-        }
-        return false;
+        return mysqli_fetch_assoc($this->_handle);
     }
+
+    /**
+     * 从查询句柄提取记录集，并返回包含每行指定列数据的数组，如果 $col 为 0，则返回第一列
+     *
+     * @param int|string $col
+     *
+     * @return array
+     */
+    function getCol($col = 0)
+    {
+        $data = array();
+        $row = mysqli_fetch_assoc($this->_handle);
+        if (!$row) { return $data; }
+
+        if ($col == 0) { $col = key($row); }
+        do {
+            $data[] = $row[$col];
+        } while ($row = mysqli_fetch_assoc($this->_handle));
+        return $data;
+    }
+
 }

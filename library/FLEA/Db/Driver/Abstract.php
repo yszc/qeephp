@@ -9,7 +9,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 FLEA_Db_Driver_Abstract 类
+ * 定义 FLEA_Db_Driver_Abstract 类和 FLEA_Db_Driver_Handle_Abstract 类
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author 廖宇雷 dualface@gmail.com
@@ -30,11 +30,26 @@ require_once 'FLEA/Db/Transaction.php';
 abstract class FLEA_Db_Driver_Abstract
 {
     /**
+     * 处理查询参数的方式
+     */
+    const PARAM_QM       = 1;
+    const PARAM_NAMED    = 2;
+    const PARAM_SEQUENCE = 3;
+    const PARAM_AT_NAMED = 4;
+
+    /**
      * 用于描绘 true、false 和 null 的数据库值
      */
-    public $TRUE_VALUE  = 1;
-    public $FALSE_VALUE = 0;
-    public $NULL_VALUE  = 'NULL';
+    const TRUE_VALUE  = 1;
+    const FALSE_VALUE = 0;
+    const NULL_VALUE  = 'NULL';
+
+    /**
+     * 指示查询参数的样式，继承类必须重载该成员变量
+     *
+     * @var const
+     */
+    public $paramStyle = self::PARAM_QM;
 
     /**
      * 数据库连接信息
@@ -56,20 +71,6 @@ abstract class FLEA_Db_Driver_Abstract
      * @var array
      */
     protected $_log = array();
-
-    /**
-     * 最后一次数据库操作的错误信息
-     *
-     * @var mixed
-     */
-    protected $_lasterr = null;
-
-    /**
-     * 最后一次数据库操作的错误代码
-     *
-     * @var mixed
-     */
-    protected $_lasterrcode = null;
 
     /**
      * 最近一次插入操作或者 nextId() 操作返回的插入 ID
@@ -98,16 +99,6 @@ abstract class FLEA_Db_Driver_Abstract
      * 关闭数据库连接，失败时抛出异常
      */
     abstract public function close();
-
-    /**
-     * 执行一个查询，返回一个 resource 或者 boolean 值，出错时抛出异常
-     *
-     * @param string $sql
-     * @param array $inputarr
-     *
-     * @return resource|boolean
-     */
-    abstract public function execute($sql, $inputarr = null);
 
     /**
      * 转义值
@@ -190,72 +181,50 @@ abstract class FLEA_Db_Driver_Abstract
     abstract public function affectedRows();
 
     /**
-     * 从记录集中返回一行数据，失败抛出异常
+     * 执行一个查询，返回一个 FLEA_Db_Driver_Handle_Abstract 或者 boolean 值，出错时抛出异常
      *
-     * @param resouce $res
+     * @param string $sql
+     * @param array $inputarr
      *
-     * @return array
+     * @return FLEA_Db_Driver_Handle_Abstract
      */
-    abstract public function fetchRow($res);
+    abstract public function execute($sql, $inputarr = null);
 
     /**
-     * 从记录集中返回一行数据，字段名作为键名，失败抛出异常
-     *
-     * @param resouce $res
-     *
-     * @return array
-     */
-    abstract public function fetchAssoc($res);
-
-    /**
-     * 释放查询句柄
-     *
-     * @param resource $res
-     *
-     * @return boolean
-     */
-    abstract public function freeRes($res);
-
-    /**
-     * 进行限定记录集的查询
+     * 进行限定范围的查询，并且返回 FLEA_Db_Driver_Handle_Abstract 对象
      *
      * @param string $sql
      * @param int $length
      * @param int $offset
+     * @param array $inputarr
      *
-     * @return resource
+     * @return FLEA_Db_Driver_Handle_Abstract
      */
-    abstract public function selectLimit($sql, $length = null, $offset = null);
+    abstract public function selectLimit($sql, $length = null, $offset = null, array $inputarr = null);
 
     /**
-     * 执行一个查询，返回查询结果记录集
+     * 执行一个查询并返回记录集
      *
-     * @param string|resource $sql
+     * 如果 $groupby 参数如果为字符串，表示结果集根据 $groupby 指定的字段进行分组。
+     * 如果 $groupby 参数为 true，则表示根据每行记录的第一个字段进行分组。
+     * 如果 $groupby 参数为 false，则表示不分组。
+     *
+     * @param string $sql
+     * @param array $inputarr
+     * @param string|boolean $groupby
      *
      * @return array
      */
-    abstract public function & getAll($sql);
+    abstract public function & getAll($sql, array $inputarr = null, $groupby = false);
 
     /**
-     * 执行一个查询，返回分组后的查询结果记录集
+     * 执行一个查询，并且返回指定字段的值集合以及以该字段值分组后的记录集
      *
-     * $groupBy 参数如果为字符串或整数，表示结果集根据 $groupBy 参数指定的字段进行分组。
-     * 如果 $groupBy 参数为 true，则表示根据每行记录的第一个字段进行分组。
-     *
-     * @param string|resource $sql
-     * @param string|int|boolean $groupBy
-     *
-     * @return array
-     */
-    abstract public function & getAllGroupBy($sql, & $groupBy);
-
-    /**
-     * 执行一个查询，返回查询结果记录集、指定字段的值集合以及以该字段值分组后的记录集
-     *
-     * @param string|resource $sql
+     * @param string $sql
      * @param string $field
      * @param array $fieldValues
      * @param array $reference
+     * @param array $inputarr
      *
      * @return array
      */
@@ -270,62 +239,78 @@ abstract class FLEA_Db_Driver_Abstract
      * @param boolean $oneToOne
      * @param string $refKeyName
      * @param mixed $limit
+     * @param array $inputarr
      */
-    abstract public function assemble($sql, & $assocRowset, $mappingName, $oneToOne, $refKeyName, $limit = null);
+    abstract public function assemble($sql, & $assocRowset, $mappingName, $oneToOne, $refKeyName, $limit = null, array $inputarr = null);
 
     /**
      * 执行查询，返回第一条记录的第一个字段
      *
-     * @param string|resource $sql
+     * @param string $sql
+     * @param array $inputarr
      *
      * @return mixed
      */
-    abstract public function getOne($sql);
+    abstract public function & getOne($sql, array $inputarr = null);
 
     /**
      * 执行查询，返回第一条记录
      *
-     * @param string|resource $sql
+     * @param string $sql
+     * @param array $inputarr
      *
      * @return mixed
      */
-    abstract public function & getRow($sql);
+    abstract public function & getRow($sql, array $inputarr = null);
 
     /**
      * 执行查询，返回结果集的指定列
      *
      * @param string|resource $sql
      * @param int $col 要返回的列，0 为第一列
+     * @param array $inputarr
      *
      * @return mixed
      */
-    abstract public function & getCol($sql, $col = 0);
+    abstract public function & getCol($sql, $col = 0, array $inputarr = null);
 
     /**
      * 返回指定表（或者视图）的元数据
      *
-     * 部分代码参考 ADOdb 实现。
-     *
      * 每个字段包含下列属性：
      *
-     * name:            字段名
-     * scale:           小数位数
-     * type:            字段类型
-     * simpleType:      简单字段类型（与数据库无关）
-     * maxLength:       最大长度
-     * notNull:         是否不允许保存 NULL 值
-     * primaryKey:      是否是主键
-     * autoIncrement:   是否是自动增量字段
-     * binary:          是否是二进制数据
-     * unsigned:        是否是无符号数值
-     * hasDefault:      是否有默认值
-     * defaultValue:    默认值
+     * - name:            字段名
+     * - scale:           小数位数
+     * - type:            字段类型
+     * - simpleType:      简单字段类型（与数据库无关）
+     * - maxLength:       最大长度
+     * - notNull:         是否不允许保存 NULL 值
+     * - primaryKey:      是否是主键
+     * - autoIncrement:   是否是自动增量字段
+     * - binary:          是否是二进制数据
+     * - unsigned:        是否是无符号数值
+     * - hasDefault:      是否有默认值
+     * - defaultValue:    默认值
+     * - description:     字段描述
+     *
+     * simpleType 可能是下列值之一：
+     *
+     * - C 长度小于等于 250 的字符串
+     * - X 长度大于 250 的字符串
+     * - B 二进制数据
+     * - N 数值或者浮点数
+     * - D 日期
+     * - T TimeStamp
+     * - L 逻辑布尔值
+     * - I 整数
+     * - R 自动增量或计数器
      *
      * @param string $table
+     * @param string $schema
      *
      * @return array
      */
-    abstract public function & metaColumns($table);
+    abstract public function & metaColumns($table, $schema = null);
 
     /**
      * 返回数据库可以接受的日期格式
@@ -345,7 +330,7 @@ abstract class FLEA_Db_Driver_Abstract
      * 如果 $commitOnNoErrors 参数为 true，当事务中所有查询都成功完成时，则提交事务，否则回滚事务
      * 如果 $commitOnNoErrors 参数为 false，则强制回滚事务
      *
-     * @param $commitOnNoErrors 指示在没有错误时是否提交事务
+     * @param $commitOnNoErrors
      */
     abstract public function completeTrans($commitOnNoErrors = true);
 
@@ -355,7 +340,7 @@ abstract class FLEA_Db_Driver_Abstract
     abstract public function failTrans();
 
     /**
-     * 反复事务是否失败的状态
+     * 检查事务过程中是否出现失败的查询
      */
     abstract public function hasFailedTrans();
 
@@ -368,4 +353,123 @@ abstract class FLEA_Db_Driver_Abstract
     {
         return new FLEA_Db_Transaction($this);
     }
+}
+
+/**
+ * FLEA_Db_Driver_Handle_Abstract 是封装查询句柄的基础类
+ *
+ * @package Database
+ * @author 廖宇雷 dualface@gmail.com
+ * @version 1.0
+ */
+abstract class FLEA_Db_Driver_Handle_Abstract
+{
+    /**
+     * 查询句柄
+     *
+     * @var resource
+     */
+    protected $_handle = null;
+
+    /**
+     * 构造函数
+     *
+     * @param resource $handle
+     */
+    public function __construct($handle)
+    {
+        if (is_resource($handle)) {
+            $this->_handle = $handle;
+        }
+    }
+
+    /**
+     * 析构函数
+     */
+    public function __destruct()
+    {
+        $this->free();
+    }
+
+    /**
+     * 返回句柄
+     *
+     * @return resource
+     */
+    public function handle()
+    {
+        return $this->_handle;
+    }
+
+    /**
+     * 指示句柄是否有效
+     *
+     * @return boolean
+     */
+    public function valid()
+    {
+        return $this->_handle != null;
+    }
+
+    /**
+     * 释放句柄
+     */
+    abstract public function free();
+
+    /**
+     * 从查询句柄中提取记录集
+     *
+     * 如果 $groupby 参数如果为字符串，表示结果集根据 $groupby 指定的字段进行分组。
+     * 如果 $groupby 参数为 true，则表示根据每行记录的第一个字段进行分组。
+     * 如果 $groupby 参数为 false，则表示不分组。
+     *
+     * @param string|boolean $groupby
+     *
+     * @return array
+     */
+    abstract public function & getAll($groupby = false);
+
+    /**
+     * 从查询句柄中提取记录集，并且返回指定字段的值集合以及以该字段值分组后的记录集
+     *
+     * @param string $field
+     * @param array $fieldValues
+     * @param array $reference
+     *
+     * @return array
+     */
+    abstract public function & getAllWithFieldRefs($field, & $fieldValues, & $reference);
+
+    /**
+     * 从查询句柄中提取记录集，并将数据按照指定字段分组后与 $assocRowset 记录集组装在一起
+     *
+     * @param array $assocRowset
+     * @param string $mappingName
+     * @param boolean $oneToOne
+     * @param string $refKeyName
+     */
+    abstract public function assemble(array & $assocRowset, $mappingName, $oneToOne, $refKeyName);
+
+    /**
+     * 从查询句柄提取一条记录，并返回该记录的第一个字段
+     *
+     * @return mixed
+     */
+    abstract public function getOne();
+
+    /**
+     * 从查询句柄提取一条记录
+     *
+     * @return array
+     */
+    abstract public function getRow();
+
+    /**
+     * 从查询句柄提取记录集，并返回包含每行指定列数据的数组，如果 $col 为 0，则返回第一列
+     *
+     * @param int|string $col
+     *
+     * @return array
+     */
+    abstract function getCol($col = 0);
 }
