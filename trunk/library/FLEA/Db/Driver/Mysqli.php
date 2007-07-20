@@ -117,6 +117,19 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
     }
 
     /**
+     * 选择要操作的数据库
+     *
+     * @param string $database
+     */
+    public function selectDB($database)
+    {
+        if (!mysqli_select_db($this->_conn, $database)) {
+            require_once 'FLEA/Db/Exception/UseDatabaseFailed.php';
+            throw new FLEA_Db_Exception_UseDatabaseFailed('MySQL', 'mysqli', $database);
+        }
+    }
+
+    /**
      * 转义值
      *
      * @param mixed $value
@@ -294,7 +307,7 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
     {
         if ($this->enableLog) { $this->log[] = $sql; }
 
-        if (empty($inputarr)) {
+        if (!empty($inputarr)) {
             $stmt = mysqli_prepare($this->_conn, $sql);
             $types = '';
             foreach ($inputarr as $v) {
@@ -306,19 +319,24 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
                     $types .= 'd';
                 }
             }
-            array_unshift($inputarr, array($stmt, $types));
+            array_unshift($inputarr, $types);
+            array_unshift($inputarr, $stmt);
             call_user_func_array('mysqli_stmt_bind_param', $inputarr);
-            $ret = mysqli_stmt_execute($stmt);
+            if (!mysqli_stmt_execute($stmt)) {
+                require_once 'FLEA/Db/Exception/SqlQuery.php';
+                throw new FLEA_Db_Exception_SqlQuery($sql, mysqli_stmt_error($stmt), mysqli_stmt_errno($stmt));
+            }
+
+            return new FLEA_Db_Driver_Mysqli_Statement($stmt);
         } else {
-            $ret = mysqli_query($this->_conn, $sql);
-        }
+            $result = mysqli_query($this->_conn, $sql);
+            if (!$result) {
+                require_once 'FLEA/Db/Exception/SqlQuery.php';
+                throw new FLEA_Db_Exception_SqlQuery($sql, mysqli_error($this->_conn), mysqli_errno($this->_conn));
+            }
 
-        if ($ret === false) {
-            require_once 'FLEA/Db/Exception/SqlQuery.php';
-            throw new FLEA_Db_Exception_SqlQuery($sql, mysqli_error($this->_conn), mysqli_errno($this->_conn));
+            return new FLEA_Db_Driver_Mysqli_Handle($result);
         }
-
-        return new FLEA_Db_Driver_Mysqli_Handle($ret);
     }
 
     /**
@@ -349,19 +367,14 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
     /**
      * 执行一个查询并返回记录集
      *
-     * 如果 $groupby 参数如果为字符串，表示结果集根据 $groupby 指定的字段进行分组。
-     * 如果 $groupby 参数为 true，则表示根据每行记录的第一个字段进行分组。
-     * 如果 $groupby 参数为 false，则表示不分组。
-     *
      * @param string $sql
      * @param array $inputarr
-     * @param string|boolean $groupby
      *
      * @return array
      */
-    public function & getAll($sql, array $inputarr = null, $groupby = false)
+    public function & getAll($sql, array $inputarr = null)
     {
-        return $this->execute($sql, $inputarr)->getAll($groupby);
+        return $this->execute($sql, $inputarr)->getAll();
     }
 
     /**
@@ -416,7 +429,7 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
      *
      * @return mixed
      */
-    public function & getOne($sql, array $inputarr = null)
+    public function getOne($sql, array $inputarr = null)
     {
         return $this->execute($sql, $inputarr)->getOne();
     }
@@ -429,7 +442,7 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
      *
      * @return mixed
      */
-    public function & getRow($sql, array $inputarr = null)
+    public function getRow($sql, array $inputarr = null)
     {
         return $this->execute($sql, $inputarr)->getRow();
     }
@@ -443,7 +456,7 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
      *
      * @return mixed
      */
-    public function & getCol($sql, $col = 0, array $inputarr = null)
+    public function getCol($sql, $col = 0, array $inputarr = null)
     {
         return $this->execute($sql, $inputarr)->getCol($col);
     }
@@ -533,8 +546,8 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
         $retarr = array();
         while ($row = $handle->getRow()) {
             $field = array();
-            $field['name'] = $row[0];
-            $type = $row[1];
+            $field['name'] = $row['Field'];
+            $type = $row['Type'];
 
             $field['scale'] = null;
             $queryArray = false;
@@ -549,25 +562,22 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
                 $field['type'] = $queryArray[1];
                 $arr = explode(",",$queryArray[2]);
                 $field['enums'] = $arr;
-                $zlen = max(array_map("strlen",$arr)) - 2; // PHP >= 4.0.6
+                $zlen = max(array_map("strlen",$arr)) - 2;
                 $field['maxLength'] = ($zlen > 0) ? $zlen : 1;
             } else {
                 $field['type'] = $type;
                 $field['maxLength'] = -1;
             }
             $field['simpleType'] = $typeMap[strtoupper($field['type'])];
-            if ($field['simpleType'] == 'C' && $field['maxLength'] > 250) {
-                $field['simpleType'] = 'X';
-            }
-            $field['notNull'] = ($row[2] != 'YES');
-            $field['primaryKey'] = ($row[3] == 'PRI');
-            $field['autoIncrement'] = (strpos($row[5], 'auto_increment') !== false);
+            $field['notNull'] = ($row['Null'] != 'YES');
+            $field['primaryKey'] = ($row['Key'] == 'PRI');
+            $field['autoIncrement'] = (strpos($row['Extra'], 'auto_increment') !== false);
             if ($field['autoIncrement']) { $field['simpleType'] = 'R'; }
             $field['binary'] = (strpos($type,'blob') !== false);
             $field['unsigned'] = (strpos($type,'unsigned') !== false);
 
             if (!$field['binary']) {
-                $d = $row[4];
+                $d = $row['Default'];
                 if ($d != '' && $d != 'NULL') {
                     $field['hasDefault'] = true;
                     $field['defaultValue'] = $d;
@@ -650,7 +660,6 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
  * @author 廖宇雷 dualface@gmail.com
  * @version 1.0
  */
-
 class FLEA_Db_Driver_Mysqli_Handle extends FLEA_Db_Driver_Handle_Abstract
 {
     /**
@@ -667,30 +676,13 @@ class FLEA_Db_Driver_Mysqli_Handle extends FLEA_Db_Driver_Handle_Abstract
     /**
      * 从查询句柄中提取记录集
      *
-     * 如果 $groupby 参数如果为字符串，表示结果集根据 $groupby 指定的字段进行分组。
-     * 如果 $groupby 参数为 true，则表示根据每行记录的第一个字段进行分组。
-     * 如果 $groupby 参数为 false，则表示不分组。
-     *
-     * @param string|boolean $groupby
-     *
      * @return array
      */
-    public function & getAll($groupby = false)
+    public function & getAll()
     {
         $data = array();
-        if ($groupby === false) {
-            while ($row = mysqli_fetch_assoc($this->_handle)) {
-                $data[] = $row;
-            }
-        } else {
-            $row = mysqli_fetch_assoc($this->_handle);
-            if (!$row) { return $data; }
-
-            $key = is_string($groupby) ? $groupby : key($row);
-            do {
-                $rkv = $row[$groupBy];
-                $data[$rkv][] = $row;
-            } while ($row = mysqli_fetch_assoc($this->_handle));
+        while ($row = mysqli_fetch_assoc($this->_handle)) {
+            $data[] = $row;
         }
         return $data;
     }
@@ -788,5 +780,204 @@ class FLEA_Db_Driver_Mysqli_Handle extends FLEA_Db_Driver_Handle_Abstract
         } while ($row = mysqli_fetch_assoc($this->_handle));
         return $data;
     }
+}
 
+/**
+ * FLEA_Db_Driver_Mysqli_Statement 封装了一个查询过程对象，便于释放资源
+ *
+ * @package Database
+ * @author 廖宇雷 dualface@gmail.com
+ * @version 1.0
+ */
+class FLEA_Db_Driver_Mysqli_Statement extends FLEA_Db_Driver_Handle_Abstract
+{
+    /**
+     * 查询过程可能返回的结果集包含的字段
+     *
+     * @var array
+     */
+    protected $_stmtFields;
+
+    /**
+     * 保存当前记录的数据
+     *
+     * @var array
+     */
+    protected $_currentRow;
+
+    /**
+     * 用于组合查询记录的回调函数
+     *
+     * @var callback
+     */
+    protected $_callback;
+
+    /**
+     * 构造函数
+     *
+     * @param mysqli_stmt $handle
+     */
+    public function __construct(mysqli_stmt $handle)
+    {
+        parent::__construct($handle);
+        $this->_prepareResult();
+    }
+
+    /**
+     * 释放查询过程对象
+     */
+    public function free()
+    {
+        if ($this->_handle) {
+            mysqli_stmt_close($this->_handle);
+        }
+        $this->_handle = null;
+    }
+
+    /**
+     * 从查询过程对象中提取记录集
+     *
+     * @return array
+     */
+    public function & getAll()
+    {
+        $data = array();
+        while (mysqli_stmt_fetch($this->_handle)) {
+            $data[] = call_user_func($this->_callback, $this->_currentRow);
+        }
+        return $data;
+    }
+
+    /**
+     * 从查询句柄中提取记录集，并且返回指定字段的值集合以及以该字段值分组后的记录集
+     *
+     * @param string $field
+     * @param array $fieldValues
+     * @param array $reference
+     *
+     * @return array
+     */
+    public function & getAllWithFieldRefs($field, & $fieldValues, & $reference)
+    {
+        $fieldValues = array();
+        $reference = array();
+        $offset = 0;
+        $data = array();
+        while (mysqli_stmt_fetch($this->_handle)) {
+            $row = call_user_func($this->_callback, $this->_currentRow);
+            $fieldValue = $row[$field];
+            $data[$offset] = $row;
+            $fieldValues[$offset] = $fieldValue;
+            $reference[$fieldValue] =& $data[$offset];
+            $offset++;
+        }
+        return $data;
+    }
+
+    /**
+     * 从查询句柄中提取记录集，并将数据按照指定字段分组后与 $assocRowset 记录集组装在一起
+     *
+     * @param array $assocRowset
+     * @param string $mappingName
+     * @param boolean $oneToOne
+     * @param string $refKeyName
+     */
+    public function assemble(array & $assocRowset, $mappingName, $oneToOne, $refKeyName)
+    {
+        if ($oneToOne) {
+            // 一对一组装数据
+            while (mysqli_stmt_fetch($this->_handle)) {
+                $row = call_user_func($this->_callback, $this->_currentRow);
+                $rkv = $row[$refKeyName];
+                unset($row[$refKeyName]);
+                $assocRowset[$rkv][$mappingName] = $row;
+            }
+        } else {
+            // 一对多组装数据
+            while (mysqli_stmt_fetch($this->_handle)) {
+                $row = call_user_func($this->_callback, $this->_currentRow);
+                $rkv = $row[$refKeyName];
+                unset($row[$refKeyName]);
+                $assocRowset[$rkv][$mappingName][] = $row;
+            }
+        }
+    }
+
+    /**
+     * 从查询句柄提取一条记录，并返回该记录的第一个字段
+     *
+     * @return mixed
+     */
+    public function getOne()
+    {
+        if (mysqli_stmt_fetch($this->_handle)) {
+            return reset($this->_currentRow);
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * 从查询句柄提取一条记录
+     *
+     * @return array
+     */
+    public function getRow()
+    {
+        if (mysqli_stmt_fetch($this->_handle)) {
+            return call_user_func($this->_callback, $this->_currentRow);
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * 从查询句柄提取记录集，并返回包含每行指定列数据的数组，如果 $col 为 0，则返回第一列
+     *
+     * @param int|string $col
+     *
+     * @return array
+     */
+    function getCol($col = 0)
+    {
+        $data = array();
+        if (!mysqli_fetch_assoc($this->_handle)) { return $data; }
+        $row = call_user_func($this->_callback, $this->_currentRow);
+        if ($col == 0) { $col = key($row); }
+        $data[] = $row[$col];
+        while (mysqli_fetch_assoc($this->_handle)) {
+            $row = call_user_func($this->_callback, $this->_currentRow);
+            $data[] = $row[$col];
+        }
+        return $data;
+    }
+
+    /**
+     * 准备结果集包含的字段
+     */
+    protected function _prepareResult()
+    {
+        if (is_null($this->_handle)) { return; }
+        $result = mysqli_stmt_result_metadata($this->_handle);
+        /* @var $result mysqli_result */
+        $meta = $result->fetch_fields();
+        if (empty($meta)) { return; }
+
+        $this->_stmtFields = array();
+        $this->_currentRow = array();
+        $bindVars = array();
+        $func = 'return array(';
+        foreach ($meta as $f) {
+            $name = str_replace(' ', '_', $f->name);
+            $this->_currentRow[$name] = null;
+            $bindVars[] = & $this->_currentRow[$name];
+            $this->_stmtFields[$name] = $f->name;
+            $func .= "'{$f->name}' => \$row['{$name}'], ";
+        }
+        $func = substr($func, 0, -2);
+        $func .= ');';
+        $this->_callback = create_function('$row', $func);
+
+        call_user_func_array(array($this->_handle, 'bind_result'), $bindVars);
+    }
 }
