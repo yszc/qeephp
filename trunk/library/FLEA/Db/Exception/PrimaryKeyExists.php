@@ -12,16 +12,20 @@
  * 定义 FLEA_Db_Exception_PrimaryKeyExists 异常
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Exception
  * @version $Id$
  */
+
+// {{{ includes
+require_once 'FLEA/Exception.php';
+// }}}
 
 /**
  * FLEA_Db_Exception_PrimaryKeyExists 异常指示在不需要主键值的时候却提供了主键值
  *
  * @package Exception
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_Db_Exception_PrimaryKeyExists extends FLEA_Exception

@@ -12,7 +12,7 @@
  * 定义 FLEA_Controller_Action 类
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Core
  * @version $Id$
  */
@@ -25,7 +25,7 @@
  * 但从这个类派生自己的控制器可以获得一些便利性。
  *
  * @package Core
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_Controller_Action

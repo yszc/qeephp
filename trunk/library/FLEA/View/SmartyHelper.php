@@ -12,7 +12,7 @@
  * 定义 FLEA_View_SmartyHelper 类
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Core
  * @version $Id$
  */
@@ -22,7 +22,7 @@
  * 提供对 QeePHP 内置功能的直接支持。
  *
  * @package Core
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_View_SmartyHelper

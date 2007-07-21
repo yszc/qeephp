@@ -12,7 +12,7 @@
  * 定义 FLEA_Db_Transaction 类
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Database
  * @version $Id$
  */
@@ -21,7 +21,7 @@
  * FLEA_Db_Transaction 类封装了一个事务操作
  *
  * @package Database
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_Db_Transaction

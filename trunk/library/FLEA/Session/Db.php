@@ -12,7 +12,7 @@
  * 定义 FLEA_Session_Db 类
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Core
  * @version $Id$
  */
@@ -32,7 +32,7 @@
  * - 修改应用程序设置 sessionProvider 为 FLEA_Session_Db
  *
  * @package Core
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_Session_Db

@@ -12,7 +12,7 @@
  * 该文件定义了一些用户简化文件系统操作的函数和对象
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Core
  * @version $Id$
  */

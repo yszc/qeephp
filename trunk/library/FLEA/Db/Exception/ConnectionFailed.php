@@ -12,16 +12,20 @@
  * 定义 FLEA_Db_Exception_ConnectionFailed 异常
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Database
  * @version $Id$
  */
+
+// {{{ includes
+require_once 'FLEA/Exception.php';
+// }}}
 
 /**
  * FLEA_Db_Exception_ConnectionFailed 异常指示连接数据库失败
  *
  * @package Database
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_Db_Exception_ConnectionFailed extends FLEA_Exception

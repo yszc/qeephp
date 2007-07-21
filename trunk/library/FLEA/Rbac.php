@@ -12,7 +12,7 @@
  * 定义 FLEA_Rbac 类
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Core
  * @version $Id$
  */
@@ -24,7 +24,7 @@
  * 这些服务由 FLEA_Rbac_UsersManager 和 FLEA_Rbac_RolesManager 提供。
  *
  * @package Core
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_Rbac

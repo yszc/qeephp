@@ -12,7 +12,7 @@
  * 定义 FLEA_WebControls 类
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Core
  * @version $Id$
  */
@@ -23,7 +23,7 @@
  * 开发者不应该自行加载该文件，而是调用 init_webcontrols() 来进行 WebControls 的初始化。
  *
  * @package Core
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_WebControls

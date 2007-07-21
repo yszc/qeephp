@@ -12,7 +12,7 @@
  * 定义 FLEA_Db_Driver_Abstract 类和 FLEA_Db_Driver_Handle_Abstract 类
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Core
  * @version $Id$
  */
@@ -21,7 +21,7 @@
  * FLEA_Db_Driver_Abstract 是所有数据库驱动的基础类
  *
  * @package Database
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.2
  */
 abstract class FLEA_Db_Driver_Abstract
@@ -359,7 +359,7 @@ abstract class FLEA_Db_Driver_Abstract
  * FLEA_Db_Driver_Handle_Abstract 是封装查询句柄的基础类
  *
  * @package Database
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 abstract class FLEA_Db_Driver_Handle_Abstract

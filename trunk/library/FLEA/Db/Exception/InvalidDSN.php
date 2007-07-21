@@ -12,16 +12,20 @@
  * 定义 FLEA_Db_Exception_InvalidDSN 异常
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Exception
  * @version $Id$
  */
+
+// {{{ includes
+require_once 'FLEA/Exception.php';
+// }}}
 
 /**
  * FLEA_Db_Exception_InvalidDSN 异常指示没有提供有效的 DSN 设置
  *
  * @package Exception
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_Db_Exception_InvalidDSN extends FLEA_Exception
