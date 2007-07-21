@@ -12,7 +12,7 @@
  * 定义 FLEA_Db_TableLink 类及其继承类
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Core
  * @version $Id$
  */
@@ -24,7 +24,7 @@
  * 开发者不应该直接构造 FLEA_Db_TableLink 对象。
  *
  * @package Core
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.2
  */
 abstract class FLEA_Db_TableLink
@@ -439,7 +439,7 @@ abstract class FLEA_Db_TableLink
  * FLEA_Db_HasOneLink 封装 has one 关系
  *
  * @package Core
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_Db_HasOneLink extends FLEA_Db_TableLink
@@ -516,7 +516,7 @@ EOT;
  * FLEA_Db_BelongsToLink 封装 belongs to 关系
  *
  * @package Core
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_Db_BelongsToLink extends FLEA_Db_TableLink
@@ -579,7 +579,7 @@ EOT;
  * FLEA_Db_HasManyLink 封装 has many 关系
  *
  * @package Core
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_Db_HasManyLink extends FLEA_Db_HasOneLink
@@ -614,7 +614,7 @@ class FLEA_Db_HasManyLink extends FLEA_Db_HasOneLink
  * FLEA_Db_ManyToManyLink 封装 many to many 关系
  *
  * @package Core
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_Db_ManyToManyLink extends FLEA_Db_TableLink

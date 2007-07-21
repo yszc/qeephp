@@ -12,7 +12,7 @@
  * 定义 FLEA_Rbac_UsersManager 类
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Core
  * @version $Id$
  */
@@ -38,7 +38,7 @@ require_once 'FLEA/Db/TableDataGateway.php';
  * 如果数据表的名字不同，应该从 FLEA_Rbac_UsersManager 派生类并使用自定义的数据表名字、主键字段名等。
  *
  * @package Core
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_Rbac_UsersManager extends FLEA_Db_TableDataGateway

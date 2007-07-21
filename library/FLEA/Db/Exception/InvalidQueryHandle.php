@@ -12,16 +12,20 @@
  * 定义 FLEA_Db_Exception_InvalidQueryHandle 异常
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Database
  * @version $Id$
  */
+
+// {{{ includes
+require_once 'FLEA/Exception.php';
+// }}}
 
 /**
  * FLEA_Db_Exception_InvalidQueryHandle 指示视图操作一个无效的数据库查询句柄
  *
  * @package Database
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_Db_Exception_InvalidQueryHandle extends FLEA_Exception

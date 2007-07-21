@@ -12,7 +12,7 @@
  * 定义 FLEA_Helper_SendFile 类
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Core
  * @version $Id$
  */
@@ -29,7 +29,7 @@ define('SENDFILE_INLINE',     'inline');
  * 浏览器无法访问的位置。然后通过程序将文件内容发送给浏览器。
  *
  * @package Core
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_Helper_SendFile

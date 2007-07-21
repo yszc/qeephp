@@ -12,7 +12,7 @@
  * 定义 FLEA_Db_Driver_Mysqli 类和 FLEA_Db_Driver_Mysqli_Handle 类
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Database
  * @version $Id$
  */
@@ -25,7 +25,7 @@ require_once 'FLEA/Db/Driver/Abstract.php';
  * FLEA_Db_Driver_Mysqli 是 MySQLi 扩展的驱动程序
  *
  * @package Database
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
@@ -657,7 +657,7 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
  * FLEA_Db_Driver_Mysqli_Handle 封装了一个查询句柄，便于释放资源
  *
  * @package Database
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_Db_Driver_Mysqli_Handle extends FLEA_Db_Driver_Handle_Abstract
@@ -786,7 +786,7 @@ class FLEA_Db_Driver_Mysqli_Handle extends FLEA_Db_Driver_Handle_Abstract
  * FLEA_Db_Driver_Mysqli_Statement 封装了一个查询过程对象，便于释放资源
  *
  * @package Database
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_Db_Driver_Mysqli_Statement extends FLEA_Db_Driver_Handle_Abstract

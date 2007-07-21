@@ -12,7 +12,7 @@
  * 定义 FLEA_View_Exception_InitEngineFailed 类
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Exception
  * @version $Id$
  */
@@ -21,7 +21,7 @@
  * FLEA_View_Exception_InitEngineFailed 指示无法初始化模版引擎
  *
  * @package Exception
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_View_Exception_InitEngineFailed extends FLEA_Exception

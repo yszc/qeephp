@@ -16,7 +16,7 @@
  * 即可完成 QeePHP 运行环境的初始化工作。
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Core
  * @version $Id$
  */
@@ -90,7 +90,7 @@ set_exception_handler('__FLEA_EXCEPTION_HANDLER');
  * 该类的所有方法都是静态方法。
  *
  * @package Core
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 abstract class FLEA

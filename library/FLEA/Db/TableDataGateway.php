@@ -12,7 +12,7 @@
  * 定义 FLEA_Db_TableDataGateway 类
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Database
  * @version $Id$
  */
@@ -52,9 +52,9 @@ define('MANY_TO_MANY',  4);
  * 对于每一个表数据入口对象，都必须在类定义中通过 $tableName 和 $primaryKey
  * 来分别指定数据表的名字和主键字段名。
  *
- * @package Core
- * @author 廖宇雷 dualface@gmail.com
- * @version 1.2
+ * @package Database
+ * @author 起源科技(www.qeeyuan.com)
+ * @version 1.3
  */
 class FLEA_Db_TableDataGateway
 {
@@ -302,11 +302,9 @@ class FLEA_Db_TableDataGateway
     /**
      * 设置数据库访问对象
      *
-     * @param FLEA_Db_Driver_Prototype $dbo
-     *
-     * @return boolean
+     * @param FLEA_Db_Driver_Abstract $dbo
      */
-    public function setDBO(FLEA_Db_Driver_Prototype $dbo)
+    public function setDBO(FLEA_Db_Driver_Abstract $dbo)
     {
         $this->dbo = $dbo;
         $this->fullTableName = $dbo->dsn['tablePrefix'] . $this->tableName;
@@ -336,14 +334,12 @@ class FLEA_Db_TableDataGateway
         $this->qpk = $dbo->qfield($this->primaryKey, $this->fullTableName, $this->schema);
         $this->pka = 'qee_pkref_' . strtolower($this->primaryKey);
         $this->qpka = $this->qpk . ' AS ' . $this->pka;
-
-        return true;
     }
 
     /**
      * 返回该表数据入口对象使用的数据访问对象
      *
-     * @return FLEA_Db_Driver_Prototype
+     * @return FLEA_Db_Driver_Abstract
      */
     public function getDBO()
     {
@@ -404,9 +400,9 @@ class FLEA_Db_TableDataGateway
 
         // 根据 $length 和 $offset 参数决定是否使用限定结果集的查询
         if (null !== $length || null !== $offset) {
-            $result = $this->dbo->selectLimit($sql, $length, $offset);
+            $handle = $this->dbo->selectLimit($sql, $length, $offset);
         } else {
-            $result = $this->dbo->execute($sql);
+            $handle = $this->dbo->execute($sql);
         }
 
         if ($enableLinks) {
@@ -416,17 +412,11 @@ class FLEA_Db_TableDataGateway
              */
             $pkvs = array();
             $assocRowset = null;
-            $rowset = $this->dbo->getAllWithFieldRefs($result, $this->pka, $pkvs, $assocRowset);
-            $in = 'IN (';
-            foreach ($pkvs as $pkv) {
-                $in .= $this->dbo->qstr($pkv);
-                $in .= ',';
-            }
-            $in = substr($in, 0, -1) . ')';
+            $rowset = $handle->getAllWithFieldRefs($this->Pka, $pkvs, $assocRowset);
         } else {
-            $rowset = $this->dbo->getAll($result);
+            $rowset = $handle->getAll();
         }
-        unset($result);
+        unset($handle);
 
         // 如果没有关联需要处理或者没有查询结果，则直接返回查询结果
         if (!$enableLinks || empty($rowset) || !$this->autoLink) {
@@ -443,7 +433,7 @@ class FLEA_Db_TableDataGateway
             /* @var $link FLEA_Db_TableLink */
             if (!$link->enabled || !$link->linkRead) { continue; }
             array_walk($assocRowset, $callback, $link->mappingName);
-            $sql = $link->getFindSQL($in);
+            $sql = $link->getFindSQL($pkvs);
             $this->dbo->assemble($sql, $assocRowset, $link->mappingName, $link->oneToOne, $this->pka, $link->limit);
         }
 
@@ -1723,7 +1713,7 @@ EOT;
  * FLEA_Db_SqlHelper 类提供了各种生成 SQL 语句的辅助方法
  *
  * @package Core
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_Db_SqlHelper

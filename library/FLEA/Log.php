@@ -12,7 +12,7 @@
  * 定义 FLEA_Log 类
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Core
  * @version $Id$
  */
@@ -34,7 +34,7 @@ function log_message($msg, $level = 'log', $title = '')
  * FLEA_Log 类提供基本的日志服务
  *
  * @package Core
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
 class FLEA_Log

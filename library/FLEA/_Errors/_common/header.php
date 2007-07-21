@@ -12,7 +12,7 @@
  * QeePHP 中用于显示异常信息的公共文件
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 廖宇雷 dualface@gmail.com
+ * @author 起源科技(www.qeeyuan.com)
  * @package Error
  * @version $Id$
  */
