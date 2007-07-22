@@ -29,10 +29,10 @@ abstract class FLEA_Db_Driver_Abstract
     /**
      * 处理查询参数的方式
      */
-    const PARAM_QM       = 1;
-    const PARAM_NAMED    = 2;
-    const PARAM_SEQUENCE = 3;
-    const PARAM_AT_NAMED = 4;
+    const PARAM_QM          = 1; // 问号作为参数占位符
+    const PARAM_CL_NAMED    = 2; // 冒号开始的命名参数
+    const PARAM_DL_SEQUENCE = 3; // $符号开始的序列
+    const PARAM_AT_NAMED    = 4; // @开始的命名参数
 
     /**
      * 用于描绘 true、false 和 null 的数据库值

@@ -441,45 +441,15 @@ class FLEA_Db_TableDataGateway
     }
 
     /**
-     * 返回具有指定字段值的第一条记录
-     *
-     * @param string $field
-     * @param mixed $value
-     * @param string $sort
-     * @param mixed $fields
-     *
-     * @return array
-     */
-    public function & findByField($field, $value, $sort = null, $fields = '*')
-    {
-        return $this->find(array($field => $value), $sort, $fields);
-    }
-
-    /**
-     * 返回具有指定字段值的所有记录
-     *
-     * @param string $field
-     * @param mixed $value
-     * @param string $sort
-     * @param array $limit
-     * @param mixed $fields
-     *
-     * @return array
-     */
-    public function & findAllByField($field, $value, $sort = null, $limit = null, $fields = '*')
-    {
-        return $this->findAll(array($field => $value), $sort, $limit, $fields);
-    }
-
-    /**
      * 直接使用 sql 语句获取记录（该方法不会处理关联数据表）
      *
      * @param string $sql
      * @param mixed $limit
+     * @param array $inputarr
      *
      * @return array
      */
-    public function & findBySql($sql, $limit = null)
+    public function & findBySql($sql, $limit = null, array $inputarr = null)
     {
         // 处理 $limit
         if (is_array($limit)) {
@@ -492,8 +462,8 @@ class FLEA_Db_TableDataGateway
             return $this->dbo->getAll($sql);
         }
 
-        $result = $this->dbo->selectLimit($sql, $length, $offset);
-        $rowset = $this->dbo->getAll($result);
+        $handle = $this->dbo->selectLimit($sql, $length, $offset, $inputarr);
+        $rowset = $handle->getAll();
         return $rowset;
     }
 
@@ -511,7 +481,7 @@ class FLEA_Db_TableDataGateway
         if ($fields == null) {
             $fields = $this->qpk;
         } else {
-            $fields = $this->dbo->qfields($fields, $this->fullTableName);
+            $fields = $this->dbo->qfields($fields, $this->fullTableName, $this->schema);
         }
         $sql = "SELECT {$distinct}COUNT({$fields})\nFROM {$this->qtableName}{$whereby}";
         return (int)$this->dbo->getOne($sql);
@@ -520,14 +490,15 @@ class FLEA_Db_TableDataGateway
     /**
      * 保存数据到数据库
      *
-     * 如果数据包含主键值，则 save() 会调用 update() 来更新记录，否则调用 create() 来创建记录。
+     * 如果数据不包含主键值或 $forceCreate 为 true，则会调用 create()，否则调用 update()。
      *
      * @param array $row
      * @param boolean $saveLinks
+     * @param boolean $forceCreate
      */
-    public function save(& $row, $saveLinks = true)
+    public function save(array & $row, $saveLinks = true, $forceCreate = false)
     {
-        if (!isset($row[$this->primaryKey]) || empty($row[$this->primaryKey])) {
+        if (!isset($row[$this->primaryKey]) || empty($row[$this->primaryKey]) || $forceCreate) {
             $this->create($row, $saveLinks);
         } else {
             $this->update($row, $saveLinks);
@@ -535,40 +506,21 @@ class FLEA_Db_TableDataGateway
     }
 
     /**
-     * 保存一个记录集（多行数据）
-     *
-     * @param array $rowset
-     * @param boolean $saveLinks
-     */
-    public function saveRowset(& $rowset, $saveLinks = true)
-    {
-        $tran = $this->autoStartTrans ? $tran = $this->dbo->beginTrans() : null;
-        foreach ($rowset as $row) {
-            $this->save($row, $saveLinks);
-        }
-    }
-
-    /**
-     * 替换一条现有记录或插入新记录，返回记录的主键值，失败返回 false
+     * 替换一条现有记录或插入新记录，返回记录的主键值
      *
      * @param array $row
      *
      * @return mixed
      */
-    public function replace(& $row) {
-        $tran = $this->autoStartTrans ? $tran = $this->dbo->beginTrans() : null;
-        $this->_setCreatedTimeFields($row);
-        $fields = '';
-        $values = '';
-        foreach ($row as $field => $value) {
-            if (!isset($this->meta[strtoupper($field)])) { continue; }
-            $fields .= $this->dbo->qfield($field) . ', ';
-            $values .= $this->dbo->qstr($value) . ', ';
-        }
-        $fields = substr($fields, 0, -2);
-        $values = substr($values, 0, -2);
-        $sql = "REPLACE INTO {$this->qtableName}\n    ({$fields})\nVALUES ({$values})";
-        $this->dbo->execute($sql);
+    public function replace(array & $row) {
+        $tran = ($this->autoStartTrans) ? $this->dbo->beginTrans() : null;
+
+        $this->filterRowData($row);
+        $this->setCreatedTimeFields($row);
+        $fields = implode(',', $this->dbo->qfields(array_keys($row), $this->fullTableName, $this->schema));
+        $params = $this->prepareSqlParameters($row);
+        $sql = "REPLACE INTO {$this->qtableName} ({$fields}) VALUES ({$params})";
+        $this->dbo->execute($sql, $row);
 
         if (isset($row[$this->primaryKey]) && !empty($row[$this->primaryKey])) {
             return $row[$this->primaryKey];
@@ -578,39 +530,13 @@ class FLEA_Db_TableDataGateway
     }
 
     /**
-     * 替换记录集（多行数据），返回记录集的主键字段值，失败返回 false
-     *
-     * @param array $rowset
-     *
-     * @return array
-     */
-    public function replaceRowset(& $rowset)
-    {
-        $tran = $this->autoStartTrans ? $tran = $this->dbo->beginTrans() : null;
-        $ids = array();
-        foreach ($rowset as $row) {
-            $id = $this->replace($row);
-            $ids[] = $id;
-        }
-        return $ids;
-    }
-
-    /**
-     * 更新一条现有的记录，成功返回 true，失败返回 false
-     *
-     * 该操作会引发 _beforeUpdate()、_beforeUpdateDb() 和 _afterUpdateDb() 事件。
+     * 更新一条现有的记录
      *
      * @param array $row
      * @param boolean $saveLinks
-     *
-     * @return boolean
      */
-    public function update(& $row, $saveLinks = true)
+    public function update(array & $row, $saveLinks = true)
     {
-        if (!$this->_beforeUpdate($row)) {
-            return false;
-        }
-
         // 检查是否提供了主键值
         if (!isset($row[$this->primaryKey])) {
             require_once 'FLEA/Db/Exception/MissingPrimaryKey.php';
@@ -618,7 +544,8 @@ class FLEA_Db_TableDataGateway
         }
 
         // 自动填写记录的最后更新时间字段
-        $this->_setUpdatedTimeFields($row);
+        $this->filterRowData($row);
+        $this->setUpdatedTimeFields($row);
 
         // 如果提供了验证器，则进行数据验证
         if ($this->autoValidating && $this->verifier != null) {
@@ -630,39 +557,17 @@ class FLEA_Db_TableDataGateway
         }
 
         // 开始事务
-        $this->dbo->startTrans();
+        $tran = ($this->autoStartTrans) ? $this->dbo->beginTrans() : null;
 
-        // 调用 _beforeUpdateDb() 事件
-        if (!$this->_beforeUpdateDb($row)) {
-            $this->dbo->completeTrans(false);
-            return false;
-        }
-
-        // 生成 SQL 语句
+        // 生成 SQL 语句，并执行更新操作
         $pkv = $row[$this->primaryKey];
         unset($row[$this->primaryKey]);
-        $fieldValuePairs = array();
-        foreach ($row as $fieldName => $value) {
-            if (!isset($this->meta[strtoupper($fieldName)])) { continue; }
-            $fieldValuePairs[] = $this->dbo->qfield($fieldName) . ' = ' . $this->dbo->qstr($value);
-        }
-        $fieldValuePairs = implode(', ', $fieldValuePairs);
-
-        $row[$this->primaryKey] = $pkv;
-        $qpkv = $this->dbo->qstr($pkv);
-        $where = "{$this->qpk} = {$qpkv}";
-        if ($fieldValuePairs != '') {
-            $sql = "UPDATE {$this->qtableName}\nSET {$fieldValuePairs}\nWHERE {$where}";
-        } else {
-            $sql = null;
-        }
-
-        // 执行更新操作
-        if ($sql) {
-            if (!$this->dbo->execute($sql)) {
-                $this->dbo->completeTrans(false);
-                return false;
-            }
+        if (!empty($row)) {
+            $params = $this->prepareSqlParametersPair($row);
+            $wparams = $this->prepareSqlParameters(array($this->primaryKey => $pkv));
+            $row[$this->primaryKey] = $pkv;
+            $sql = "UPDATE {$this->qtableName} SET {$params} WHERE {$this->qpk} = {$wparams}";
+            $this->dbo->execute($sql, $row);
         }
 
         // 处理对关联数据的更新
@@ -670,80 +575,37 @@ class FLEA_Db_TableDataGateway
             foreach ($this->links as $link) {
                 /* @var $link FLEA_Db_TableLink */
                 // 跳过不需要处理的关联
-                if (!$link->enabled || !$link->linkUpdate
-                    || !isset($row[$link->mappingName])
-                    || !is_array($row[$link->mappingName]))
-                {
+                if (!$link->enabled || !$link->linkUpdate || !isset($row[$link->mappingName]) || !is_array($row[$link->mappingName])) {
                     continue;
                 }
-
-                if (!$link->saveAssocData($row[$link->mappingName], $pkv)) {
-                    $this->dbo->completeTrans(false);
-                    return false;
-                }
+                $link->saveAssocData($row[$link->mappingName], $pkv);
             }
         }
-
-        // 提交事务
-        $this->dbo->completeTrans();
-
-        $this->_afterUpdateDb($row);
 
         return true;
     }
 
     /**
-     * 更新记录集（多行记录）
-     *
-     * @param array $rowset
-     * @param boolean $saveLinks
-     *
-     * @return boolean
-     */
-    function updateRowset(& $rowset, $saveLinks = true)
-    {
-        $this->dbo->startTrans();
-        foreach ($rowset as $row) {
-            if (!$this->update($row, $saveLinks)) {
-                $this->dbo->completeTrans(false);
-                return false;
-            }
-        }
-        $this->dbo->completeTrans();
-        return true;
-    }
-
-    /**
-     * 更新符合条件的记录，成功返回更新的记录总数，失败返回 false
-     *
-     * 该操作不会引发任何事件，也不会处理关联数据。
+     * 更新符合条件的记录，成功返回更新的记录总数
      *
      * @param mixed $conditions
      * @param array $$row
      *
-     * @return int|boolean
+     * @return int
      */
-    function updateByConditions($conditions, & $row)
+    public function updateByConditions($conditions, array & $data)
     {
         $whereby = $this->getWhere($conditions, false);
-        $this->_setUpdatedTimeFields($row);
-        $fieldValuePairs = array();
-        foreach ($row as $field => $value) {
-            if (is_int($field)) {
-                $fieldValuePairs[] = $value;
-            } else {
-                $fieldValuePairs[] = $this->dbo->qfield($field) . ' = ' . $this->dbo->qstr($value);
-            }
-        }
-        $fieldValuePairs = implode(', ', $fieldValuePairs);
-        $sql = "UPDATE {$this->qtableName}\nSET {$fieldValuePairs}{$whereby}";
-        return $this->dbo->execute($sql);
+        $this->filterRowData($data);
+        $this->setUpdatedTimeFields($data);
+        $params = $this->prepareSqlParametersPair($data);
+        $sql = "UPDATE {$this->qtableName} SET {$params} {$whereby}";
+        $this->dbo->execute($sql, $data);
+        return $this->dbo->affectedRows();
     }
 
     /**
      * 更新记录的指定字段，返回更新的记录总数
-     *
-     * 该操作不会引发任何事件，也不会处理关联数据。
      *
      * @param mixed $conditions
      * @param string $field
@@ -751,76 +613,71 @@ class FLEA_Db_TableDataGateway
      *
      * @return int
      */
-    function updateField($conditions, $field, $value)
+    public function updateField($conditions, $field, $value)
     {
-        $row = array($field => $value);
-        return $this->updateByConditions($conditions, $row);
+        $pair = array($field => $value);
+        return $this->updateByConditions($conditions, $pair);
     }
 
     /**
      * 增加符合条件的记录的指定字段的值，返回更新的记录总数
      *
-     * 该操作不会引发任何事件，也不会处理关联数据。
-     *
      * @param mixed $conditions
      * @param string $field
      * @param int $incr
      *
-     * @return mixed
+     * @return int
      */
-    function incrField($conditions, $field, $incr = 1)
+    public function incrField($conditions, $field, $incr = 1)
     {
-        $field = $this->dbo->qfield($field, $this->fullTableName);
+        $field = $this->dbo->qfield($field, $this->fullTableName, $this->schema);
         $incr = (int)$incr;
-        $row = array("{$field} = {$field} + {$incr}");
-        return $this->updateByConditions($conditions, $row);
+        $whereby = $this->getWhere($conditions, false);
+        $sql = "UPDATE {$this->qtableName} SET {$field} = {$field} + {$incr} {$whereby}";
+        $this->dbo->execute($sql, $data);
+        return $this->dbo->affectedRows();
     }
 
     /**
      * 减小符合条件的记录的指定字段的值，返回更新的记录总数
      *
-     * 该操作不会引发任何事件，也不会处理关联数据。
-     *
      * @param mixed $conditions
      * @param string $field
      * @param int $decr
      *
-     * @return mixed
+     * @return int
      */
-    function decrField($conditions, $field, $decr = 1)
+    public function decrField($conditions, $field, $decr = 1)
     {
-        $field = $this->dbo->qfield($field, $this->fullTableName);
+        $field = $this->dbo->qfield($field, $this->fullTableName, $this->schema);
         $decr = (int)$decr;
-        $row = array("{$field} = {$field} - {$decr}");
-        return $this->updateByConditions($conditions, $row);
+        $whereby = $this->getWhere($conditions, false);
+        $sql = "UPDATE {$this->qtableName} SET {$field} = {$field} - {$decr} {$whereby}";
+        $this->dbo->execute($sql, $data);
+        return $this->dbo->affectedRows();
     }
 
     /**
-     * 插入一条新记录，返回新记录的主键值
+     * 插入一条新记录及关联数据，并返回新记录的主键值
      *
-     * create() 操作会引发 _beforeCreate()、_beforeCreateDb() 和 _afterCreateDb() 事件。
+     * 如果数据库不能返回新记录的主键值，则无法自动插入关联表数据。
      *
      * @param array $row
      * @param boolean $saveLinks
      *
      * @return mixed
      */
-    function create(& $row, $saveLinks = true)
+    public function create(array & $row, $saveLinks = true)
     {
-        if (!$this->_beforeCreate($row)) {
-            return false;
-        }
-
         // 自动设置日期字段
-        $this->_setCreatedTimeFields($row);
+        $this->filterRowData($row);
+        $this->setCreatedTimeFields($row);
 
         // 处理主键
         $mpk = strtoupper($this->primaryKey);
         $insertId = null;
         $unsetpk = true;
-        if (isset($this->meta[$mpk]['autoIncrement'])
-            && $this->meta[$mpk]['autoIncrement'])
-        {
+        if (isset($this->meta[$mpk]['autoIncrement']) && $this->meta[$mpk]['autoIncrement']) {
             if (isset($row[$this->primaryKey])) {
                 if (empty($row[$this->primaryKey])) {
                     // 如果主键字段是自增，而提供的记录数据虽然包含主键字段，
@@ -831,8 +688,8 @@ class FLEA_Db_TableDataGateway
                 }
             }
         } else {
-            // 如果主键字段不是自增字段，并且没有提供主键字段值时，则获取一个新的主键字段值
             if (!isset($row[$this->primaryKey]) || empty($row[$this->primaryKey])) {
+                // 没有提供主键字段值时，则获取一个新的主键字段值
                 $insertId = $this->newInsertId();
                 $row[$this->primaryKey] = $insertId;
             } else {
@@ -842,159 +699,75 @@ class FLEA_Db_TableDataGateway
             }
         }
 
-        // 自动验证数据
+        // 如果提供了验证器，则进行数据验证
         if ($this->autoValidating && $this->verifier != null) {
             if (!$this->checkRowData($row)) {
-                FLEA::loadClass('FLEA_Exception_ValidationFailed');
-                __THROW(new FLEA_Exception_ValidationFailed($this->getLastValidation(), $row));
-                return false;
+                // 验证失败抛出异常
+                require_once 'FLEA/Exception/ValidationFailed.php';
+                throw new FLEA_Exception_ValidationFailed($this->getLastValidation(), $row);
             }
-        }
-
-        // 调用 _beforeCreateDb() 事件
-        $this->dbo->startTrans();
-
-        if (!$this->_beforeCreateDb($row)) {
-            if ($unsetpk) { unset($row[$this->primaryKey]); }
-            $this->dbo->completeTrans(false);
-            return false;
         }
 
         // 生成 SQL 语句
-        $fields = array();
-        $values = array();
-        foreach ($row as $field => $value) {
-            $mfield = strtoupper($field);
-            if (!isset($this->meta[$mfield])) { continue; }
+        $fields = implode(',', $this->dbo->qfields(array_keys($row), $this->fullTableName, $this->schema));
+        $params = $this->prepareSqlParameters($row);
+        $sql = "INSERT INTO {$this->qtableName} ({$fields}) VALUES ({$params})";
 
-            $fields[] = $field;
-            $values[] = $this->dbo->qstr($value);
-        }
-        if (empty($fields)) { return false; }
+        // 开始事务，并插入数据
+        $tran = ($this->autoStartTrans) ? $this->dbo->beginTrans() : null;
+        $this->dbo->execute($sql, $row);
 
-        $fields = $this->dbo->qfields($fields);
-        $values = implode(', ', $values);
-        $sql = "INSERT INTO {$this->qtableName}\n    ({$fields})\nVALUES ({$values})";
-
-        // 插入数据
-        if (!$this->dbo->Execute($sql)) {
-            if ($unsetpk) { unset($row[$this->primaryKey]); }
-            $this->dbo->completeTrans(false);
-            return false;
-        }
-
-        // 如果提交的数据中没有主键字段值，则尝试获取新插入记录的主键值
+        /**
+         * 如果提交的数据中没有主键字段值，则尝试获取新插入记录的主键值，
+         * 如果数据库无法返回新插入记录的主键值，则直接返回 null，忽略关联表的数据
+         */
         if ($insertId == null) {
             $insertId = $this->dbo->insertId();
-            if (!$insertId) {
-                if ($unsetpk) { unset($row[$this->primaryKey]); }
-                $this->dbo->completeTrans(false);
-                FLEA::loadClass('FLEA_Db_Exception_InvalidInsertID');
-                __THROW(new FLEA_Db_Exception_InvalidInsertID());
-                return false;
-            }
+            if ($insertId === null) { return null; }
         }
 
         // 处理关联数据表
         if ($this->autoLink && $saveLinks) {
             foreach ($this->links as $link) {
                 /* @var $link FLEA_Db_TableLink */
-                if (!$link->enabled
-                    || !$link->linkCreate
-                    || !isset($row[$link->mappingName])
-                    || !is_array($row[$link->mappingName]))
-                {
+                if (!$link->enabled || !$link->linkCreate || !isset($row[$link->mappingName]) || !is_array($row[$link->mappingName])) {
                     // 跳过没有关联数据的关联和不需要处理的关联
                     continue;
                 }
 
-                if (!$link->saveAssocData($row[$link->mappingName], $insertId)) {
-                    if ($unsetpk) { unset($row[$this->primaryKey]); }
-                    $this->dbo->completeTrans(false);
-                    return false;
-                }
+                $link->saveAssocData($row[$link->mappingName], $insertId);
             }
         }
-
-        // 提交事务
-        $this->dbo->CompleteTrans();
-
-        $row[$this->primaryKey] = $insertId;
-        $this->_afterCreateDb($row);
         if ($unsetpk) { unset($row[$this->primaryKey]); }
 
         return $insertId;
     }
 
     /**
-     * 插入多行记录，返回包含所有新记录主键值的数组，如果失败则返回 false
-     *
-     * @param array $rowset
-     * @param boolean $saveLinks
-     *
-     * @return array
-     */
-    function createRowset(& $rowset, $saveLinks = true)
-    {
-        $insertids = array();
-        $this->dbo->startTrans();
-        foreach ($rowset as $row) {
-            $insertid = $this->create($row, $saveLinks);
-            if (!$insertid) {
-                $this->dbo->completeTrans(false);
-                return false;
-            }
-            $insertids[] = $insertid;
-        }
-        $this->dbo->completeTrans();
-        return $insertids;
-    }
-
-    /**
      * 删除记录
      *
-     * remove() 操作会引发 _beforeRemove()、_beforeRemoveDbByPkv()、_afterRemoveDbByPkv 和 _afterRemoveDb() 事件。
-     *
      * @param array $row
-     *
-     * @return boolean
+     * @param boolean $removeLinks
      */
-    function remove(& $row)
+    public function remove(array & $row, $removeLinks = true)
     {
-        if (!$this->_beforeRemove($row)) {
-            return false;
-        }
-
         if (!isset($row[$this->primaryKey])) {
-            FLEA::loadClass('FLEA_Db_Exception_MissingPrimaryKey');
-            __THROW(new FLEA_Db_Exception_MissingPrimaryKey($this->primaryKey));
-            return false;
+            require_once 'FLEA/Db/Exception/MissingPrimaryKey.php';
+            throw new FLEA_Db_Exception_MissingPrimaryKey($this->primaryKey);
         }
-        $ret = $this->removeByPkv($row[$this->primaryKey]);
-        if ($ret) {
-            $this->_afterRemoveDb($row);
-        }
-
-        return $ret;
+        $this->removeByPkv($row[$this->primaryKey], $removeLinks);
     }
 
     /**
      * 根据主键值删除记录
      *
-     * removeByPkv() 引发 _beforeRemoveDbByPkv() 和 _afterRemoveDbByPkv() 事件。
-     *
      * @param mixed $pkv
-     *
-     * @return boolean
+     * @param boolean $removeLinks
      */
-    function removeByPkv($pkv)
+    public function removeByPkv($pkv, $removeLinks = true)
     {
-        $this->dbo->startTrans();
-
-        if (!$this->_beforeRemoveDbByPkv($pkv)) {
-            $this->dbo->completeTrans(false);
-            return false;
-        }
+        // 开始事务
+        $tran = ($this->autoStartTrans) ? $this->dbo->beginTrans() : null;
 
         /**
          * 首先删除关联表数据，再删除主表数据
@@ -1002,17 +775,14 @@ class FLEA_Db_TableDataGateway
         $qpkv = $this->dbo->qstr($pkv);
 
         // 处理关联数据表
-        if ($this->autoLink) {
+        if ($this->autoLink && $removeLinks) {
             foreach ($this->links as $link) {
                 /* @var $link FLEA_Db_TableLink */
                 if (!$link->enabled) { continue; }
                 switch ($link->type) {
                 case MANY_TO_MANY:
                     /* @var $link FLEA_Db_ManyToManyLink */
-                    if (!$link->deleteMiddleTableDataByMainForeignKey($qpkv)) {
-                        $this->dbo->completeTrans(false);
-                        return false;
-                    }
+                    $link->deleteMiddleTableDataByMainForeignKey($qpkv);
                     break;
                 case HAS_ONE:
                 case HAS_MANY:
@@ -1023,10 +793,7 @@ class FLEA_Db_TableDataGateway
                      * 否则更新关联数据的外键值为 $link->linkRemoveFillValue
                      */
                     /* @var $link FLEA_Db_HasOneLink */
-                    if ($link->deleteByForeignKey($qpkv) === false) {
-                        $this->dbo->completeTrans(false);
-                        return false;
-                    }
+                    $link->deleteByForeignKey($qpkv);
                     break;
                 }
             }
@@ -1034,82 +801,41 @@ class FLEA_Db_TableDataGateway
 
         // 删除主表数据
         $sql = "DELETE FROM {$this->qtableName}\nWHERE {$this->qpk} = {$qpkv}";
-        if ($this->dbo->execute($sql) == false) {
-            $this->dbo->completeTrans(false);
-            return false;
-        }
-
-        // 提交事务
-        $this->dbo->completeTrans();
-
-        $this->_afterRemoveDbByPkv($pkv);
-
-        return true;
+        $this->dbo->execute($sql);
     }
 
     /**
-     * 删除符合条件的记录
+     * 删除符合条件的记录，返回被删除的记录总数
      *
      * @param mixed $conditions
      *
-     * @return boolean
+     * @return int
      */
-    function removeByConditions($conditions)
+    public function removeByConditions($conditions)
     {
         $rowset = $this->findAll($conditions, null, null, $this->primaryKey, false);
-        $count = 0;
-        $this->dbo->startTrans();
+        // 开始事务
+        $tran = ($this->autoStartTrans) ? $this->dbo->beginTrans() : null;
         foreach ($rowset as $row) {
-            if (!$this->removeByPkv($row[$this->primaryKey])) { break; }
+            $this->removeByPkv($row[$this->primaryKey]);
             $count++;
         }
-        $this->dbo->completeTrans();
-        $rows = $this->dbo->affectedRows();
-        if ($rows > 0) { return $count; }
-        return 0;
+        return $count;
     }
 
     /**
-     * 删除数组中所有主键值的记录，该操作不会处理关联
+     * 删除所有记录，返回被删除的记录总数
      *
-     * @param array $pkvs
+     * @param boolean $removelinks
      *
-     * @return boolean
+     * @return int
      */
-    function removeByPkvs($pkvs)
+    public function removeAll($removelinks = false)
     {
-        $ret = true;
-        $this->dbo->startTrans();
-        foreach ($pkvs as $id) {
-            $ret = $this->removeByPkv($id);
-            if ($ret === false) { break; }
-        }
-        $this->dbo->completeTrans();
-        return $ret;
-    }
+        // 开始事务
+        $tran = ($this->autoStartTrans) ? $this->dbo->beginTrans() : null;
 
-    /**
-     * 删除所有记录
-     *
-     * @return boolean
-     */
-    function removeAll()
-    {
-        $sql = "DELETE FROM {$this->qtableName}";
-        return $this->execute($sql);
-    }
-
-    /**
-     * 删除所有记录及关联的数据
-     *
-     * @return boolean
-     */
-    function removeAllWithLinks()
-    {
-        $this->dbo->startTrans();
-
-        // 处理关联数据表
-        if ($this->autoLink) {
+        if ($this->autoLink && $removelinks) {
             foreach ($this->links as $link) {
                 /* @var $link FLEA_Db_TableLink */
                 switch ($link->type) {
@@ -1126,49 +852,36 @@ class FLEA_Db_TableDataGateway
                 default:
                     continue;
                 }
-                if ($this->dbo->execute($sql) == false) {
-                    $this->dbo->completeTrans(false);
-                    return false;
-                }
+                $this->dbo->execute($sql);
             }
         }
 
-        $sql = "DELETE FROM {$this->qtableName}";
-        if ($this->dbo->execute($sql) == false) {
-            $this->dbo->completeTrans(false);
-            return false;
-        }
-
-        // 提交事务
-        $this->dbo->completeTrans();
-
-        return true;
+        $this->dbo->execute("DELETE FROM {$this->qtableName}");
+        return $this->dbo->affectedRows();
     }
 
     /**
      * 启用所有关联
      */
-    function enableLinks()
+    public function enableLinks()
     {
         $this->autoLink = true;
-        $keys = array_keys($this->links);
-        foreach ($keys as $key) {
-            $this->links[$key]->enabled = true;
+        foreach ($this->links as $link) {
+            $link->enabled = true;
         }
     }
 
     /**
-     * 启用指定关联
+     * 启用指定关联，并返回该关联
      *
      * @param string $linkName
      *
      * @return FLEA_Db_TableLink
-     *
      */
-    function enableLink($linkName)
+    public function enableLink($linkName)
     {
-        $link =& $this->getLink($linkName);
-        if ($link) { $link->enabled = true; }
+        $link = $this->getLink($linkName);
+        $link->enabled = true;
         $this->autoLink = true;
         return $link;
     }
@@ -1176,41 +889,44 @@ class FLEA_Db_TableDataGateway
     /**
      * 禁用所有关联
      */
-    function disableLinks()
+    public function disableLinks()
     {
         $this->autoLink = false;
-        $keys = array_keys($this->links);
-        foreach ($keys as $key) {
-            $this->links[$key]->enabled = false;
+        foreach ($this->links as $link) {
+            $link->enabled = false;
         }
     }
 
     /**
-     * 禁用指定关联
+     * 禁用指定关联，并返回该关联
      *
      * @param string $linkName
      *
      * @return FLEA_Db_TableLink
      */
-    function disableLink($linkName)
+    public function disableLink($linkName)
     {
-        $link =& $this->getLink($linkName);
-        if ($link) { $link->enabled = false; }
+        $link = $this->getLink($linkName);
+        $link->enabled = true;
         return $link;
     }
 
     /**
      * 清除所有关联
      */
-    function clearLinks()
+    public function clearLinks()
     {
+        $keys = array_keys($this->links);
+        foreach ($keys as $key) {
+            unset($this->links[$key]);
+        }
         $this->links = array();
     }
 
     /**
      * 根据类定义的 $hasOne、$hasMany、$belongsTo 和 $manyToMany 成员变量重建所有关联
      */
-    function relink()
+    public function relink()
     {
         $this->clearLinks();
         $this->createLink($this->hasOne,     HAS_ONE);
@@ -1226,17 +942,14 @@ class FLEA_Db_TableDataGateway
      *
      * @return FLEA_Db_TableLink
      */
-    function & getLink($linkName)
+    public function getLink($linkName)
     {
         $linkName = strtoupper($linkName);
-        if (isset($this->links[$linkName])) {
-            return $this->links[$linkName];
+        if (!isset($this->links[$linkName])) {
+            require_once 'FLEA/Db/Exception/MissingLink.php';
+            throw new FLEA_Db_Exception_MissingLink($linkName);
         }
-
-        FLEA::loadClass('FLEA_Db_Exception_MissingLink');
-        __THROW(new FLEA_Db_Exception_MissingLink($linkName));
-        $ret = false;
-        return $ret;
+        return $this->links[$linkName];
     }
 
     /**
@@ -1246,33 +959,25 @@ class FLEA_Db_TableDataGateway
      *
      * @return boolean
      */
-    function & existsLink($name)
+    public function existsLink($linkName)
     {
-        $name = strtoupper($name);
-        return isset($this->links[$name]);
+        return isset($this->links[strtoupper($linkName)]);
     }
 
     /**
-     * 建立关联，并且返回新建立的关联对象
+     * 建立关联
      *
      * @param array $defines
      * @param enum $type
-     *
-     * @return FLEA_Db_TableLink
      */
-    function createLink($defines, $type)
+    public function createLink(array $defines, $type)
     {
-        if (!is_array($defines)) { return; }
         if (!is_array(reset($defines))) {
             $defines = array($defines);
         }
-
-        // 创建关联对象
         foreach ($defines as $define) {
-            if (!is_array($define)) { continue; }
-            // 构造连接对象实例
-            $link =& FLEA_Db_TableLink::createLink($define, $type, $this);
-            $this->links[strtoupper($link->name)] =& $link;
+            $link = FLEA_Db_TableLink::createLink($define, $type, $this);
+            $this->links[strtoupper($link->name)] = $link;
         }
     }
 
@@ -1281,12 +986,14 @@ class FLEA_Db_TableDataGateway
      *
      * @param string $linkName
      */
-    function removeLink($linkName)
+    public function removeLink($linkName)
     {
         $linkName = strtoupper($linkName);
-        if (isset($this->links[$linkName])) {
-            unset($this->links[$linkName]);
+        if (!isset($this->links[$linkName])) {
+            require_once 'FLEA/Db/Exception/MissingLink.php';
+            throw new FLEA_Db_Exception_MissingLink($linkName);
         }
+        unset($this->links[$linkName]);
     }
 
     /**
@@ -1295,14 +1002,14 @@ class FLEA_Db_TableDataGateway
      * 派生类可以覆盖此方法，以便进行附加的验证。
      *
      * @param array $row
-     * @param boolean $skipEmpty
+     * @param boolean $skipNotExists
      *
      * @return boolean
      */
-    function checkRowData(& $row, $skipEmpty = false) {
+    public function checkRowData(array & $row, $skipNotExists = false)
+    {
         if (is_null($this->verifier)) { return false; }
-        $this->lastValidationResult =
-                $this->verifier->checkAll($row, $this->meta, $skipEmpty);
+        $this->lastValidationResult = $this->verifier->checkAll($row, $this->meta, $skipNotExists);
         return empty($this->lastValidationResult);
     }
 
@@ -1311,16 +1018,18 @@ class FLEA_Db_TableDataGateway
      *
      * @return mixed
      */
-    function getLastValidation() {
+    public function getLastValidation()
+    {
         return $this->lastValidationResult;
     }
 
     /**
-     * 返回当前数据表的下一个插入 ID
+     * 返回当前数据表的下一个插入ID
      *
      * @return mixed
      */
-    function newInsertId() {
+    public function newInsertId()
+    {
         return $this->dbo->nextId($this->fullTableName . '_seq');
     }
 
@@ -1332,66 +1041,22 @@ class FLEA_Db_TableDataGateway
      *
      * @return mixed
      */
-    function execute($sql, $inputarr = false)
+    public function execute($sql, array $inputarr = null)
     {
         return $this->dbo->execute($sql, $inputarr);
     }
 
     /**
-     * 返回转义后的数据
-     *
-     * @param mixed $value
-     *
-     * @return string
-     */
-    function qstr($value)
-    {
-        return $this->dbo->qstr($value);
-    }
-
-    /**
-     * 获得一个字段名的完全限定名
-     *
-     * @param string $fieldName
-     * @param string $tableName
-     *
-     * @return string
-     */
-    function qfield($fieldName, $tableName = null)
-    {
-        if ($tableName == null) {
-            $tableName = $this->fullTableName;
-        }
-        return $this->dbo->qfield($fieldName, $tableName);
-    }
-
-    /**
-     * 获得多个字段名的完全限定名
-     *
-     * @param string|array $fieldsName
-     * @param string $tableName
-     *
-     * @return string
-     */
-    function qfields($fieldsName, $tableName = null)
-    {
-        if ($tableName == null) {
-            $tableName = $this->fullTableName;
-        }
-        return $this->dbo->qfields($fieldsName, $tableName);
-    }
-
-    /**
      * 分析查询条件，返回 WHERE 子句
      *
-     * @param array $conditions
+     * @param mixed $conditions
      * @param boolean $queryLinks
      *
-     * @return string
+     * @return string|array
      */
-    function getWhere($conditions, $queryLinks = true) {
+    public function getWhere($conditions, $queryLinks = true) {
         // 处理查询条件
-        $where = FLEA_Db_SqlHelper::parseConditions($conditions, $this);
+        $where = self::parseConditions($conditions, $this);
         $sqljoin = '';
         $distinct = '';
 
@@ -1461,6 +1126,7 @@ EOT;
                 $whereby = substr($whereby, 0, - (strlen($expr) + 1));
 
                 unset($link);
+                break;
             }
 
             $whereby = "\n{$sqljoin}\n{$whereby}";
@@ -1474,22 +1140,34 @@ EOT;
     }
 
     /**
+     * 过滤掉记录中多余的字段，只保留数据表中定义了的字段
+     *
+     * @param array $row
+     */
+    public function filterRowData(& $row)
+    {
+        $fields = array_map('strtoupper', array_keys($row));
+        foreach ($fields as $field) {
+            if (!isset($this->meta[$field])) {
+                unset($row[$field]);
+            }
+        }
+    }
+
+    /**
      * 强制刷新缓存的数据表 meta 信息
      */
-    function flushMeta()
+    public function flushMeta()
     {
         $this->_prepareMeta(true);
     }
 
     /**
-     * 开启一个事务
+     * 开启一个事务，成功返回事务对象，否则返回 null
      */
-    function beginTrans() {
-        if ($this->autoStartTrans) {
-            return $this->dbo->beginTrans();
-        } else {
-            return null;
-        }
+    public function beginTrans()
+    {
+        return $this->dbo->beginTrans();
     }
 
     /**
@@ -1497,7 +1175,8 @@ EOT;
      *
      * @param array $row
      */
-    function _setUpdatedTimeFields(& $row) {
+    public function setUpdatedTimeFields(array & $row)
+    {
         foreach ($this->updatedTimeFields as $af) {
             $af = strtoupper($af);
             if (!isset($this->meta[$af])) { continue; }
@@ -1519,7 +1198,8 @@ EOT;
      *
      * @param array $row
      */
-    function _setCreatedTimeFields(& $row) {
+    public function setCreatedTimeFields(array & $row)
+    {
         $currentTime = time();
         $currentTimeStamp = $this->dbo->dbTimeStamp(time());
         foreach (array_merge($this->createdTimeFields, $this->updatedTimeFields) as $af) {
@@ -1545,17 +1225,16 @@ EOT;
      * 准备当前数据表的元数据
      *
      * @param boolean $flushCache
-     *
-     * @return boolean
      */
-    function _prepareMeta($flushCache = false) {
-        $cached = FLEA::getAppInf('dbMetaCached');
+    protected function _prepareMeta($flushCache = false)
+    {
+        $cached = FLEA::getAppInf('dbMetaCached', false);
         if ($cached && !$flushCache) {
-            $metaID = strtoupper($this->fullTableName);
+            $metaID = strtoupper($this->schema . '.' . $this->fullTableName);
             $cachedAllMeta = FLEA::getAppInf('QeePHP.Cache.AllMeta');
             if (isset($cachedAllMeta[$metaID])) {
                 $this->meta = $cachedAllMeta[$metaID];
-                return true;
+                return;
             }
 
             $cacheId = $this->dbo->dsn['id'];
@@ -1565,159 +1244,75 @@ EOT;
             }
             if (isset($allMeta[$metaID])) {
                 $this->meta = $allMeta[$metaID];
-                return true;
+                return;
             }
         }
 
         $this->meta = $this->dbo->metaColumns($this->fullTableName);
-        if ($this->meta == false) {
-            FLEA::loadClass('FLEA_Db_Exception_MetaColumnsFailed');
-            __THROW(new FLEA_Db_Exception_MetaColumnsFailed($this->tableName));
-            return false;
-        }
         if ($cached) {
             $allMeta[$metaID] = $this->meta;
-            return FLEA::writeCache($cacheId, $allMeta);
-        } else {
-            return true;
+            FLEA::writeCache($cacheId, $allMeta);
         }
     }
 
     /**
-     * 调用 create() 方法后立即引发 _beforeCreate 事件
+     * 准备查询参数字符串
      *
-     * 如果要阻止 create() 创建记录，该方法应该返回 false，否则返回 true。
+     * @param array $inputarr
+     * @param enum $mode
      *
-     * @param array $row
-     *
-     * @return boolean
+     * @return string
      */
-    function _beforeCreate(& $row)
+    public function prepareSqlParameters(array & $inputarr, $mode = null)
     {
-        return true;
+        if ($mode === null) {
+            $mode = $this->dbo->paramStyle;
+        }
+
+        switch ($mode) {
+        case FLEA_Db_Driver_Abstract::PARAM_QM:
+            // 问号作为参数占位符
+            $params = str_repeat('?,', count($inputarr) - 1) . '?';
+            break;
+        case FLEA_Db_Driver_Abstract::PARAM_DL_SEQUENCE:
+            // $符号开始的序列
+            $params = '$' . implode(',$', range(1, count($inputarr)));
+            break;
+        default:
+            $prefix = ($mode == FLEA_Db_Driver_Abstract::PARAM_AT_NAMED) ? '@' : ':';
+            $params = $prefix . implode(',' . $prefix, array_keys($inputarr));
+        }
+        return $params;
     }
 
     /**
-     * 调用 create() 方法后，表数据入口对数据进行处理后存入数据库前引发 _beforeCreateDb 事件
+     * 准备成对的查询参数字符串
      *
-     * 如果要阻止 create() 创建记录，该方法应该返回 false，否则返回 true。
+     * @param array $inputarr
+     * @param enum $mode
      *
-     * @param array $row
-     *
-     * @return boolean
+     * @return string
      */
-    function _beforeCreateDb(& $row)
+    public function prepareSqlParametersPair(array & $inputarr, $mode)
     {
-        return true;
+        $keys = array_keys($inputarr);
+        $params = array();
+        switch ($mode) {
+        case FLEA_Db_Driver_Abstract::PARAM_QM:
+            // 问号作为参数占位符
+            foreach ($keys as $field) { $params[] = "{$field} = ?"; }
+            break;
+        case FLEA_Db_Driver_Abstract::PARAM_DL_SEQUENCE:
+            // $符号开始的序列
+            foreach ($keys as $offset => $field) { $params[] = "{$field} = \$" . ($offset + 1); }
+            break;
+        default:
+            $prefix = ($mode == FLEA_Db_Driver_Abstract::PARAM_AT_NAMED) ? '@' : ':';
+            foreach ($keys as $field) { $params[] = "{$field} = {$prefix}{$field}"; }
+        }
+        return implode(',', $params);
     }
 
-    /**
-     * 调用 create() 方法并且成功将数据存入数据库后引发 _afterCreateDb 事件
-     *
-     * @param array $row
-     */
-    function _afterCreateDb(& $row)
-    {
-    }
-
-
-    /**
-     * 调用 update() 方法后立即引发 _beforeUpdate 事件
-     *
-     * 如果要阻止 update() 更新记录，该方法应该返回 false，否则返回 true。
-     *
-     * @param array $row
-     *
-     * @return boolean
-     */
-    function _beforeUpdate(& $row)
-    {
-        return true;
-    }
-
-    /**
-     * 调用 update() 方法后，表数据入口对数据进行处理后存入数据库前引发 _beforeUpdateDb 事件
-     *
-     * 如果要阻止 update() 更新记录，该方法应该返回 false，否则返回 true。
-     *
-     * @param array $row
-     *
-     * @return boolean
-     */
-    function _beforeUpdateDb(& $row)
-    {
-        return true;
-    }
-
-    /**
-     * 调用 update() 方法并且成功将数据更新到数据库后引发 _afterUpdateDb 事件
-     *
-     * @param array $row
-     */
-    function _afterUpdateDb(& $row)
-    {
-    }
-
-    /**
-     * 调用 remove() 方法后立即引发 _beforeRemove 事件
-     *
-     * 如果要阻止 remove() 删除记录，该方法应该返回 false，否则返回 true。
-     *
-     * @param array $row
-     *
-     * @return boolean
-     */
-    function _beforeRemove(& $row)
-    {
-        return true;
-    }
-
-    /**
-     * 调用 remove() 方法并且成功删除记录后引发 _afterRemoveDb 事件
-     *
-     * @param array $row
-     */
-    function _afterRemoveDb($row)
-    {
-    }
-
-    /**
-     * 调用 remove() 或 removeByPkv() 方法后立即引发 _beforeRemoveDbByPkv 事件
-     *
-     * 调用 remove() 方法时，_beforeRemoveDbByPkv 事件出现在 _beforeRemove 事件之后。
-     *
-     * 如果要阻止 remove() 或 removeByPkv() 删除记录，
-     * 该方法应该返回 false，否则返回 true。
-     *
-     * @param mixed $pkv
-     *
-     * @return boolean
-     */
-    function _beforeRemoveDbByPkv($pkv)
-    {
-        return true;
-    }
-
-    /**
-     * 调用 remove() 或 removeByPkv() 方法并且成功删除记录后引发 _afterRemoveDbByPkv 事件
-     *
-     * @param array $row
-     */
-    function _afterRemoveDbByPkv($pkv)
-    {
-    }
-}
-
-
-/**
- * FLEA_Db_SqlHelper 类提供了各种生成 SQL 语句的辅助方法
- *
- * @package Core
- * @author 起源科技(www.qeeyuan.com)
- * @version 1.0
- */
-class FLEA_Db_SqlHelper
-{
     /**
      * 分析查询条件
      *
@@ -1726,7 +1321,7 @@ class FLEA_Db_SqlHelper
      *
      * @return array
      */
-    function parseConditions($conditions, & $table)
+    static public function parseConditions($conditions, FLEA_Db_TableDataGateway $table = null)
     {
         // 对于 NULL，直接返回 NULL
         if (is_null($conditions)) { return null; }
@@ -1744,6 +1339,12 @@ class FLEA_Db_SqlHelper
         // 如果不是数组，说明提供的查询条件有误
         if (!is_array($conditions)) {
             return null;
+        }
+
+        // 如果数组的所有键名都是数字，且第一个键名是整数 0，则假定为 IN 查询
+        $keys = array_filter(array_keys($conditions), 'is_int');
+        if (count($keys) == count($conditions) && $keys[0] === 0) {
+            return ' IN (' . implode(',', $conditions). ')';
         }
 
         $where = '';
@@ -1811,17 +1412,4 @@ class FLEA_Db_SqlHelper
             return array($where, $linksWhere);
         }
     }
-
-    /**
-     * 格式化输出 SQL 日志
-     *
-     * @param array $log
-     */
-    function dumpLog(& $log)
-    {
-        foreach ($log as $ix => $sql) {
-            dump($sql, 'SQL ' . ($ix + 1));
-        }
-    }
 }
-
