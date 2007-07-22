@@ -5,7 +5,7 @@ require_once('simpletest/unit_tester.php');
 require_once('simpletest/reporter.php');
 
 define('TEST_SUPPORT_DIR', realpath(dirname(__FILE__) . '/support'));
-$testsRootDir = dirname(__FILE__) . '/tests';
+$testsRootDir = dirname(__FILE__) . '/testcases';
 $testFiles = fetchTestsFromDirs($testsRootDir);
 
 $test = new TestSuite('All tests');
