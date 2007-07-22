@@ -30,19 +30,16 @@ require_once 'FLEA/Exception.php';
  */
 class FLEA_Db_Exception_MissingLink extends FLEA_Exception
 {
-    var $name;
+    public $linkName;
 
     /**
      * 构造函数
      *
-     * @param $name
-     *
-     * @return FLEA_Db_Exception_MissingLink
+     * @param $linkName
      */
-    function FLEA_Db_Exception_MissingLink($name)
+    public function __construct($linkName)
     {
-        $this->name = $name;
-        $code = 0x06ff009;
-        parent::FLEA_Exception(sprintf(_ET($code), $name), $code);
+        parent::__construct(self::t('Association TableLink object \"%s\" does not exist.', $linkName));
+        $this->linkName = $linkName;
     }
 }

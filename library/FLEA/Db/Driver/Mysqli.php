@@ -356,7 +356,7 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
             if ($length !== null) {
                 $sql .= ', ' . (int)$length;
             } else {
-                $sql .= ', 4294967294';
+                $sql .= ', 18446744073709551615';
             }
         } elseif ($length !== null) {
             $sql .= "\nLIMIT " . (int)$length;
