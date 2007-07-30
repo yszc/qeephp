@@ -1,18 +1,26 @@
 <?php
-ini_set('include_path', '.;' . realpath(dirname(__FILE__) . '/../library'));
 
-require_once('simpletest/unit_tester.php');
-require_once('simpletest/reporter.php');
-
-define('TEST_SUPPORT_DIR', realpath(dirname(__FILE__) . '/support'));
 $testsRootDir = dirname(__FILE__) . '/testcases';
 $testFiles = fetchTestsFromDirs($testsRootDir);
+array_shift($argv);
+$args = implode(' ', $argv);
 
-$test = new TestSuite('All tests');
+$prefixlen = strlen($testsRootDir);
 foreach ($testFiles as $filename) {
-    $test->addTestFile($filename);
+    $filename = realpath($filename);
+    $basename = basename($filename);
+    $class = substr(basename($filename, '.php'), 4);
+    $path = substr($filename, $prefixlen, strlen($filename) - $prefixlen - strlen($basename));
+    $path .= $class;
+    $class = 'Test' . str_replace(DIRECTORY_SEPARATOR, '_', $path);
+    echo "run test: {$class} \"{$filename}\"\n";
+
+    $cmd = "phpunit {$args} {$class} \"{$filename}\"";
+    $return = 0;
+    system($cmd, $return);
+    echo "\n--------------------------------------------------------------------------------\n\n";
+    if ($return) { break; }
 }
-$test->run(new HtmlReporter());
 
 function fetchTestsFromDirs($dir)
 {
