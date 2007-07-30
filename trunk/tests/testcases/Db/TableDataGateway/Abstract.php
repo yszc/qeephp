@@ -1,6 +1,8 @@
 <?php
 
-abstract class Test_DB_TableDataGateway_Abstract extends UnitTestCase
+require_once dirname(__FILE__) . '/../../_common.php';
+
+abstract class Test_DB_TableDataGateway_Abstract extends PHPUnit_Framework_TestCase
 {
     /**
      * 使用的驱动类型
@@ -23,9 +25,9 @@ abstract class Test_DB_TableDataGateway_Abstract extends UnitTestCase
      */
     protected $_table;
 
-    public function __construct($label, $driver)
+    public function __construct($name, $driver)
     {
-        parent::UnitTestCase($label);
+        parent::__construct($name);
         $this->_driver = $driver;
         $dsnList = include TEST_SUPPORT_DIR . '/DSN.php';
         $this->_dsn = $dsnList[$driver];

@@ -6,49 +6,49 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
 {
     public function __construct()
     {
-        parent::__construct('mysqli', 'FLEA_Db_Driver_Mysqli');
+        parent::__construct(__CLASS__, 'FLEA_Db_Driver_Mysqli');
     }
 
     public function test_qstr()
     {
         $actual = "This'is a qstr test:;\".";
         $qstr = $this->_dbo->qstr($actual);
-        $this->assertEqual($qstr, "'This\\'is a qstr test:;\\\".'");
+        $this->assertEquals("'This\\'is a qstr test:;\\\".'", $qstr);
     }
 
     public function test_qtable()
     {
         $actual = 'products_has_tags';
         $qtable = $this->_dbo->qtable($actual);
-        $this->assertEqual($qtable, '`products_has_tags`');
+        $this->assertEquals('`products_has_tags`', $qtable);
     }
 
     public function test_qfield()
     {
         $field = 'name';
         $table = 'products';
-        $this->assertEqual($this->_dbo->qfield($field, $table), '`products`.`name`');
+        $this->assertEquals('`products`.`name`', $this->_dbo->qfield($field, $table));
         $field = '*';
         $table = 'products';
-        $this->assertEqual($this->_dbo->qfield($field, $table), '`products`.*');
+        $this->assertEquals('`products`.*', $this->_dbo->qfield($field, $table));
         $field = 'title';
         $table = '';
-        $this->assertEqual($this->_dbo->qfield($field, $table), '`title`');
+        $this->assertEquals('`title`', $this->_dbo->qfield($field, $table));
         $field = '*';
-        $this->assertEqual($this->_dbo->qfield($field, $table), '*');
+        $this->assertEquals('*', $this->_dbo->qfield($field, $table));
     }
 
     public function test_qfields()
     {
         $fields = 'name,title';
         $table = 'products';
-        $this->assertEqual($this->_dbo->qfields($fields, $table), '`products`.`name`, `products`.`title`');
+        $this->assertEquals('`products`.`name`, `products`.`title`', $this->_dbo->qfields($fields, $table));
         $fields = 'name  ,   title';
-        $this->assertEqual($this->_dbo->qfields($fields, $table), '`products`.`name`, `products`.`title`');
+        $this->assertEquals('`products`.`name`, `products`.`title`', $this->_dbo->qfields($fields, $table));
         $fields = array('name', 'title', '');
-        $this->assertEqual($this->_dbo->qfields($fields, $table), '`products`.`name`, `products`.`title`');
+        $this->assertEquals('`products`.`name`, `products`.`title`', $this->_dbo->qfields($fields, $table));
         $fields = array('name', 'title', '*');
-        $this->assertEqual($this->_dbo->qfields($fields, ''), '`name`, `title`, *');
+        $this->assertEquals('`name`, `title`, *', $this->_dbo->qfields($fields, ''));
     }
 
     public function test_nextId()
@@ -62,7 +62,7 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
     {
         $next = $this->_dbo->nextId('test_seq');
         $last = $this->_dbo->insertId();
-        $this->assertEqual($next, $last);
+        $this->assertEquals($next, $last);
     }
 
     public function test_affectedRows()
@@ -75,12 +75,12 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
     {
         $sql = "SELECT id FROM game";
         $handle = $this->_dbo->execute($sql);
-        $this->assertIsA($handle, 'FLEA_Db_Driver_Handle_Abstract');
+        $this->assertType('FLEA_Db_Driver_Handle_Abstract', $handle);
         unset($handle);
 
         $sql = "SELECT id FROM game WHERE id > ? AND gametype_id = ?";
         $handle = $this->_dbo->execute($sql, array(970, 14));
-        $this->assertIsA($handle, 'FLEA_Db_Driver_Handle_Abstract');
+        $this->assertType('FLEA_Db_Driver_Handle_Abstract', $handle);
         unset($handle);
     }
 
@@ -88,12 +88,12 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
     {
         $sql = "SELECT id FROM game";
         $handle = $this->_dbo->selectLimit($sql, 100);
-        $this->assertIsA($handle, 'FLEA_Db_Driver_Handle_Abstract');
+        $this->assertType('FLEA_Db_Driver_Handle_Abstract', $handle);
         unset($handle);
 
         $sql = "SELECT id FROM game WHERE id > ? AND gametype_id = ?";
         $handle = $this->_dbo->selectLimit($sql, 50, 10, array(970, 14));
-        $this->assertIsA($handle, 'FLEA_Db_Driver_Handle_Abstract');
+        $this->assertType('FLEA_Db_Driver_Handle_Abstract', $handle);
         unset($handle);
     }
 
@@ -101,12 +101,12 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
     {
         $sql = "SELECT id FROM game";
         $rowset = $this->_dbo->getAll($sql);
-        $this->assertEqual(count($rowset), 499);
+        $this->assertEquals(499, count($rowset));
         unset($rowset);
 
         $sql = "SELECT id FROM game WHERE id > ? AND gametype_id = ?";
         $rowset = $this->_dbo->getAll($sql, array(970, 14));
-        $this->assertEqual(count($rowset), 17);
+        $this->assertEquals(17, count($rowset));
         unset($rowset);
     }
 }
