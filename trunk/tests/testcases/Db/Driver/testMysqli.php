@@ -7,6 +7,9 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
     public function __construct()
     {
         parent::__construct(__CLASS__, 'FLEA_Db_Driver_Mysqli');
+        if (!function_exists('mysqli_init')) {
+            dl('php_mysqli.' . PHP_SHLIB_SUFFIX);
+        }
     }
 
     public function test_qstr()
