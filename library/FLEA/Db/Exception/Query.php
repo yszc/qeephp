@@ -9,7 +9,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 FLEA_Db_Exception_SqlQuery 异常
+ * 定义 FLEA_Db_Exception_Query 异常
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author 起源科技(www.qeeyuan.com)
@@ -22,13 +22,13 @@ require_once 'FLEA/Exception.php';
 // }}}
 
 /**
- * FLEA_Db_Exception_SqlQuery 异常指示一个 SQL 语句执行错误
+ * FLEA_Db_Exception_Query 异常指示一个数据库查询执行错误
  *
  * @package Exception
  * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
-class FLEA_Db_Exception_SqlQuery extends FLEA_Exception
+class FLEA_Db_Exception_Query extends FLEA_Exception
 {
     /**
      * 发生错误的 SQL 语句

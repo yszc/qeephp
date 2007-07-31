@@ -37,6 +37,9 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
         $field = 'title';
         $table = '';
         $this->assertEquals('`title`', $this->_dbo->qfield($field, $table));
+        $field = 'members.username';
+        $table = '';
+        $this->assertEquals('`members`.`username`', $this->_dbo->qfield($field, $table));
         $field = '*';
         $this->assertEquals('*', $this->_dbo->qfield($field, $table));
     }
@@ -52,13 +55,15 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
         $this->assertEquals('`products`.`name`, `products`.`title`', $this->_dbo->qfields($fields, $table));
         $fields = array('name', 'title', '*');
         $this->assertEquals('`name`, `title`, *', $this->_dbo->qfields($fields, ''));
+        $fields = array('members.username', 'title', '*');
+        $this->assertEquals('`members`.`username`, `title`, *', $this->_dbo->qfields($fields, ''));
     }
 
     public function test_nextId()
     {
         $id = $this->_dbo->nextId('test_seq');
         $next = $this->_dbo->nextId('test_seq');
-        $this->assertTrue($next > $id);
+        $this->assertTrue($next > $id, "\$next = {$next}, \$id = {$id}");
     }
 
     public function test_insertId()
@@ -66,6 +71,7 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
         $next = $this->_dbo->nextId('test_seq');
         $last = $this->_dbo->insertId();
         $this->assertEquals($next, $last);
+        $this->_dbo->dropSeq('test_seq');
     }
 
     public function test_affectedRows()
@@ -83,6 +89,11 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
 
         $sql = "SELECT id FROM game WHERE id > ? AND gametype_id = ?";
         $handle = $this->_dbo->execute($sql, array(970, 14));
+        $this->assertType('FLEA_Db_Driver_Handle_Abstract', $handle);
+        unset($handle);
+
+        $sql = "SELECT id FROM game_file WHERE title = ?";
+        $handle = $this->_dbo->execute($sql, array('2005081546235.jar'));
         $this->assertType('FLEA_Db_Driver_Handle_Abstract', $handle);
         unset($handle);
     }

@@ -78,10 +78,14 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
         $options = empty($dsn['options']) ? array() : (array)$dsn['options'];
         $flags = empty($dsn['flags']) ? null : $dsn['flags'];
 
+        if (!function_exists('mysqli_init')) {
+            require_once 'FLEA/Db/Exception/ExtNotLoaded.php';
+            throw new FLEA_Db_Exception_ExtNotLoaded('MySQL Improved', 'mysqli');
+        }
         $this->_conn = mysqli_init();
         if (!$this->_conn) {
             require_once 'FLEA/Db/Exception/ConnectionFailed.php';
-            throw new FLEA_Db_Exception_ConnectionFailed('MySQL', 'mysqli');
+            throw new FLEA_Db_Exception_ConnectionFailed('MySQL Improved', 'mysqli');
         }
 
 		foreach($options as $pair) {
@@ -91,7 +95,7 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
 		$ret = mysqli_real_connect($this->_conn, $host, $username, $password, $database, $port, $socket, $flags);
         if (!$ret) {
             require_once 'FLEA/Db/Exception/ConnectionFailed.php';
-            throw new FLEA_Db_Exception_ConnectionFailed('MySQL', 'mysqli');
+            throw new FLEA_Db_Exception_ConnectionFailed('MySQL Improved', 'mysqli');
         }
 
         if (!empty($dsn['charset'])) {
@@ -107,7 +111,7 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
         if ($this->_conn) {
             if (!mysqli_close($this->_conn)) {
                 require_once 'FLEA/Db/Exception/DisconnectionFailed.php';
-                throw new FLEA_Db_Exception_DisconnectionFailed('MySQL', 'mysqli');
+                throw new FLEA_Db_Exception_DisconnectionFailed('MySQL Improved', 'mysqli');
             }
         }
         $this->_conn = null;
@@ -125,7 +129,7 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
     {
         if (!mysqli_select_db($this->_conn, $database)) {
             require_once 'FLEA/Db/Exception/UseDatabaseFailed.php';
-            throw new FLEA_Db_Exception_UseDatabaseFailed('MySQL', 'mysqli', $database);
+            throw new FLEA_Db_Exception_UseDatabaseFailed('MySQL Improved', 'mysqli', $database);
         }
     }
 
@@ -207,14 +211,16 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
             if ($fieldName == '') { continue; }
             $pos = strpos($fieldName, '.');
             if ($pos !== false) {
-                $tableName = substr($fieldName, 0, $pos);
+                $tableNameTmp = substr($fieldName, 0, $pos);
                 $fieldName = substr($fieldName, $pos + 1);
+            } else {
+                $tableNameTmp = $tableName;
             }
-            if ($tableName != '') {
+            if ($tableNameTmp != '') {
                 if ($fieldName != '*') {
-                    $return[] = "`{$tableName}`.`{$fieldName}`";
+                    $return[] = "`{$tableNameTmp}`.`{$fieldName}`";
                 } else {
-                    $return[] = "`{$tableName}`.*";
+                    $return[] = "`{$tableNameTmp}`.*";
                 }
             } else {
                 if ($fieldName != '*') {
@@ -237,16 +243,16 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
      */
     public function nextId($seqName = 'sdboseq', $startValue = 1)
     {
+        $tableName = $this->qtable($seqName);
         try {
-            $this->execute(sprintf(self::NEXT_ID_SQL, $seqName), null, false);
-        } catch (FLEA_Db_Exception_SqlQuery $ex) {
+            $this->execute(sprintf(self::NEXT_ID_SQL, $tableName), null, false);
+        } catch (FLEA_Db_Exception_Query $ex) {
             $this->createSeq($seqName, $startValue);
-            $this->execute(sprintf(self::NEXT_ID_SQL, $seqName));
         }
 
         $id = $this->insertId();
         if ($id) { return $id; }
-        $this->execute(sprintf(self::INIT_SEQ_SQL, $seqName, $startValue));
+        $this->execute(sprintf(self::INIT_SEQ_SQL, $tableName, $this->qstr($startValue)));
         return $startValue;
     }
 
@@ -258,11 +264,9 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
      */
     public function createSeq($seqName = 'sdboseq', $startValue = 1)
     {
-        try {
-            $this->execute(sprintf(self::CREATE_SEQ_SQL, $seqName));
-        } catch (FLEA_Db_Exception_SqlQuery $ex) {
-            $this->execute(sprintf(self::INIT_SEQ_SQL, $seqName, $startValue - 1));
-        }
+        $tableName = $this->qtable($seqName);
+        $this->execute(sprintf(self::CREATE_SEQ_SQL, $tableName));
+        $this->execute(sprintf(self::INIT_SEQ_SQL, $tableName, $this->qstr($startValue)));
     }
 
     /**
@@ -272,7 +276,7 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
      */
     public function dropSeq($seqName = 'sdboseq')
     {
-        $this->execute(sprintf(self::DROP_SEQ_SQL, $seqName));
+        $this->execute(sprintf(self::DROP_SEQ_SQL, $this->qtable($seqName)));
     }
 
     /**
@@ -309,6 +313,10 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
 
         if (!empty($inputarr)) {
             $stmt = mysqli_prepare($this->_conn, $sql);
+            if (!$stmt) {
+                require_once 'FLEA/Db/Exception/Query.php';
+                throw new FLEA_Db_Exception_Query($sql, mysqli_error($this->_conn));
+            }
             $types = '';
             foreach ($inputarr as $v) {
                 if (is_string($v)) {
@@ -323,16 +331,16 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
             array_unshift($inputarr, $stmt);
             call_user_func_array('mysqli_stmt_bind_param', $inputarr);
             if (!mysqli_stmt_execute($stmt)) {
-                require_once 'FLEA/Db/Exception/SqlQuery.php';
-                throw new FLEA_Db_Exception_SqlQuery($sql, mysqli_stmt_error($stmt), mysqli_stmt_errno($stmt));
+                require_once 'FLEA/Db/Exception/Query.php';
+                throw new FLEA_Db_Exception_Query($sql, mysqli_stmt_error($stmt));
             }
 
             return new FLEA_Db_Driver_Mysqli_Statement($stmt);
         } else {
             $result = mysqli_query($this->_conn, $sql);
-            if (!$result) {
-                require_once 'FLEA/Db/Exception/SqlQuery.php';
-                throw new FLEA_Db_Exception_SqlQuery($sql, mysqli_error($this->_conn), mysqli_errno($this->_conn));
+            if ($result === false) {
+                require_once 'FLEA/Db/Exception/Query.php';
+                throw new FLEA_Db_Exception_Query($sql, mysqli_error($this->_conn));
             }
 
             return new FLEA_Db_Driver_Mysqli_Handle($result);
