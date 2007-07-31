@@ -498,7 +498,7 @@ function dump_trace()
         $lines .= $line . "\n";
         $index++;
     } // for
-    $lines .= "#{$index} {main}\n";
+    $lines .= "#{$index} main\n";
 
     if (ini_get('html_errors')) {
         echo nl2br(str_replace(' ', '&nbsp;', $lines));
