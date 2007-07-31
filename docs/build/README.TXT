@@ -1,1 +1,1 @@
-install phpDocumentor first.
+extract fshl.zip, texy.zip to current directory.
