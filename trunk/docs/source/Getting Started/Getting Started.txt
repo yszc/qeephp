@@ -1,0 +1,460 @@
+开始使用起源框架（原FleaPHP）
+****************************
+
+作者：廖宇雷 （liaoyulei@qeeyuan.com） .[author]
+
+这个教程展示了如何用起源框架（原FleaPHP）快速开发数据库驱动的 Web 应用程序。
+
+
+公告：FleaPHP 改名为起源框架
+============================
+
+为了更好的发展 FleaPHP，起源科技决定将 FleaPHP 改名为起源框架，英文名 QeePHP Framework，简称 QeePHP。
+
+--------
+
+
+目标
+====
+
+在这个教程里面，我们来创建一个简单的 Todo List 程序。这个程序允许用户创建新的任务项目，并将已有的项目设置为“已经完成”状态。当然，还允许用户删除已有的任务项目。
+
+--------
+
+
+准备工作
+========
+
+为了方便，这里使用 APM Express 集成包来做开发环境。包含 QeePHP 的 APM Express 可以从 "QeePHP 下载":http://www.fleaphp.org/index.php?q=download 页面获取。选择 qeephp-apmxe.zip 或者 fleaphp-apmxe.zip 项目，解压缩后运行 APM-Express.exe 即可完成 APM Express 的安装。
+
+提示：假设 APM Express 安装在 D:\APM-Express 目录。
+
+--------
+
+
+创建目录结构
+============
+
+在 d:\APM-Express\htdocs 目录下建立一个子目录 todo-list，用于保存 Todo List 应用程序的文件。
+
+在 todo-list 目录中创建下面的目录结构：
+
+-  _Cache 保存缓存数据
+-  Config 保存应用程序配置文件
+-  Controller 保存控制器的代码
+-  Table 保存表数据入口的代码
+-  static 保存JavaScript 脚本、CSS 样式表、图片等静态文件
+
+--------
+
+
+创建入口文件
+============
+
+在 **todo-list** 目录中创建 **index.php** 文件，内容如下： 
+
+/---code php
+<?php
+
+define('APP_DIR', dirname(__FILE__));
+
+require(APP_DIR . '/../FleaPHP/FLEA/FLEA.php');
+FLEA::loadAppInf(APP_DIR . '/Config/APP_INF.php');
+FLEA::import(APP_DIR);
+FLEA::runMVC();
+\---
+
+现在通过浏览器访问 "http://localhost/todo-list/index.php":http://localhost/todo-list/index.php ，将会看到一个错误页面。但这也证明我们正确的载入了 QeePHP 框架。
+
+[* 01.png *]
+
+--------
+
+
+指定应用程序设置
+================
+
+在 QeePHP 框架中，应用程序设置类似 Windows 注册表。不但保存应用程序需要的各种配置信息，QeePHP 框架本身也根据应用程序设置中的各个选项来初始化运行环境和组装框架组件。
+
+默认情况下，QeePHP 框架将以“调试模式”运行。这种模式下用于应用程序的开发阶段，加强了错误信息显示、日志记录等功能，主要是为了提高开发效率，方便调试和排错。另一种运行模式则称为“部署模式”。这种模式下，QeePHP 框架将不显示详细的错误信息，并且启用缓存功能，最大限度的提高安全性和运行效率。
+
+在 FLEA/Config/ 目录下有两个配置文件：**DEBUG_MODE_CONFIG.php** 和 **DEPLOY_MODE_CONFIG.php**，分别保存了“调试模式”和“部署模式”下 QeePHP 框架的默认应用程序设置。开发者可以参考这两个文件指定自己应用程序的设置。
+
+在前面编写的 index.php 中，有一行 `FLEA::loadAppInf(APP_DIR . '/Config/APP_INF.php');` 代码。这行代码就是载入一个配置文件，并将配置文件的内容添加到整个应用程序设置中。
+
+现在我们来创建 **Config/APP_INF.php** 文件，内容如下：
+
+/---code php
+<?php
+
+return array(
+    'responseCharset' 	=> 'utf-8',
+    'databaseCharset' 	=> 'utf8',
+    'defaultController' => 'Todo',
+    'internalCacheDir' => APP_DIR . '/_Cache',
+);
+\---
+
+第一个设置 **responseCharset** 指定以什么编码输出页面内容，第二个设置 **databaseCharset** 指定用什么编码在数据库中存储数据。这里注意第一个设置和第二个设置的值有点区别，因为 HTTP 协议和教程中用到的 MySQL 数据库对 UTF8 编码要求不同的标识。假如换成其他数据库，那么同样是 UTF8 编码，databaseCharset 设置的值还可能是其他值。
+
+第三个设置 **defaultController** 则指定程序运行时的默认控制器名字是什么。第四个设置 **internalCacheDir** 则指定一个目录用来保存 QeePHP 运行过程中产生的缓存文件。
+
+--------
+
+
+MVC 模式和 QeePHP 的运行流程
+============================
+
+保存 APP_INF.php 文件后，刷新浏览器，可以看到现在显示了一个不同的错误信息：
+
+[* 02.png *]
+
+这个错误信息指出没有找到名为“Todo”的控制器，那什么是“控制器”呢？
+回答这个问题前，我们来看看 QeePHP 的运行流程：
+
+[* 03.png *]
+
+一个控制器的代码看上去就像下面的例子：
+
+/---code php
+<?php
+
+// 定义一个控制器
+class Controller_Todo
+{
+    // 定义一个响应动作
+    function actionList()
+    {
+        ....
+    }
+}
+
+\---
+
+--------
+
+
+编写第一个控制器
+================
+
+我们前面设置了默认控制器为 **Todo**，现在我们就来编写这个控制器的代码。
+
+创建 **Controller/Todo.php** 文件，写入如下内容：
+
+/---code php
+<?php
+
+class Controller_Todo extends FLEA_Controller_Action
+{
+    
+    function actionIndex()
+    {
+        echo "It's working.";
+    }
+}
+\---
+
+保存 Todo.php 文件后，刷新浏览器就可以看到 **It's working.** 字样。
+
+**提示**：默认的响应动作名字为 `index`，在控制器类中对应的方法名就是 `actionIndex`。
+
+--------
+
+
+创建数据库
+==========
+
+我们的目的是实现一个 Todo List 应用程序，所以我们需要创建数据库来保存各种数据。
+
+打开命令行窗口，进入 `D:\APM-Express\mysql5\bin` 目录，然后输入下列命令创建我们需要的数据库和数据表：
+
+`D:\APM-Express\mysql5\bin\mysql -u root`
+
+/---code sql
+CREATE DATABASE `todo_db`;
+USE `todo_db`;
+
+CREATE TABLE `tasks` (
+  `task_id` INTEGER(11) NOT NULL AUTO_INCREMENT,
+  `title` VARCHAR(255) NOT NULL,
+  `description` TEXT NOT NULL,
+  `is_completed` BOOLEAN NOT NULL,
+  `created` INTEGER(11) NOT NULL,
+  `updated` INTEGER(11) NOT NULL,
+  PRIMARY KEY (`task_id`));
+\---
+
+[* 04.png *]
+
+--------
+
+
+访问数据库
+==========
+
+在 QeePHP 中访问数据库是很简单的事情，通常只需要做三件事：
+
+-  将应用程序设置 dbDSN 指定为连接数据库需要的参数
+-  为需要访问的数据表定义一个表数据入口
+-  使用表数据入口操作数据库
+
+准备应用程序设置 dbDSN
+----------------------
+
+打开 Config/APP_INF.php 文件，修改为：
+
+/---code php
+<?php
+
+return array(
+    'responseCharset' 	=> 'utf-8',
+    'databaseCharset' 	=> 'utf8',
+    'defaultController' => 'Todo',
+    'internalCacheDir' => APP_DIR . '/_Cache',
+    
+    'dbDSN' => array(
+        'driver' => 'mysql',
+        'host' => 'localhost',
+        'login' => 'root',
+        'password' => '',
+        'database' => 'todo_db',
+    ),
+);
+\---
+
+增加的 **dbDSN** 设置让 QeePHP 知道如何连接数据库。
+
+
+为需要访问的数据表定义一个表数据入口
+------------------------------------
+
+我们要操作数据表 **tasks**，就创建文件 **Table/Tasks.php**，内容如下：
+
+/---code php
+<?php
+
+FLEA::loadClass('FLEA_Db_TableDataGateway');
+
+class Table_Tasks extends FLEA_Db_TableDataGateway 
+{
+    var $tableName = 'tasks';
+    var $primaryKey = 'task_id';
+}
+\---
+
+这个文件定义了一个表数据入口对象 **Table_Tasks**，并且用 **$tableName** 指定了对应的数据表名称。而 **$primaryKey** 则指明了这个数据表的主键字段。
+
+
+使用表数据入口操作数据库
+------------------------
+
+现在我们就可以在响应动作方法中使用表数据入口对象了：
+
+/---code php
+<?php
+
+class Controller_Todo extends FLEA_Controller_Action
+{
+    
+    function actionIndex()
+    {
+        // 获取 Table_Tasks 表数据入口对象实例
+        $tableTasks =& FLEA::getSingleton('Table_Tasks');
+        /* @var $tableTasks Table_Tasks */
+
+        // 创建一条新记录
+        $newTask = array(
+            'title'         => 'Test Task ' . rand(),
+            'description'   => '- none description -',
+            'is_completed'  => false,
+        );
+        $tableTasks->create($newTask);
+        
+        // 查询所有的记录并显示
+        $allTasks = $tableTasks->findAll();
+        dump($allTasks);
+    }
+}
+\---
+
+现在刷新浏览器，可以看到我们成功创建了一条 **tasks** 表的记录。如果多刷新几次浏览器，可以看到更多的记录被创建出来。
+
+[* 05.png *]
+
+可以看到，在 QeePHP 中操作数据库是非常简单直接的，只需要少量的代码就可以完成需要的任务。
+
+--------
+
+
+显示任务列表
+============
+
+前面我们已经完成了所有准备工作，现在可以开始实现应用程序的逻辑部分了。首先就是显示出任务列表。
+
+为了能够显示任务列表，我们需要一个视图模板文件。为了方便在 Dreamweaver 或者类似的所见即所得网页设计工具中创建模板文件，我们选择将模板文件和 index.php 文件放在同一个目录。
+
+首先就是创建 **todo_index.php** 文件：
+
+/---code html
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Todo List</title>
+<body>
+<h1>Todo List 应用程序</h1>
+
+<p>现有任务列表</p>
+
+<ul>
+<?php foreach ($allTasks as $task): ?>
+  <li>
+    [<?php echo date('Y-m-d H:i:s', $task['created']); ?>]
+    <a href="<?php echo url('Todo', 'editTask', array('task_id' => $task['task_id'])); ?>"><?php echo h($task['title']); ?></a>
+  </li>
+<?php endforeach; ?>
+</ul>
+
+</body>
+</html>
+\---
+
+接下来修改 Controller/Todo.php 文件为：
+
+/---code php
+<?php
+
+class Controller_Todo extends FLEA_Controller_Action
+{
+    /**
+     * Table_Tasks 对象实例
+     * 
+     * @var Table_Tasks
+     */
+    var $_tableTasks;
+    
+    /**
+     * 构造函数
+     */
+    function Controller_Todo($controllerName)
+    {
+        parent::FLEA_Controller_Action($controllerName);
+        $this->_tableTasks =& FLEA::getSingleton('Table_Tasks');
+    }
+    
+    /**
+     * 显示任务列表
+     */
+    function actionIndex()
+    {
+        $allTasks = $this->_tableTasks->findAll(null, 'created DESC');
+        
+        $viewdata = array(
+            'allTasks' => $allTasks,
+        );
+        $this->_executeView('todo_index.php', $viewdata);
+    }
+}
+\---
+
+**提示**：由于我们接下来会在 Todo 控制器中添加多个方法，所以改为在构造函数中获得表数据入口对象实例。这样可以简化一部分代码。
+
+现在刷新浏览器就可以看到我们先前添加的任务项目了：
+
+[* 06.png *]
+
+在视图模板文件中，我们用到了 h() 这个函数。这是 QeePHP 提供的一个便利函数，等效於 htmlspecialchars()，用于将字符串中的特殊字符转义为 HTML 标记。这是消除 XSS 攻击简单有效的方法。
+
+--------
+
+
+添加任务项目
+============
+
+能够正确显示任务列表后，接下来则是实现添加任务项目的功能。
+
+修改模板文件：
+
+/---code html
+....
+....
+
+<form name="add_task" action="<?php echo url('Todo', 'saveTask'); ?>" method="post">
+  <p>任务名称：<br /><?php $ui->control('textbox', 'title', array('size' => 50)); ?></p>
+  <p>任务描述：<br /><?php $ui->control('memo', 'description', array('cols' => 50, 'rows' => 4)); ?></p>
+  <p><?php $ui->control('submit', 'button_save', array('caption' => ' 添加任务 ')); ?></p>
+</form>
+
+</body>
+</html>
+\---
+
+然后修改 Controller/Todo.php 文件中的 actionIndex() 方法：
+
+/---code php
+    function actionIndex()
+    {
+        $allTasks = $this->_tableTasks->findAll(null, 'created DESC');
+        
+        $viewdata = array(
+            'allTasks' => $allTasks,
+            'ui' => FLEA::initWebControls(),
+        );
+        $this->_executeView('todo_index.php', $viewdata);
+    }
+\---
+
+增加的 **FLEA::initWebControls()** 用于初始化 QeePHP 的 **WebControls** 功能。WebControls 功能可以用简短的语句创建表单控件。并为创建可重复使用的页面组件提供了支持。
+
+修改了 actionIndex() 方法，还要增加一个新方法 **actionSaveTask**：
+
+/---code php
+    /**
+     * 保存任务的信息
+     */
+    function actionSaveTask()
+    {
+        $newTask = array(
+            'title' => $_POST['title'],
+            'description' => $_POST['description'],
+            'is_completed' => 0,
+        );
+        $this->_tableTasks->create($newTask);
+        
+        js_alert('添加任务成功', '', $this->_url());
+    }
+\---code
+
+现在刷新浏览器，输入标题和描述后点击“添加任务”按钮即可添加一个新的任务项目。
+
+在这个步骤中，出现了 **url()** 这个函数。url() 函数用于生成一个符合 QeePHP 规范的 URL 地址，并且包含要调用的控制器和响应动作的名称。
+
+同样，在控制器的 **actionSaveTask()** 方法中调用的 **$this->_url()** 是 url() 函数的简化形式。用于生成只能访问当前控制器的 URL 地址。而 url() 则可以指定要访问的任意控制器名字。
+
+--------
+
+
+修改任务
+========
+
+所有任务项目添加时都是“未完成”状态，用户应该能够设置为“已经完成”状态，并且修改任务的名称和描述文字。现在我们就来添加这个功能。
+
+打开模板文件，搜索：
+
+/---code html
+<?php echo h($task['title']); ?>
+\---
+
+改为：
+
+/---code html
+<a href="<?php echo url('Todo', 'editTask', array('task_id' => $task['task_id'])); ?>"><?php echo h($task['title']); ?></a>
+\---
+
+这样修改后，在任务列表页面点击任务名称就可以进入修改页面。修改页面的模板文件名为 **todo_edit.php**，内容如下：
+
+/---code html
+
+\---
+
