@@ -9,11 +9,11 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 FLEA_Db_Exception_InvalidInsertID 异常
+ * 定义 FLEA_Db_Exception_ExtNotLoaded 异常
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
- * @author 起源科技(www.qeeyuan.com)
- * @package Exception
+ * @author 廖宇雷 dualface@gmail.com
+ * @package Database
  * @version $Id$
  */
 
@@ -22,22 +22,21 @@ require_once 'FLEA/Exception.php';
 // }}}
 
 /**
- * FLEA_Db_Exception_InvalidInsertID 异常指示无法获取刚刚插入的记录的主键值
+ * FLEA_Db_Exception_ExtNotLoaded 异常指示需要的 PHP 扩展没有载入
  *
- * @package Exception
- * @author 起源科技(www.qeeyuan.com)
+ * @package Database
+ * @author 廖宇雷 dualface@gmail.com
  * @version 1.0
  */
-class FLEA_Db_Exception_InvalidInsertID extends FLEA_Exception
+class FLEA_Db_Exception_ExtNotLoaded extends FLEA_Exception
 {
-    /**
-     * 构造函数
-     *
-     * @return FLEA_Db_Exception_InvalidInsertID
-     */
-    public function __construct()
+    public $extname;
+    public $dbtype;
+
+    public function __construct($dbtype, $extname)
     {
-        $code = 0x06ff008;
-        parent::__construct($code);
+        parent::__construct(self::t('PHP extension "%s" required by "%s".', $extname, $dbtype));
+        $this->dbtype = $dbtype;
+        $this->extname = $extname;
     }
 }

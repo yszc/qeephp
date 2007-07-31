@@ -27,6 +27,11 @@
  */
 class FLEA_Exception extends Exception
 {
+    public function __construct($message, $code = 0)
+    {
+        parent::__construct($message, $code);
+    }
+
     /**
      * 将错误信息翻译为当前设置的语言
      *
