@@ -38,14 +38,6 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
     public $paramStyle = self::PARAM_QM;
 
     /**
-     * 用于 genSeq()、dropSeq() 和 nextId() 的 SQL 查询语句
-     */
-    const NEXT_ID_SQL    = "UPDATE %s SET id = LAST_INSERT_ID(id + 1)";
-    const CREATE_SEQ_SQL = "CREATE TABLE %s (id INT NOT NULL)";
-    const INIT_SEQ_SQL   = "INSERT INTO %s VALUES (%s)";
-    const DROP_SEQ_SQL   = "DROP TABLE %s";
-
-    /**
      * 指示事务启动次数
      *
      * @var int
@@ -244,16 +236,20 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
     public function nextId($seqName = 'sdboseq', $startValue = 1)
     {
         $tableName = $this->qtable($seqName);
+        $startValue = (int)$startValue;
         try {
-            $this->execute(sprintf(self::NEXT_ID_SQL, $tableName), null, false);
-        } catch (FLEA_Db_Exception_Query $ex) {
+            $this->execute("UPDATE {$tableName} SET id = LAST_INSERT_ID(id + 1)");
+            if (mysqli_affected_rows($this->_conn) == 0) {
+                $startValue--;
+                $this->execute("INSERT INTO {$tableName} (id) VALUES ({$startValue})");
+                $this->execute("UPDATE {$tableName} SET id = LAST_INSERT_ID(id + 1)");
+            }
+        } catch (Exception $ex) {
             $this->createSeq($seqName, $startValue);
         }
 
-        $id = $this->insertId();
-        if ($id) { return $id; }
-        $this->execute(sprintf(self::INIT_SEQ_SQL, $tableName, $this->qstr($startValue)));
-        return $startValue;
+        $nextid = $this->getOne('SELECT LAST_INSERT_ID()');
+        return $nextid;
     }
 
     /**
@@ -265,8 +261,10 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
     public function createSeq($seqName = 'sdboseq', $startValue = 1)
     {
         $tableName = $this->qtable($seqName);
-        $this->execute(sprintf(self::CREATE_SEQ_SQL, $tableName));
-        $this->execute(sprintf(self::INIT_SEQ_SQL, $tableName, $this->qstr($startValue)));
+        $startValue = (int)$startValue - 1;
+        $this->execute("CREATE TABLE {$tableName} (id INT NOT NULL)");
+        $this->execute("INSERT INTO {$tableName} (id) VALUES ({$startValue})");
+        $this->execute("UPDATE {$tableName} SET id = LAST_INSERT_ID(id + 1)");
     }
 
     /**
@@ -276,7 +274,8 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
      */
     public function dropSeq($seqName = 'sdboseq')
     {
-        $this->execute(sprintf(self::DROP_SEQ_SQL, $this->qtable($seqName)));
+        $tableName = $this->qtable($seqName);
+        $this->execute("DROP TABLE {$tableName}");
     }
 
     /**
@@ -286,7 +285,7 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
      */
     public function insertId()
     {
-        return mysqli_insert_id($this->_conn);
+        return $this->getOne('SELECT LAST_INSERT_ID()');
     }
 
     /**
