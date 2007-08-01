@@ -64,6 +64,15 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
         $id = $this->_dbo->nextId('test_seq');
         $next = $this->_dbo->nextId('test_seq');
         $this->assertTrue($next > $id, "\$next = {$next}, \$id = {$id}");
+        $this->_dbo->dropSeq('test_seq');
+    }
+
+    public function test_createSeq()
+    {
+        $this->_dbo->createSeq('test_seq2', 5);
+        $id = $this->_dbo->insertId();
+        $this->assertEquals(5, $id);
+        $this->_dbo->dropSeq('test_seq2');
     }
 
     public function test_insertId()
@@ -78,6 +87,7 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
     {
         $this->_dbo->nextId('test_seq');
         $this->assertTrue($this->_dbo->affectedRows() == 1);
+        $this->_dbo->dropSeq('test_seq');
     }
 
     public function test_execute()
