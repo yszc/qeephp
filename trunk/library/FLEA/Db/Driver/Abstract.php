@@ -49,6 +49,13 @@ abstract class FLEA_Db_Driver_Abstract
     public $paramStyle = self::PARAM_QM;
 
     /**
+     * 所有 SQL 查询的日志
+     *
+     * @var array
+     */
+    public $log = array();
+
+    /**
      * 数据库连接信息
      *
      * @var array
@@ -61,13 +68,6 @@ abstract class FLEA_Db_Driver_Abstract
      * @var resource
      */
     protected $_conn = null;
-
-    /**
-     * 所有 SQL 查询的日志
-     *
-     * @var array
-     */
-    protected $_log = array();
 
     /**
      * 最近一次插入操作或者 nextId() 操作返回的插入 ID
