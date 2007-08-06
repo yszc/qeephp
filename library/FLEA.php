@@ -37,7 +37,7 @@ require_once 'FLEA/Functions.php';
  */
 
 // 定义 QeePHP 版本号常量和 QeePHP 所在路径
-define('FLEA_VERSION', '1.0.70.885');
+define('FLEA_VERSION', '1.8');
 
 // 定义指示 PHP4 或 PHP5 的常量
 define('PHP5', true);
