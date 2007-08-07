@@ -14,6 +14,7 @@
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author 廖宇雷 dualface@gmail.com
  * @package Database
+ * @subpackage Exception
  * @version $Id$
  */
 
@@ -25,6 +26,7 @@ require_once 'FLEA/Exception.php';
  * FLEA_Db_Exception_ExtNotLoaded 异常指示需要的 PHP 扩展没有载入
  *
  * @package Database
+ * @subpackage Exception
  * @author 廖宇雷 dualface@gmail.com
  * @version 1.0
  */
