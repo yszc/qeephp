@@ -13,7 +13,8 @@
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author 起源科技(www.qeeyuan.com)
- * @package Exception
+ * @package Database
+ * @subpackage Exception
  * @version $Id$
  */
 
@@ -24,7 +25,8 @@ require_once 'FLEA/Exception.php';
 /**
  * FLEA_Db_Exception_InvalidLinkType 异常指示无效的数据表关联类型
  *
- * @package Exception
+ * @package Database
+ * @subpackage Exception
  * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */

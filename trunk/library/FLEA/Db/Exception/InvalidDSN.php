@@ -13,7 +13,8 @@
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author 起源科技(www.qeeyuan.com)
- * @package Exception
+ * @package Database
+ * @subpackage Exception
  * @version $Id$
  */
 
@@ -24,8 +25,9 @@ require_once 'FLEA/Exception.php';
 /**
  * FLEA_Db_Exception_InvalidDSN 异常指示没有提供有效的 DSN 设置
  *
- * @package Exception
+ * @package Database
  * @author 起源科技(www.qeeyuan.com)
+ * @subpackage Exception
  * @version 1.0
  */
 class FLEA_Db_Exception_InvalidDSN extends FLEA_Exception
