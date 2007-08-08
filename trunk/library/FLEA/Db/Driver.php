@@ -122,6 +122,13 @@ abstract class FLEA_Db_Driver
     protected $_TIMESTAMP_FORMAT = 'Y-m-d H:i:s';
 
     /**
+     * 指示事务是否提交
+     *
+     * @var boolean
+     */
+    protected $_hasFailedTrans = true;
+
+    /**
      * 获取一个数据库访问对象实例
      *
      * DSN 是 Database Source Name 的缩写，可以理解为数据源名。
@@ -684,12 +691,18 @@ abstract class FLEA_Db_Driver
     /**
      * 强制指示在调用 completeTrans() 时回滚事务
      */
-    abstract public function failTrans();
+    public function failTrans()
+    {
+        $this->_hasFailedTrans = false;
+    }
 
     /**
      * 检查事务过程中是否出现失败的查询
      */
-    abstract public function hasFailedTrans();
+    public function hasFailedTrans()
+    {
+        return $this->_hasFailedTrans;
+    }
 
     /**
      * 返回指定数据表（或者视图）的元数据
