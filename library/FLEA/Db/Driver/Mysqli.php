@@ -18,7 +18,7 @@
  */
 
 // {{{ includes
-require_once 'FLEA/Db/Driver/Abstract.php';
+require_once 'FLEA/Db/Driver.php';
 // }}}
 
 /**
@@ -45,20 +45,11 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
     protected $_transCount = 0;
 
     /**
-     * 指示事务是否提交
-     *
-     * @var boolean
-     */
-    protected $_hasFailedTrans = true;
-
-    /**
      * 连接数据库，失败时抛出异常
      */
     public function connect()
     {
         if ($this->_conn) { return; }
-        $this->_lasterr = null;
-        $this->_lasterrcode = null;
 
         $dsn = $this->_dsn;
         $host = empty($dsn['host']) ? 'localhost' : $dsn['host'];
@@ -93,6 +84,10 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
         if (!empty($dsn['charset'])) {
             $this->execute('SET NAMES ' . $this->qstr($dsn['charset']));
         }
+
+        $this->_insertId = null;
+        $this->_transCount = 0;
+        $this->_hasFailedTrans = false;
     }
 
     /**
@@ -134,8 +129,8 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
      */
     public function qstr($value)
     {
-        if (is_bool($value)) { return $value ? self::TRUE_VALUE : self::FALSE_VALUE; }
-        if (is_null($value)) { return self::NULL_VALUE; }
+        if (is_bool($value)) { return $value ? $this->_TRUE_VALUE : $this->_FALSE_VALUE; }
+        if (is_null($value)) { return $this->_NULL_VALUE; }
         return "'" . mysqli_real_escape_string($this->_conn, $value) . "'";
     }
 
@@ -149,7 +144,11 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
      */
     public function qtable($tableName, $schema = null)
     {
-        return "`{$tableName}`";
+        if (empty($schema)) {
+            return "`{$tableName}`";
+        } else {
+            return "`{$schema}`.`{$tableName}`";
+        }
     }
 
     /**
@@ -163,24 +162,9 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
      */
     public function qfield($fieldName, $tableName = null, $schema = null)
     {
-        $pos = strpos($fieldName, '.');
-        if ($pos !== false) {
-            $tableName = substr($fieldName, 0, $pos);
-            $fieldName = substr($fieldName, $pos + 1);
-        }
-        if ($tableName != '') {
-            if ($fieldName != '*') {
-                return "`{$tableName}`.`{$fieldName}`";
-            } else {
-                return "`{$tableName}`.*";
-            }
-        } else {
-            if ($fieldName != '*') {
-                return "`{$fieldName}`";
-            } else {
-                return "*";
-            }
-        }
+        $schema = empty($schema) ? '' : "{$schema}.";
+        $tableName = empty($tableName) ? '' : "{$tableName}.";
+        return "{$schema}{$tableName}`{$fieldName}`";
     }
 
     /**
@@ -189,39 +173,23 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver_Abstract
      * @param string|array $fields
      * @param string $tableName
      * @param string $schema
+     * @param boolean $returnArray
      *
      * @return string
      */
-    public function qfields($fields, $tableName = null, $schema = null)
+    public function qfields($fields, $tableName = null, $schema = null, $returnArray = false)
     {
+        $schema = empty($schema) ? '' : "{$schema}.";
+        $tableName = empty($tableName) ? '' : "{$tableName}.";
         if (!is_array($fields)) {
             $fields = explode(',', $fields);
+            $fields = array_fiter(array_map('trim', $fields), 'strlen');
         }
         $return = array();
         foreach ($fields as $fieldName) {
-            $fieldName = trim($fieldName);
-            if ($fieldName == '') { continue; }
-            $pos = strpos($fieldName, '.');
-            if ($pos !== false) {
-                $tableNameTmp = substr($fieldName, 0, $pos);
-                $fieldName = substr($fieldName, $pos + 1);
-            } else {
-                $tableNameTmp = $tableName;
-            }
-            if ($tableNameTmp != '') {
-                if ($fieldName != '*') {
-                    $return[] = "`{$tableNameTmp}`.`{$fieldName}`";
-                } else {
-                    $return[] = "`{$tableNameTmp}`.*";
-                }
-            } else {
-                if ($fieldName != '*') {
-                    $return[] = "`{$fieldName}`";
-                } else {
-                    $return[] = '*';
-                }
-            }
+            $return[] = "{$schema}{$tableName}`{$fieldName}`";
         }
+        if ($returnArray) { return $return; }
         return implode(', ', $return);
     }
 
