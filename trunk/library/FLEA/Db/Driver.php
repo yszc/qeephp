@@ -229,7 +229,7 @@ abstract class FLEA_Db_Driver
                 $dsn['options'] = null;
             }
         }
-        
+
         if (!isset($dsn['driver'])) {
             return false;
         }
@@ -263,6 +263,16 @@ abstract class FLEA_Db_Driver
      * 如果当前没有连接到数据库，尝试关闭连接会抛出一个异常。
      */
     abstract public function close();
+
+    /**
+     * 返回连接数据库的句柄
+     *
+     * @return resource
+     */
+    public function handle()
+    {
+        return $this->_conn;
+    }
 
     /**
      * 选择要操作的数据库
@@ -375,7 +385,7 @@ abstract class FLEA_Db_Driver
      * $tablename = 'posts';
      * $identifiers = $dbo->qfields($fields, $tablename);
      * // 如果是 MySQL 驱动，则 $identifiers 的值为 `posts`.`post_id`, `posts`.`title`, `posts`.`body`
-     * 
+     *
      * $fields = array('post_id', 'title', 'body');
      * $identifiers = $dbo->qfields($fields, null, null, true);
      * // 如果是 MySQL 驱动，则 $identifiers 的值为 array("`post_id`", "`title`", "`body`")
@@ -499,7 +509,7 @@ abstract class FLEA_Db_Driver
      *
      * 使用 selectLimit()，可以限定 SELECT 查询返回的结果集的大小。
      * $length 参数指定结果集最多包含多少条记录。而 $offset 参数则指定在查询结果中，从什么位置开始提取记录。
-     * 
+     *
      * 假设 SELECT * FROM posts ORDER BY post_id ASC 的查询结果一共有 500 条记录。
      * 现在通过指定 $length 为 20，则可以限定只提取其中的 20 条记录作为结果集。
      * 进一步指定 $offset 参数为 59，则可以从查询结果的第 60 条记录开始提取 20 条作为结果集。
@@ -754,7 +764,7 @@ abstract class FLEA_Db_Driver
      * $dbo->pushFetchMode();
      * // 临时改变 $fetchMode
      * $dbo->fetchMode = $dbo->FETCH_MODE_ARRAY;
-     * 
+     *
      * ...
      *
      * // 还原改变之前的 $fetchMode
@@ -765,7 +775,7 @@ abstract class FLEA_Db_Driver
      */
     public function pushFetchMode()
     {
-       array_push($this->_fetchModeStack, $this->fetchMode); 
+       array_push($this->_fetchModeStack, $this->fetchMode);
     }
 
     /**
@@ -911,7 +921,7 @@ abstract class FLEA_Db_Driver_Handle
      */
     public function pushFetchMode()
     {
-       array_push($this->_fetchModeStack, $this->fetchMode); 
+       array_push($this->_fetchModeStack, $this->fetchMode);
     }
 
     /**

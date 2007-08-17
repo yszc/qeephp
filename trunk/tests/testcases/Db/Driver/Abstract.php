@@ -21,7 +21,7 @@ abstract class Test_DB_Driver_Abstract extends PHPUnit_Framework_TestCase
     /**
      * 数据库访问对象
      *
-     * @var FLEA_Db_Driver_Abstract
+     * @var FLEA_Db_Driver
      */
     protected $_dbo;
 

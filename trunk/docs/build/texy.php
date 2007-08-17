@@ -154,6 +154,7 @@ EOT;
 }
 
 echo <<<EOT
+</head>
 <body>
 <div id="contents">
 {$html}
