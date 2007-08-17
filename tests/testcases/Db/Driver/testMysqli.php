@@ -21,8 +21,11 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
 
     public function test_qtable()
     {
-        $actual = 'products_has_tags';
-        $qtable = $this->_dbo->qtable($actual);
+        $tableName = 'products_has_tags';
+        $schema = 'test_db';
+        $qtable = $this->_dbo->qtable($tableName, $schema);
+        $this->assertEquals('`test_db`.`products_has_tags`', $qtable);
+        $qtable = $this->_dbo->qtable($tableName);
         $this->assertEquals('`products_has_tags`', $qtable);
     }
 
@@ -37,11 +40,21 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
         $field = 'title';
         $table = '';
         $this->assertEquals('`title`', $this->_dbo->qfield($field, $table));
-        $field = 'members.username';
-        $table = '';
-        $this->assertEquals('`members`.`username`', $this->_dbo->qfield($field, $table));
         $field = '*';
         $this->assertEquals('*', $this->_dbo->qfield($field, $table));
+
+        $field = 'name';
+        $table = 'products';
+        $schema = 'test_db';
+        $this->assertEquals('`test_db`.`products`.`name`', $this->_dbo->qfield($field, $table, $schema));
+        $field = '*';
+        $table = 'products';
+        $this->assertEquals('`test_db`.`products`.*', $this->_dbo->qfield($field, $table, $schema));
+        $field = 'title';
+        $table = '';
+        $this->assertEquals('`title`', $this->_dbo->qfield($field, $table, $schema));
+        $field = '*';
+        $this->assertEquals('*', $this->_dbo->qfield($field, $table, $schema));
     }
 
     public function test_qfields()
@@ -55,20 +68,25 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
         $this->assertEquals('`products`.`name`, `products`.`title`', $this->_dbo->qfields($fields, $table));
         $fields = array('name', 'title', '*');
         $this->assertEquals('`name`, `title`, *', $this->_dbo->qfields($fields, ''));
-        $fields = array('members.username', 'title', '*');
-        $this->assertEquals('`members`.`username`, `title`, *', $this->_dbo->qfields($fields, ''));
+
+        $fields = 'name,title';
+        $table = 'products';
+        $schema = 'test_db';
+        $this->assertEquals('`test_db`.`products`.`name`, `test_db`.`products`.`title`', $this->_dbo->qfields($fields, $table, $schema));
+        $fields = 'name  ,   title';
+        $this->assertEquals('`test_db`.`products`.`name`, `test_db`.`products`.`title`', $this->_dbo->qfields($fields, $table, $schema));
+        $fields = array('name', 'title', '*');
+        $arr = $this->_dbo->qfields($fields, $table, $schema, true);
+        $this->assertEquals(array('`test_db`.`products`.`name`', '`test_db`.`products`.`title`', '`test_db`.`products`.*'), $arr);
     }
 
-    public function test_nextId()
+    public function test_sequence()
     {
         $id = $this->_dbo->nextId('test_seq');
         $next = $this->_dbo->nextId('test_seq');
-        $this->assertTrue($next > $id, "\$next = {$next}, \$id = {$id}");
+        $this->assertTrue($next > $id, "expected \$next > \$id, \$next = {$next}, \$id = {$id}");
         $this->_dbo->dropSeq('test_seq');
-    }
 
-    public function test_createSeq()
-    {
         $this->_dbo->createSeq('test_seq2', 5);
         $id = $this->_dbo->insertId();
         $this->assertEquals(5, $id);
@@ -77,10 +95,18 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
 
     public function test_insertId()
     {
-        $next = $this->_dbo->nextId('test_seq');
-        $last = $this->_dbo->insertId();
-        $this->assertEquals($next, $last);
-        $this->_dbo->dropSeq('test_seq');
+        srand(time());
+        $title = $this->_dbo->qstr('title' . rand());
+        $sql = "INSERT INTO gametype (title) VALUES ({$title})";
+        mysqli_query($this->_dbo->handle(), $sql);
+        $id = $this->_dbo->insertId();
+
+        $sql = "SELECT title FROM gametype WHERE id = {$id}";
+        $r = mysqli_query($this->_dbo->handle(), $sql);
+        $row = mysqli_fetch_assoc($r);
+        mysqli_free_result($r);
+
+        $this->assertEquals($title, $row['title']);
     }
 
     public function test_affectedRows()
@@ -132,5 +158,10 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
         $rowset = $this->_dbo->getAll($sql, array(970, 14));
         $this->assertEquals(17, count($rowset));
         unset($rowset);
+    }
+
+    public function testGetAllWithFeildRefs()
+    {
+        $sql = "SELECT * FROM game WHERE id > ?";
     }
 }
