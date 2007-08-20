@@ -215,6 +215,7 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver
         if (!empty($inputarr)) {
             $stmt = mysqli_prepare($this->_conn, $sql);
             if (!$stmt) {
+                $this->_hasFailedQuery = true;
                 require_once 'FLEA/Db/Exception/Query.php';
                 throw new FLEA_Db_Exception_Query($sql, mysqli_error($this->_conn));
             }
@@ -232,6 +233,7 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver
             array_unshift($inputarr, $stmt);
             call_user_func_array('mysqli_stmt_bind_param', $inputarr);
             if (!mysqli_stmt_execute($stmt)) {
+                $this->_hasFailedQuery = true;
                 require_once 'FLEA/Db/Exception/Query.php';
                 throw new FLEA_Db_Exception_Query($sql, mysqli_stmt_error($stmt));
             }
@@ -240,6 +242,7 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver
         } else {
             $result = mysqli_query($this->_conn, $sql);
             if ($result === false) {
+                $this->_hasFailedQuery = true;
                 require_once 'FLEA/Db/Exception/Query.php';
                 throw new FLEA_Db_Exception_Query($sql, mysqli_error($this->_conn));
             }
@@ -270,18 +273,27 @@ class FLEA_Db_Driver_Mysqli extends FLEA_Db_Driver
             $this->_hasFailedQuery = false;
         }
         $this->_transCount++;
+        if ($this->savepointEnabled) {
+            $savepoint = 'savepoint_' . $this->_transCount;
+            $this->execute("SAVEPOINT `{$savepoint}`");
+            array_push($this->_savepointStack, $savepoint);
+        }
     }
 
     public function completeTrans($commitOnNoErrors = true)
     {
-        if ($this->_transCount < 1) { return; }
-        if ($this->_transCount > 1) {
-            $this->_transCount--;
+        if ($this->_transCount == 0) { return; }
+        $this->_transCount--;
+        if ($this->savepointEnabled) {
+            $savepoint = array_pop($this->_savepointStack);
+            if ($this->_hasFailedQuery || $commitOnNoErrors == false) {
+                $this->execute("ROLLBACK TO SAVEPOINT `{$savepoint}`");
+            }
             return;
+        } else {
+            if ($this->_transCount > 0) { return; }
         }
-        $this->_transCount = 0;
-
-        if ($this->_hasFailedTrans == false && $commitOnNoErrors) {
+        if ($this->_hasFailedQuery == false && $commitOnNoErrors) {
             $this->execute('COMMIT');
         } else {
             $this->execute('ROLLBACK');
@@ -466,6 +478,7 @@ class FLEA_Db_Driver_Mysqli_Statement extends FLEA_Db_Driver_Handle
     {
         if (is_null($this->_handle)) { return; }
         $result = mysqli_stmt_result_metadata($this->_handle);
+        if (!is_object($result)) { return; }
         /* @var $result mysqli_result */
         $meta = $result->fetch_fields();
         if (empty($meta)) { return; }
