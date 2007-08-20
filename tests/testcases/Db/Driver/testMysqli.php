@@ -232,4 +232,94 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
         $this->assertEquals(9, $row['id']);
         unset($handle);
     }
+
+    public function test_transactionForceRollback()
+    {
+        $this->_dbo->startTrans();
+        $sql = "INSERT INTO gametype (title) VALUES (?)";
+        $this->_dbo->execute($sql, array('title' . rand()));
+        $id = $this->_dbo->insertId();
+        $sql = "SELECT id, title FROM gametype WHERE id = {$id}";
+        $row = $this->_dbo->getRow($sql);
+        $this->assertEquals($id, $row['id']);
+        $this->_dbo->completeTrans(false);
+
+        $sql = "SELECT id, title FROM gametype WHERE id = {$id}";
+        $row = $this->_dbo->getRow($sql);
+        $this->assertEquals(null, $row);
+    }
+
+    public function test_transactionRollbackWhenError()
+    {
+        $this->_dbo->startTrans();
+        $sql = "INSERT INTO gametype (title) VALUES (?)";
+        $this->_dbo->execute($sql, array('title' . rand()));
+        $id = $this->_dbo->insertId();
+        try {
+            $sql = "SELECT id, title FROM gametype WHERE nonexist = {$id}";
+            $row = $this->_dbo->getRow($sql);
+        } catch (Exception $ex) {
+            // 忽略这个异常
+        }
+        $this->_dbo->completeTrans();
+
+        $sql = "SELECT id, title FROM gametype WHERE id = {$id}";
+        $row = $this->_dbo->getRow($sql);
+        $this->assertEquals(null, $row);
+    }
+
+    public function test_transactionRollbackWhenError2()
+    {
+        $this->_dbo->startTrans();
+        $sql = "INSERT INTO gametype (title) VALUES (?)";
+        $this->_dbo->execute($sql, array('title' . rand()));
+        $id = $this->_dbo->insertId();
+        try {
+            $sql = "SELECT id, title FROM gametype WHERE nonexist = ?";
+            $row = $this->_dbo->getRow($sql, array(999));
+        } catch (Exception $ex) {
+            // 忽略这个异常
+        }
+        $this->_dbo->completeTrans();
+
+        $sql = "SELECT id, title FROM gametype WHERE id = {$id}";
+        $row = $this->_dbo->getRow($sql);
+        $this->assertEquals(null, $row);
+    }
+
+    public function test_savepoints()
+    {
+        $this->_dbo->savepointEnabled = true;
+        $this->_dbo->startTrans();
+
+        // savepoint 1
+        $this->_dbo->startTrans();
+        $sql = "INSERT INTO gametype (title) VALUES (?)";
+        $this->_dbo->execute($sql, array('title' . rand()));
+        $id = $this->_dbo->insertId();
+        $this->_dbo->completeTrans(false);
+
+        $sql = "SELECT id, title FROM gametype WHERE id = {$id}";
+        $row = $this->_dbo->getRow($sql);
+        $this->assertEquals(null, $row);
+        // savepoint 1 end
+
+        // savepoint 2
+        $this->_dbo->startTrans();
+        $sql = "INSERT INTO gametype (title) VALUES (?)";
+        $this->_dbo->execute($sql, array('title' . rand()));
+        $id = $this->_dbo->insertId();
+        $this->_dbo->completeTrans();
+
+        $sql = "SELECT id, title FROM gametype WHERE id = {$id}";
+        $row = $this->_dbo->getRow($sql);
+        $this->assertEquals($id, $row['id']);
+        // savepoint 2 end
+
+        $this->_dbo->completeTrans(false);
+
+        $sql = "SELECT id, title FROM gametype WHERE id = {$id}";
+        $row = $this->_dbo->getRow($sql);
+        $this->assertEquals(null, $row);
+    }
 }
