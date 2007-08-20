@@ -1,6 +1,25 @@
 <?php
+/////////////////////////////////////////////////////////////////////////////
+// 这个文件是 QeePHP 项目的一部分
+//
+// Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
+//
+// 要查看完整的版权信息和许可信息，请查看源代码中附带的 COPYRIGHT 文件，
+// 或者访问 http://www.qeephp.org/ 获得详细信息。
+/////////////////////////////////////////////////////////////////////////////
 
+/**
+ * MySQLi 驱动的单元测试
+ *
+ * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
+ * @author 廖宇雷 dualface@gmail.com
+ * @package tests
+ * @version $Id$
+ */
+
+// {{{ includes
 require_once 'Abstract.php';
+// }}}
 
 class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
 {
@@ -52,6 +71,7 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
         $this->assertEquals('`test_db`.`products`.*', $this->_dbo->qfield($field, $table, $schema));
         $field = 'title';
         $table = '';
+        $schema = '';
         $this->assertEquals('`title`', $this->_dbo->qfield($field, $table, $schema));
         $field = '*';
         $this->assertEquals('*', $this->_dbo->qfield($field, $table, $schema));
@@ -96,17 +116,22 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
     public function test_insertId()
     {
         srand(time());
-        $title = $this->_dbo->qstr('title' . rand());
-        $sql = "INSERT INTO gametype (title) VALUES ({$title})";
+        $title = 'title' . rand();
+        $qtitle = $this->_dbo->qstr($title);
+        $sql = "INSERT INTO gametype (title) VALUES ({$qtitle})";
         mysqli_query($this->_dbo->handle(), $sql);
         $id = $this->_dbo->insertId();
 
-        $sql = "SELECT title FROM gametype WHERE id = {$id}";
+        $sql = "SELECT id, title FROM gametype WHERE id = {$id}";
         $r = mysqli_query($this->_dbo->handle(), $sql);
         $row = mysqli_fetch_assoc($r);
         mysqli_free_result($r);
 
         $this->assertEquals($title, $row['title']);
+        $this->assertEquals($id, $row['id']);
+
+        $sql = "DELETE FROM gametype WHERE id = {$id}";
+        mysqli_query($this->_dbo->handle(), $sql);
     }
 
     public function test_affectedRows()
@@ -120,17 +145,17 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
     {
         $sql = "SELECT id FROM game";
         $handle = $this->_dbo->execute($sql);
-        $this->assertType('FLEA_Db_Driver_Handle_Abstract', $handle);
+        $this->assertEquals(true, is_a($handle, 'FLEA_Db_Driver_Handle'));
         unset($handle);
 
         $sql = "SELECT id FROM game WHERE id > ? AND gametype_id = ?";
         $handle = $this->_dbo->execute($sql, array(970, 14));
-        $this->assertType('FLEA_Db_Driver_Handle_Abstract', $handle);
+        $this->assertEquals(true, is_a($handle, 'FLEA_Db_Driver_Handle'));
         unset($handle);
 
         $sql = "SELECT id FROM game_file WHERE title = ?";
         $handle = $this->_dbo->execute($sql, array('2005081546235.jar'));
-        $this->assertType('FLEA_Db_Driver_Handle_Abstract', $handle);
+        $this->assertEquals(true, is_a($handle, 'FLEA_Db_Driver_Handle'));
         unset($handle);
     }
 
@@ -138,12 +163,12 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
     {
         $sql = "SELECT id FROM game";
         $handle = $this->_dbo->selectLimit($sql, 100);
-        $this->assertType('FLEA_Db_Driver_Handle_Abstract', $handle);
+        $this->assertEquals(true, is_a($handle, 'FLEA_Db_Driver_Handle'));
         unset($handle);
 
         $sql = "SELECT id FROM game WHERE id > ? AND gametype_id = ?";
         $handle = $this->_dbo->selectLimit($sql, 50, 10, array(970, 14));
-        $this->assertType('FLEA_Db_Driver_Handle_Abstract', $handle);
+        $this->assertEquals(true, is_a($handle, 'FLEA_Db_Driver_Handle'));
         unset($handle);
     }
 
@@ -160,8 +185,51 @@ class Test_DB_Driver_Mysqli extends Test_DB_Driver_Abstract
         unset($rowset);
     }
 
-    public function testGetAllWithFeildRefs()
+    public function test_getRow()
     {
-        $sql = "SELECT * FROM game WHERE id > ?";
+        $sql = "SELECT * FROM gametype WHERE id = 9";
+        $row = $this->_dbo->getRow($sql);
+        $this->assertEquals(9, $row['id']);
+
+        $sql = "SELECT * FROM gametype WHERE id = ?";
+        $row = $this->_dbo->getRow($sql, array(9));
+        $this->assertEquals(9, $row['id']);
+    }
+
+    public function test_getOne()
+    {
+        $sql = "SELECT id FROM gametype WHERE id = 9";
+        $id = $this->_dbo->getOne($sql);
+        $this->assertEquals(9, $id);
+
+        $sql = "SELECT id FROM gametype WHERE id = ?";
+        $id = $this->_dbo->getOne($sql, array(9));
+        $this->assertEquals(9, $id);
+    }
+
+    public function test_getCol()
+    {
+        $sql = "SELECT id, title FROM gametype WHERE id > 0";
+        $ids = $this->_dbo->getCol($sql, 0);
+        $this->assertEquals(12, count($ids));
+
+        $sql = "SELECT id, title FROM gametype WHERE id > ?";
+        $ids = $this->_dbo->getCol($sql, 0, array(0));
+        $this->assertEquals(12, count($ids));
+    }
+
+    public function test_fetchRow()
+    {
+        $sql = "SELECT * FROM gametype WHERE id = 9";
+        $handle = $this->_dbo->execute($sql);
+        $row = $handle->fetchRow();
+        $this->assertEquals(9, $row['id']);
+        unset($handle);
+
+        $sql = "SELECT * FROM gametype WHERE id = ?";
+        $handle = $this->_dbo->execute($sql, array(9));
+        $row = $handle->fetchRow();
+        $this->assertEquals(9, $row['id']);
+        unset($handle);
     }
 }
