@@ -29,7 +29,7 @@ class FLEA_Db_Transaction
     /**
      * 数据库访问对象
      *
-     * @var FLEA_Db_Driver_Abstract
+     * @var FLEA_Db_Driver
      */
     protected $_dbo;
 
@@ -43,9 +43,9 @@ class FLEA_Db_Transaction
     /**
      * 构造函数
      *
-     * @param FLEA_Db_Driver_Abstract $dbo
+     * @param FLEA_Db_Driver $dbo
      */
-    public function __construct(FLEA_Db_Driver_Abstract $dbo)
+    public function __construct(FLEA_Db_Driver $dbo)
     {
         $this->_dbo = $dbo;
         $this->_dbo->startTrans();
@@ -63,11 +63,16 @@ class FLEA_Db_Transaction
     }
 
     /**
-     * 提交事务
+     * 完成事务，根据事务期间的查询是否出错决定是提交还是回滚事务
+     *
+     * 如果 $commitOnNoErrors 参数为 true，当事务期间所有查询都成功完成时，则提交事务，否则回滚事务；
+     * 如果 $commitOnNoErrors 参数为 false，则强制回滚事务。
+     *
+     * @param $commitOnNoErrors
      */
-    public function commit()
+    public function commit($commitOnNoErrors = true)
     {
-        $this->_dbo->completeTrans();
+        $this->_dbo->completeTrans($commitOnNoErrors);
         $this->_inTran = false;
     }
 
@@ -78,5 +83,29 @@ class FLEA_Db_Transaction
     {
         $this->_dbo->completeTrans(false);
         $this->_inTran = false;
+    }
+
+    /**
+     * 指示在调用 completeTrans() 时回滚事务
+     */
+    public function failTrans()
+    {
+        $this->_dbo->failTrans();
+    }
+
+    /**
+     * 指示在调用 complateTrans() 时提交事务（如果 $commitOnNoErrors 参数为 true）
+     */
+    public function successTrans()
+    {
+        $this->_dbo->successTrans();
+    }
+
+    /**
+     * 检查事务过程中是否出现失败的查询
+     */
+    public function hasFailedQuery()
+    {
+        return $this->_dbo->hasFailedQuery();
     }
 }

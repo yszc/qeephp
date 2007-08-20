@@ -66,12 +66,6 @@ class ORM
     public function save(IActiveRecord $obj)
     {
         $class = get_class($obj);
-        if (!isset($this->_classsOpts[$class])) {
-
-        }
-
-        $opts = $this->_classOpts
-
     }
 
     /**

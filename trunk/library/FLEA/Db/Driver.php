@@ -17,10 +17,6 @@
  * @version $Id$
  */
 
-// {{{ includes
-require_once 'FLEA/Db/Transaction.php';
-// }}}
-
 /**
  * FLEA_Db_Driver 是所有数据库驱动的基础类，并且提供创建特定类型数据库驱动对象的工厂方法
  *
@@ -86,6 +82,13 @@ abstract class FLEA_Db_Driver
     public $fetchMode = self::FETCH_MODE_ASSOC;
 
     /**
+     * 默认禁用 SAVEPOINT
+     *
+     * @var boolean
+     */
+    public $savepointEnabled = false;
+
+    /**
      * 数据库连接信息
      *
      * @var array
@@ -131,6 +134,13 @@ abstract class FLEA_Db_Driver
      * @var boolean
      */
     protected $_hasFailedQuery = true;
+
+    /**
+     * SAVEPOINT 堆栈
+     *
+     * @var array
+     */
+    protected $_savepointStack = array();
 
     /**
      * 获取一个数据库访问对象实例
@@ -685,6 +695,7 @@ abstract class FLEA_Db_Driver
      */
     public function beginTrans()
     {
+        require_once 'FLEA/Db/Transaction.php';
         return new FLEA_Db_Transaction($this);
     }
 
