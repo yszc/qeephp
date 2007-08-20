@@ -36,7 +36,7 @@ abstract class Test_DB_Driver_Abstract extends PHPUnit_Framework_TestCase
     public function setUp() {
         $filename = str_replace('_', DIRECTORY_SEPARATOR, $this->_driver);
         require_once $filename . '.php';
-        $this->_dbo = new $this->_driver($this->_dsn);
+        $this->_dbo = FLEA_Db_Driver::getDBO($this->_dsn);
         $this->_dbo->connect();
     }
 
