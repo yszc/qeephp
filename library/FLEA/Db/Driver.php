@@ -17,6 +17,10 @@
  * @version $Id$
  */
 
+// {{{ includes
+require_once 'FLEA/Db/Transaction.php';
+// }}}
+
 /**
  * FLEA_Db_Driver 是所有数据库驱动的基础类，并且提供创建特定类型数据库驱动对象的工厂方法
  *
@@ -122,11 +126,11 @@ abstract class FLEA_Db_Driver
     protected $_TIMESTAMP_FORMAT = 'Y-m-d H:i:s';
 
     /**
-     * 指示事务是否提交
+     * 指示事务执行期间是否发生了错误
      *
      * @var boolean
      */
-    protected $_hasFailedTrans = true;
+    protected $_hasFailedQuery = true;
 
     /**
      * 获取一个数据库访问对象实例
@@ -185,9 +189,11 @@ abstract class FLEA_Db_Driver
         require_once "FLEA/Db/Driver/{$driver}.php";
         $dbo = new $class($dsn);
 
-        FLEA::register($dbo, $dsnid);
-        if ($default) {
-            FLEA::register($dbo, 'QeePHP.DBO_default');
+        if ($qee) {
+            FLEA::register($dbo, $dsnid);
+            if ($default) {
+                FLEA::register($dbo, 'QeePHP.DBO_default');
+            }
         }
         return $dbo;
     }
@@ -245,7 +251,7 @@ abstract class FLEA_Db_Driver
      *
      * @param array|string $dsn
      */
-    protected public function __construct($dsn)
+    protected function __construct($dsn)
     {
         $this->_dsn = $dsn;
     }
@@ -555,7 +561,8 @@ abstract class FLEA_Db_Driver
      */
     public function & getAll($sql, array $inputarr = null)
     {
-        return $this->execute($sql, $inputarr)->fetchAll();
+        $rowset = $this->execute($sql, $inputarr)->fetchAll();
+        return $rowset;
     }
 
     /**
@@ -568,7 +575,8 @@ abstract class FLEA_Db_Driver
      */
     public function & getRow($sql, array $inputarr = null)
     {
-        return $this->selectLimit($sql, 1, null, $inputarr)->fetchRow();
+        $row = $this->selectLimit($sql, 1, null, $inputarr)->fetchRow();
+        return $row;
     }
 
     /**
@@ -677,7 +685,6 @@ abstract class FLEA_Db_Driver
      */
     public function beginTrans()
     {
-        require_once 'FLEA/Db/Transaction.php';
         return new FLEA_Db_Transaction($this);
     }
 
@@ -699,19 +706,27 @@ abstract class FLEA_Db_Driver
     abstract public function completeTrans($commitOnNoErrors = true);
 
     /**
-     * 强制指示在调用 completeTrans() 时回滚事务
+     * 指示在调用 completeTrans() 时回滚事务
      */
     public function failTrans()
     {
-        $this->_hasFailedTrans = false;
+        $this->_hasFailedQuery = true;
+    }
+
+    /**
+     * 指示在调用 complateTrans() 时提交事务（如果 $commitOnNoErrors 参数为 true）
+     */
+    public function successTrans()
+    {
+        $this->_hasFailedQuery = false;
     }
 
     /**
      * 检查事务过程中是否出现失败的查询
      */
-    public function hasFailedTrans()
+    public function hasFailedQuery()
     {
-        return $this->_hasFailedTrans;
+        return $this->_hasFailedQuery;
     }
 
     /**
@@ -802,7 +817,7 @@ abstract class FLEA_Db_Driver_Handle
      * 返回记录的形式
      * @var const
      */
-    public $fetchMode = FLEA_Db_Driver::FETCH_ASSOC;
+    public $fetchMode = FLEA_Db_Driver::FETCH_MODE_ASSOC;
 
     /**
      * 查询句柄
@@ -904,7 +919,7 @@ abstract class FLEA_Db_Driver_Handle
      *
      * @return array
      */
-    public function & getCol($col = 0)
+    public function & fetchCol($col = 0)
     {
         $this->pushFetchMode();
         $this->fetchMode = FLEA_Db_Driver::FETCH_MODE_ARRAY;
@@ -960,7 +975,7 @@ abstract class FLEA_Db_Driver_Handle
      *
      * $fieldValues = array();
      * $reference = array();
-     * $rowset = $handle->getAllWithFieldRefs('post_id', $fieldValues, $reference);
+     * $rowset = $handle->fetchAllWithFieldRefs('post_id', $fieldValues, $reference);
      * </code>
      *
      * 上述代码执行后，$rowset 包含 posts 表中的全部 4 条记录。
@@ -985,7 +1000,7 @@ abstract class FLEA_Db_Driver_Handle
      *
      * @return array
      */
-    public function & getAllWithFieldRefs($field, & $fieldValues, & $reference)
+    public function & fetchAllWithFieldRefs($field, array & $fieldValues, array & $reference)
     {
         $fieldValues = array();
         $reference = array();
@@ -1014,7 +1029,22 @@ abstract class FLEA_Db_Driver_Handle
      * @param boolean $oneToOne
      * @param string $refKeyName
      */
-    abstract public function assemble($handle, & $assocRowset, $mappingName, $oneToOne, $refKeyName);
-
+    public function assemble(FLEA_Db_Driver_Handle $handle, array & $assocRowset, $mappingName, $oneToOne, $refKeyName)
+    {
+        if ($oneToOne) {
+            // 一对一组装数据
+            while ($row = $handle->fetchRow()) {
+                $rkv = $row[$refKeyName];
+                unset($row[$refKeyName]);
+                $assocRowset[$rkv][$mappingName] = $row;
+            }
+        } else {
+            // 一对多组装数据
+            while ($row = $handle->fetchRow()) {
+                $rkv = $row[$refKeyName];
+                unset($row[$refKeyName]);
+                $assocRowset[$rkv][$mappingName][] = $row;
+            }
+        }
+    }
 }
-
