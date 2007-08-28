@@ -24,3 +24,10 @@
  * @author 廖宇雷 dualface@gmail.com
  * @version 1.0
  */
+class FLEA_Config
+{
+    public function __construct()
+    {
+
+    }
+}
