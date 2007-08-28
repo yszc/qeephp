@@ -17,7 +17,7 @@
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author 起源科技(www.qeeyuan.com)
- * @package Core
+ * @package FLEA
  * @version $Id$
  */
 

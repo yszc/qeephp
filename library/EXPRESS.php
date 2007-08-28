@@ -17,7 +17,7 @@
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author 廖宇雷 dualface@gmail.com
- * @package Easy
+ * @package FLEA
  * @version $Id$
  */
 
@@ -31,7 +31,7 @@ require_once 'FLEA/Functions.php';
  */
 
 // 定义 QeePHP 版本号常量和 QeePHP 所在路径
-define('FLEA_VERSION', '1.8');
+define('FLEA_VERSION', '2.0');
 
 // 定义指示 PHP4 或 PHP5 的常量
 define('PHP5', true);
@@ -103,7 +103,7 @@ abstract class FLEA
      */
     static function loadAppInf($configFilename)
     {
-        $config = self::loadFile($configFilename);
+        $config = FLEA_Container::loadFile($configFilename);
         self::setAppInf($config);
     }
 
@@ -253,7 +253,7 @@ abstract class FLEA
      */
     static function initWebControls()
     {
-        return self::getSingleton(self::getAppInf('webControlsClassName'));
+        return FLEA_Container::getSingleton(self::getAppInf('webControlsClassName'));
     }
 
     /**
@@ -263,7 +263,7 @@ abstract class FLEA
      */
     static function initAjax()
     {
-        return self::getSingleton(self::getAppInf('ajaxClassName'));
+        return FLEA_Container::getSingleton(self::getAppInf('ajaxClassName'));
     }
 
     /**
@@ -276,7 +276,7 @@ abstract class FLEA
         $settingName = 'helper.' . strtolower($helperName);
         $setting = self::getAppInf($settingName);
         if ($setting) {
-            self::loadFile($setting, true);
+            FLEA_Container::loadFile($setting, true);
         }
     }
 
@@ -286,7 +286,7 @@ abstract class FLEA
     static function runMVC()
     {
         self::init();
-        $dispatcher = self::getSingleton(self::getAppInf('dispatcher'));
+        $dispatcher = FLEA_Container::getSingleton(self::getAppInf('dispatcher'));
         return $dispatcher->dispatching();
     }
 
@@ -305,7 +305,7 @@ abstract class FLEA
          * 载入日志服务提供程序
          */
         if (self::getAppInf('logEnabled') && self::getAppInf('logProvider')) {
-            self::loadClass(self::getAppInf('logProvider'));
+            FLEA_Container::loadClass(self::getAppInf('logProvider'));
         }
         if (!function_exists('log_message')) {
             // 如果没有指定日志服务提供程序，就定义一个空的 log_message() 函数
@@ -335,30 +335,26 @@ abstract class FLEA
 
         // 处理 requestFilters
         foreach ((array)self::getAppInf('requestFilters') as $file) {
-            self::loadFile($file);
+            FLEA_Container::loadFile($file);
         }
 
         // 处理 autoLoad
         foreach ((array)self::getAppInf('autoLoad') as $file) {
-            self::loadFile($file);
+            FLEA_Container::loadFile($file);
         }
 
         // 载入指定的 session 服务提供程序
         if (self::getAppInf('sessionProvider')) {
-            self::getSingleton(self::getAppInf('sessionProvider'));
+            FLEA_Container::getSingleton(self::getAppInf('sessionProvider'));
         }
         // 自动起用 session 会话
         if (self::getAppInf('autoSessionStart')) {
             session_start();
         }
 
-        // 定义 I18N 相关的常量
-        define('RESPONSE_CHARSET', self::getAppInf('responseCharset'));
-        define('DATABASE_CHARSET', self::getAppInf('databaseCharset'));
-
         // 检查是否启用多语言支持
         if (self::getAppInf('multiLanguageSupport')) {
-            self::loadClass(self::getAppInf('languageSupportProvider'));
+            FLEA_Container::loadClass(self::getAppInf('languageSupportProvider'));
         }
         if (!function_exists('_T')) {
             eval('function _T() {}');
