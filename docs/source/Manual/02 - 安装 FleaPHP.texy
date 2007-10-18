@@ -20,8 +20,8 @@ FleaPHP 官方网站提供不同版本的下载，包括带有示例程序的完
 下载 FleaPHP http://www.fleaphp.org/
 
 
-从 Subversion 仓库获取源代码
-============================
+使用 Subversion 获取最新版本的 FleaPHP
+======================================
 
 如果你使用命令行版本的 Subversion，那么下面的命令将把最新版本的 FleaPHP 导出到 FleaPHP 子目录中。
 
@@ -35,4 +35,31 @@ svn checkout svn://svn.fleaphp.org/trunk/FleaPHP FleaPHP
 svn checkout svn://svn.fleaphp.org/trunk/FleaPHP/FLEA FLEA
 \---
 
-FleaPHP 的 SVN 仓库地址为：svn://svn.fleaphp.org/trunk/FleaPHP .[tip]
+FleaPHP 的 SVN 仓库地址为： svn://svn.fleaphp.org/trunk/FleaPHP .[tip]
+
+以后要更新本地的 FleaPHP 框架，只需要进入 FleaPHP 所在目录，执行下面的命令即可。
+
+/---code
+svn update
+\---
+
+
+使用 TortoiseSVN 获取最新版本的 FleaPHP
+=======================================
+
+如果你使用 Windows 下的 TortoiseSVN，则按照如下步骤操作：
+
+首先下载最新版本的 "TortoiseSVN":http://tortoisesvn.tigris.org/download.html 以及中文语言包（可选）。
+
+安装了语言包后，在任意文件夹中点击鼠标右键，选择“TortoiseSVN→Settings”菜单，并选中“简体中文”即可。 .[tip]
+
+[* 02_tortoisesvn_language.png *]
+
+TortoiseSVN 安装完成后，在任意文件夹中点击鼠标右键选择菜单“SVN 取出”或者（SVN Checkout）。然后参考下图输入文件库URL和导出位置。最后点击“确定”按钮完成导出操作。
+
+[* 02_tortoisesvn_checkout.png *]
+
+[* 02_tortoisesvn_co_complete.png *]
+
+以后要更新源代码，在 FleaPHP 所在文件夹图标上点击鼠标右键选择“SVN 更新”菜单即可。
+
