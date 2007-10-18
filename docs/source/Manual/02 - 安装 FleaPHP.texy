@@ -1,0 +1,38 @@
+安装 FleaPHP
+************
+
+下载 FleaPHP
+============
+
+FleaPHP 官方网站提供不同版本的下载，包括带有示例程序的完全版，和用于生产环境的核心库版本。
+
+-  完全版
+  -  除了 FleaPHP 框架本身，还附带有多个示例程序
+  -  示例程序可以用于体验 FleaPHP，也可以作为开发时的参考
+  -  附带有 APM Express 的完全版是一个绿色运行环境，包含有 Apache2/PHP5/MySQL5
+  -  框架和示例程序均使用 UTF-8 编码
+
+-  核心库
+  -  仅有 FleaPHP 框架本身，不包含其他文件
+  -  分为 UTF-8 版本和 GBK 版本，方便不同环境使用
+  -  去除了源代码中的所有注释和空行，减小文件体积
+
+下载 FleaPHP http://www.fleaphp.org/
+
+
+从 Subversion 仓库获取源代码
+============================
+
+如果你使用命令行版本的 Subversion，那么下面的命令将把最新版本的 FleaPHP 导出到 FleaPHP 子目录中。
+
+/---code
+svn checkout svn://svn.fleaphp.org/trunk/FleaPHP FleaPHP
+\---
+
+如果只需要 FleaPHP 核心库，使用下列命令：
+
+/---code
+svn checkout svn://svn.fleaphp.org/trunk/FleaPHP/FLEA FLEA
+\---
+
+FleaPHP 的 SVN 仓库地址为：svn://svn.fleaphp.org/trunk/FleaPHP .[tip]
