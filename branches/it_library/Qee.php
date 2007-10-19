@@ -148,14 +148,14 @@ abstract class Qee
      *
      * @var array
      */
-    protected static $OBJECTS = array();
+    private static $OBJECTS = array();
 
     /**
      * 类搜索路径
      *
      * @var array
      */
-    protected static $CLASS_PATH = array();
+    private static $CLASS_PATH = array();
 
 
     /**
@@ -557,6 +557,9 @@ abstract class Qee
 	Qee::loadCalss($class);
 }
 
+// 加入搜索路径
+Qee::import(dirname(__FILE__));
+Qee::import(dirname(__FILE__).'/Qee');
 
 /**
  * 重定向浏览器到指定的 URL
