@@ -1,0 +1,24 @@
+使用 FleaPHP 创建应用程序
+*************************
+
+为了方便开发者用 FleaPHP 创建自己的应用程序，FleaPHP 提供了 APM Express 开发环境和“应用程序模板”。现在我们首先安装 APM Express。如果读者有自己的开发环境，则只需要下载 FleaPHP 完全版解压缩即可，无需安装 APM Express。
+
+安装 APM Express 的步骤：
+
+1.  从 http://www.fleaphp.org/ 下载 fleaphp-apmxe.zip，其文件描述为：精简的 Apache/PHP/MySQL 环境，集成 FleaPHP 完全版
+2.  解压缩后运行 fleaphp-apmxe.exe 即可安装（假定安装到 **d:\fleaphp-apmxe** 目录）
+
+如果你的计算机上已经装有 Apache、IIS，以及 PHP、MySQL 等软件，则必须暂时停止运行这些软件，否则有可能和 APM Express 发生冲突。
+
+现在我们使用 FleaPHP 完全版中 Tool 目录下的应用程序模板为基础，创建一个新的应用程序。
+
+步骤：
+
+1.  将 **FleaPHP\Tool\codes\templates\mvc-app** 目录及其中所有文件复制到 **htdocs** 目录中，并重命名为 **myapp**
+2.  修改 **myapp\index.php** 中的 **`require('FLEA.php')`** 为适当路径，以便能够成功加载 **FLEA.php** 文件
+3.  启动 APM Express，在浏览器中输入地址 http://localhost/myapp/
+4.  如果上述操作正确无误，将看到如下画面：
+
+[* 04_start_myapp.png *]
+
+看到上述画面后，说明我们的准备工作已经做好了！

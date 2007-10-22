@@ -1,0 +1,69 @@
+使用模板输出页面内容
+********************
+
+简单点来理解，模板是一些单独的文件，包含有最终要输出到浏览器的页面内容。通过使用模板，我们可以很方便的把程序分为两大部分：表现内容和程序代码。
+
+过去，我们都是在一个 .php 文件中混合编写页面的功能代码和显示代码。这种混写的文件难以修改，而且不容易查找错误。所以我们现在用模板来将程序代码和表现内容分开。
+
+由于模板是如此有用，所以出现了一些专门的程序，可以帮助开发者简化模板的创建和修改，这类程序称为模板引擎。流行的模板引擎有 Smarty、Template Lite、Smart Template 等。在 FleaPHP 中，内置有对上述模板引擎的支持。
+
+
+使用 .php 文件来做模板
+======================
+
+如果使用 .php 文件作为模板，开发者只需要在动作方法中调用 **`_executeView()`** 方法即可。
+
+修改 **Posts.php**：
+
+/---code php
+<?php
+.....
+
+    function actionIndex()
+    {
+        $this->_executeView(APP_DIR . '/View/posts_index.php');
+    }
+
+.....
+\---
+
+**`_executeView()`** 方法的第一个参数是要读取的模板文件名。为了能够正确找到模板文件，这里我们使用了在 **index.php** 中定义的 **`APP_DIR`** 常量。
+
+修改代码后，刷新浏览器会看到一个错误信息：
+
+[* 08_template_not_found.png *]
+
+这个错误信息表示没有找到 **posts_index.php** 这个模板文件。所以我们得补上这个缺少的文件：
+
+在 **myapp\APP\View** 目录下创建 **posts_index.php** 文件：
+
+/---code php
+<?php defined('APP_DIR') or die(); // 阻止对模板文件的直接访问 ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>访问 Posts 控制器的 index 动作方法</title>
+</head>
+<body>
+<p>通过模板输出内容</p>
+<?php dump($_GET); ?>
+<p>nice</p>
+</body>
+</html>
+\---
+
+保存后刷新浏览器可以看到以下画面：
+
+[* 08_posts_index_tpl.png *]
+
+在模板文件中第一行的 **`<?php defined('APP_DIR') or die(); ?>`** 可以避免用户通过浏览器直接访问到模板文件，所以有必要加上这个安全保障。 .[tip]
+
+通过上面的例子，我们把产生页面输出内容的代码从程序中分离了出来。这个单独的文件不但可以方便网页设计师修改，而且也方便检查错误。
+
+
+使用 Smarty 模板引擎
+====================
+
+Smarty 是一个功能强大的模板引擎，可以为创建复杂的页面内容提供帮助。
+
