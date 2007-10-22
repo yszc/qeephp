@@ -1,0 +1,44 @@
+用 URL 访问应用程序功能
+***********************
+
+默认情况下，基于 FleaPHP 的应用程序总是使用 **index.php** 来访问程序的所有功能。为了确定要访问的功能，可以在 **index.php** 后面通过查询字符串来指明。例如：
+
+/---code
+www.my-site.com/index.php?controller=posts&action=list
+\---
+
+FleaPHP 也支持 PATHFINO 模式和更友好的 URL 重写，详情请参考相关文档。 .[tip]
+
+
+指定动作方法和控制器
+====================
+
+在 FleaPHP 应用程序中，所有提供给用户使用的功能，都表现为一个个动作方法。而一组相关的动作方法，会组织到一起，放入同一个控制器。例如应用程序中名为 **posts** 的控制器提供了所有对文章的操作功能，而 **photos** 控制器则提供了对照片的操作功能。
+
+为了正确访问需要的功能，我们必须在 **index.php** 后面通过特定的参数来指定要使用的控制器和动作方法名字。
+
+/---code
+www.my-site.com/index.php?controller=posts&action=list
+\---
+
+上面的 URL 中，***controller=posts*** 指定了要访问名为 **posts** 的控制器，而 ***action=list*** 指定了要访问 **posts** 控制器的 **list** 方法。
+
+实际上， **controller** 和 **action** 参数都是可选的。如果没有提供 **controller** 参数，则假定访问名为 ***default*** 的控制器。而没有提供 **action** 参数时，则假定访问名为 ***index*** 的动作方法。
+
+所以我们访问 http://localhost/myapp/ 实际上等同于访问：
+
+/---code
+http://localhost/myapp/index.php?controller=default&action=index
+\---
+
+
+附带更多参数
+============
+
+除了 **controller** 和 **action** 参数，用户可以在 URL 中使用任何参数，这些参数会被传递到 **$_GET** 全局数组中。例如：
+
+/---code
+www.my-site.com/index.php?controller=photos&action=list&sort=created&dir=desc
+\---
+
+明白如何通过 URL 参数指定要访问的控制器和动作方法后，我们来看看如何编写控制器和动作方法的代码。

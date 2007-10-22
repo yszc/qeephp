@@ -1,0 +1,33 @@
+传递参数到动作方法
+******************
+
+在基于 FleaPHP 的应用程序中，所有通过 URL 传递的参数都会保存在 **$_GET** 全局数组中。而通过 POST 方法提交的表单数据则会保存在 **$_POST** 全局数组中。这种参数传递方式和 PHP 默认方式完全一致，因此可以避免开发者重新学习一个不同的参数的传递机制。
+
+修改 **Posts.php** 的代码：
+
+/---code php
+<?php
+
+FLEA::loadClass('FLEA_Controller_Action');
+
+class Controller_Posts extends FLEA_Controller_Action
+{
+    function actionIndex()
+    {
+        // dump() 函数输出一个变量的值
+        dump($_GET);
+        echo 'nice';
+    }
+}
+\---
+
+然后在浏览器输入 URL：
+
+/---code
+http://localhost/myapp/index.php?controller=posts&sort=created&dir=desc
+\---
+
+刷新浏览器后可以看到我们的 **actionIndex** 动作方法成功输出了 **$_GET** 包含的所有值。
+
+[* 07_passing_arguments.png *]
+

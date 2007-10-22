@@ -1,0 +1,62 @@
+创建控制器和动作方法
+********************
+
+我们在浏览器中输入地址： http://localhost/myapp/index.php?controller=posts 会看到如下的错误画面：
+
+[* 06_not_found_controller.png *]
+
+这说明我们视图访问一个不存在的控制器。
+
+
+创建控制器
+==========
+
+打开 **myapp\APP\Controller** 目录，在该目录中创建一个名为 **Posts.php** 的文件，并输入如下内容：
+
+/---code php
+<?php
+
+FLEA::loadClass('FLEA_Controller_Action');
+
+class Controller_Posts extends FLEA_Controller_Action
+{
+}
+
+\---
+
+注意，由于在 Linux/Unix 下，文件名区分大小写。所以控制器的文件名必须和控制器名字完全一致，并且第一个字母大写。 .[caution]
+
+现在我们刷新浏览器，会看到一个略微不同的错误信息：
+
+[* 06_action_not_found.png *]
+
+
+编写动作方法
+============
+
+现在我们在 **Posts.php** 中添加默认的 **index** 动作方法：
+
+由于我们很可能在控制器中添加一些供多个动作方法共享的内部函数，而这些函数不应该被用户直接访问。所以 FleaPHP 要求所有动作方法的函数名都必须是 **action** 后面跟动作方法名。例如动作方法 **list** 对应的函数名就是 **actionList**，从而避免了用户访问不允许访问的控制器函数。 .[caution]
+
+/---code php
+<?php
+
+FLEA::loadClass('FLEA_Controller_Action');
+
+class Controller_Posts extends FLEA_Controller_Action
+{
+    function actionIndex()
+    {
+        echo 'nice';
+    }
+}
+\---
+
+保存后刷新浏览器，可以看到出现了 ***nice*** 字样，说明我们编写的动作方法被正确调用了。
+
+[* 06_first_action_done.png *]
+
+PHP 的函数名是不区分大小写的，但为了美观，通常写成第一个单词全小写，其他单词首字母大写的形式。 .[tip]
+
+
+
