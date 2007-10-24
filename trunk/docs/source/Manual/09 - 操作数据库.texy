@@ -1,0 +1,170 @@
+操作数据库
+**********
+
+要连接数据库，我们首先需要修改 **myapp\APP\Config\DATABASE.php** 文件。将其中的数据库用户名、密码、数据库类型等参数设置为要使用的选项：
+
+/---code php
+<?php
+
+// 定义数据库连接设置
+return array(
+    'dbDSN' => array(
+        // 要使用的数据库系统
+        'driver'        => 'mysql',
+        // 数据系统所在主机
+        'host'          => 'localhost',
+        // 登录名
+        'login'         => 'root',
+        // 密码
+        'password'      => '',
+        // 默认使用的数据库
+        'database'      => 'test',
+    ),
+);
+\---
+
+为了继续进行下面的内容，你需要使用 MySQL 数据库，并且创建了一个名为 **posts** 的数据表。创建该数据表的 SQL 脚本如下：
+
+/---code sql
+CREATE TABLE `posts` (
+  `post_id` int(11) NOT NULL auto_increment,
+  `title` varchar(255) NOT NULL default '',
+  `body` text NOT NULL,
+  `created` int(11) default '0',
+  `updated` int(11) default '0',
+  `comments_count` int(11) default '0',
+  PRIMARY KEY  (`post_id`)
+) DEFAULT CHARSET=utf8;
+
+INSERT INTO `posts` VALUES(1, '第一篇文章', '第一篇文章的内容', 1193251279, 1193251279, 0);
+INSERT INTO `posts` VALUES(2, '第二篇文章', '第二篇文章的内容', 1193251279, 1193251279, 0);
+
+\---
+
+注意，如果使用 MySQL 4.0 及更早版本，应该去掉上述脚本中的 `DEFAULT CHARSET=utf8` 内容。 .[caution]
+
+
+从数据库查询内容
+================
+
+准备工作做好后，我们就可以很简单的访问数据库了。我们修改 **myapp\APP\Controller\Posts.php** 文件的内容如下：
+
+/---code php
+.....
+
+    function actionIndex()
+    {
+        $dbo =& FLEA::getDBO();
+        $rowset = $dbo->getAll('SELECT * FROM posts');
+        dump($rowset);
+    }
+    
+.....
+\---
+
+现在刷新浏览器可以看到输出了：
+
+[* 09_query_rowset.png *]
+
+上面的代码中，`$dbo =& FLEA::getDBO()` 用于获取一个数据库访问对象。这个对象提供了查询数据库的各种方法。所以紧接着我们就用 `$dbo->getAll()` 进行了查询操作，并获得了结果。
+
+FleaPHP 的数据库访问对象提供了不少有用的方法，包括：
+
+-  connect() 连接数据库
+-  close() 关闭数据库连接
+-  execute() 执行一个查询
+-  selectLimit() 分页查询
+-  getAll() 执行查询，并返回所有查询结果
+-  getRow() 执行查询，返回第一行结果
+-  getOne() 执行查询，返回第一行第一列的内容
+-  getCol() 执行查询，返回所有行第一列的内容
+
+其他方法还包括数据转义、创建序列、查询表结构、数据库事物等功能。详细功能列表请参考 API 手册。
+
+下面我们试试看其他数据库操作：
+
+/---code php
+.....
+
+    function actionIndex()
+    {
+        $dbo =& FLEA::getDBO();
+        dump($dbo->getRow('SELECT * FROM posts ORDER BY created'));
+        dump($dbo->getCol('SELECT title FROM posts'));
+    }
+
+.....
+\---
+
+FleaPHP 的数据库访问对象有一个功能强大的 `execute()` 方法，可以完成更灵活的操作，例如：
+
+/---code php
+// 执行查询，并遍历结果集
+$res = $dbo->execute('SELECT title, body, created FROM posts');
+while ($row = $dbo->fetchAssoc($res)) {
+    dump($row, $row['title']);
+}
+// 释放查询资源
+$dbo->freeRes($res);
+\---
+
+上述代码执行结果如下：
+
+[* 09_query_by_execute.png *]
+
+下面一个例子使用 `execute()` 提供的参数化查询能力，让开发者可以在 SQL 语句中使用不同的参数：
+
+/---code php
+// 执行参数化查询
+$sql = 'SELECT post_id, title, body, created FROM posts WHERE post_id = ?';
+$res = $dbo->execute($sql, array(2));
+$row = $dbo->fetchAssoc($res);
+dump($row, $row['title']);
+// 释放查询资源
+$dbo->freeRes($res);
+\---
+
+
+插入和更新记录
+==============
+
+FleaPHP 的数据库访问对象提供了简便的方法来完成插入记录操作：
+
+/---code php
+$row = array(
+    'title' => '文章编号：' . rand(),
+    'body' => '文章内容',
+    'created' => time(),
+    'updated' => time(),
+);
+$sql = $dbo->getInsertSQL($row, 'posts');
+if ($dbo->execute($sql, $row)) {
+    echo '插入记录成功，最新记录的 post_id 是 ' . $dbo->insertId();
+}
+\---
+
+可以看到上述代码非常简单，根本无需自己编写 SQL 语句。执行上述代码两次后，通过 phpMyAdmin 查看 **posts** 数据表的内容如下：
+
+[* 09_check_insert.png *]
+
+同样，更新操作也可以很简便的完成：
+
+/---code php
+// 首先查询现有记录
+$row = $dbo->getRow('SELECT * FROM posts WHERE post_id = 2');
+// 修改记录内容，并保存到数据库
+$row['created'] = time();
+$row['updated'] = time();
+$row['body'] .= '.追加的内容';
+
+$sql = $dbo->getUpdateSQL($row, 'post_id', 'posts');
+if ($dbo->execute($sql, $row)) {
+    echo '成功更新 ' . $dbo->affectedRows() . ' 条记录';
+    dump($row, '更新后的记录');
+}
+\---
+
+运行效果如下；
+
+[* 09_check_update.png *]
+
