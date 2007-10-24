@@ -1,7 +1,11 @@
 创建控制器和动作方法
 ********************
 
-我们在浏览器中输入地址： http://localhost/myapp/index.php?controller=posts 会看到如下的错误画面：
+我们在浏览器中输入以下地址会看到一个错误画面：
+
+/---code
+http://localhost/myapp/index.php?controller=posts
+\---
 
 [* 06_not_found_controller.png *]
 
