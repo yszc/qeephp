@@ -23,7 +23,7 @@ return array(
 );
 \---
 
-为了继续进行下面的内容，你需要使用 MySQL 数据库，并且创建了一个名为 **posts** 的数据表。创建该数据表的 SQL 脚本如下：
+为了继续进行下面的内容，你需要使用 MySQL 数据库，并且创建一个名为 **posts** 的数据表。创建该数据表的 SQL 脚本如下：
 
 /---code sql
 CREATE TABLE `posts` (
@@ -143,7 +143,7 @@ if ($dbo->execute($sql, $row)) {
 }
 \---
 
-可以看到上述代码非常简单，根本无需自己编写 SQL 语句。执行上述代码两次后，通过 phpMyAdmin 查看 **posts** 数据表的内容如下：
+可以看到上述代码非常简单，根本无需自己编写 SQL 语句。执行上述代码三次后，通过 phpMyAdmin 查看 **posts** 数据表的内容可以看到已经多出来三行新记录：
 
 [* 09_check_insert.png *]
 
