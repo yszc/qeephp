@@ -65,5 +65,112 @@
 使用 Smarty 模板引擎
 ====================
 
-Smarty 是一个功能强大的模板引擎，可以为创建复杂的页面内容提供帮助。
+Smarty 是一个功能强大的模板引擎，可以为创建复杂的页面内容提供帮助。而且 FleaPHP 中还为 Smarty 提供了不少辅助功能，让开发者可以更容易的使用 Smarty。
+
+要在 FleaPHP 应用程序中使用 Smarty 模板引擎，需要做一点准备工作。
+
+步骤：
+
+1.  从 http://smarty.php.net 下载最新版本的 Smarty 引擎源代码：
+
+[* 08_download_smarty.png *]
+
+<br />
+
+2.  将所有文件解压缩到 **d:\fleaphp-apmxe\htdocs\myapp\APP** 目录中，如下图：
+
+[* 08_install_smarty.png *]
+
+<br />
+
+3.  修改 **myapp\APP\Config\APP_INF.php** 文件，加入以下内容：
+
+/---code php
+<?php
+
+return array(
+
+    .....
+    
+    /**
+     * 指定使用 Smarty 模板引擎
+     */
+    'view'                      => 'FLEA_View_Smarty',
+
+    /**
+     * 指定 Smarty 模板引擎必须的参数
+     */
+    'viewConfig'                => array(
+        'smartyDir'     => APP_DIR . '/Smarty-2.6.18/libs',
+        'template_dir'  => APP_DIR . '/View',
+        'compile_dir'   => APP_DIR . '/_Cache',
+    ),
+
+    .....
+);
+\---
+
+<br />
+
+4.  将 **myapp\APP\View\posts_index.php** 重命名为 **posts_index.tpl**，并且修改内容为：
+
+/---code html
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>访问 Posts 控制器的 index 动作方法</title>
+</head>
+<body>
+<p>通过模板输出内容</p>
+{$dump}
+<p>nice</p>
+</body>
+</html>
+\---
+
+<br />
+
+5.  最后修改 **myapp\APP\Controller\Posts.php** 文件的内容：
+
+/---code php
+<?php
+
+.....
+
+    function actionIndex()
+    {
+        $viewdata = array(
+            'dump' => dump($_GET, '', true),
+        );
+        $this->_executeView('posts_index.tpl', $viewdata);
+    }
+
+.....
+\---
+
+上述修改完成后，刷新浏览器可以看到我们获得了预期的结果。
+
+[* 08_smarty_output.png *]
+
+由于在使用 Smarty 模板引擎时，通常不推荐直接在模板中写入 PHP 代码。所以我们需要把模板中对 `dump()` 函数的调用移到控制器中，并且用一个变量来保存 `dump()` 函数的返回结果。
+
+注意控制器中的下列代码：
+
+/---code php
+$viewdata = array(
+    'dump' => dump($_GET, '', true),
+);
+$this->_executeView('posts_index.tpl', $viewdata);
+\---
+
+上述代码将 `dump()` 函数的返回结果保存到了一个数组变量 `$viewdata` 中，并且指定了一个键名 `dump`。接下来调用 `_executeView()` 函数显示模板，并且传入参数 `$viewdata`。
+
+`_executeView()` 函数会将 `$viewdata` 中的内容传递给 Smarty 模板引擎。而 Smarty 模板引擎会把 `$viewdata` 中的内容转换为模板中可用的模板变量。模板变量的名字就是 `$viewdata` 的键名（例如 `dump`），而模板变量的值则是该键名对应的值（也就是 `dump()` 函数的返回结果）。
+
+所以，最终我们可以在模板中使用 {$dump} 来输出结果。要了解有关 Smarty 模板引擎的更进一步信息，请阅读 Smarty 的用户手册。
+
+FleaPHP 除了支持 Smarty 模板引擎，还支持 Template Lite（一个 Smarty 的精简版本）、Smart Template（小巧的模板引擎）等。对于这些模板引擎，只需要修改配置文件中的 `view` 和 `viewConfig` 项目即可。控制器中对 `_executeView()` 函数的调用通常无需修改。
+
+正是这种适应多种模板引擎的能力，为开发者提供了选择的多样性和灵活性。
 
