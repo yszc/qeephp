@@ -22,6 +22,11 @@
  */
 
 
+/**
+ * 载入公共函数库
+ */
+//require_once 'FLEA/Functions.php';
+
 //include_once 'Qee/Container.php';
 
 /**
@@ -29,7 +34,7 @@
  */
 
 // 定义 QeePHP 版本号常量和 QeePHP 所在路径
-define('QEE_VERSION', '1.8');
+define('QEE_VERSION', '2.0.1 alpha');
 
 // 简写的 DIRECTORY_SEPARATOR
 define('DS', DIRECTORY_SEPARATOR);
@@ -42,6 +47,10 @@ define('URL_PATHINFO',  2);
 
 // URL 重写模式
 define('URL_REWRITE',   3);
+
+// URL 路由模式， 待实现
+define('URL_ROUTER',    4);
+
 
 /**#@+
  * 定义 RBAC 基本角色常量
@@ -69,8 +78,6 @@ if (DEBUG_MODE) {
     //error_reporting(0);
 }
 
-// 设置异常处理例程
-set_exception_handler('__QEE_EXCEPTION_HANDLER');
 
 /**
  * Qee 类提供了 QeePHP 框架的基本服务
@@ -104,14 +111,26 @@ abstract class Qee
     /**
      * 取出指定名字的设置值
      *
-     * @param string $option
+     * @param string $key
      * @param mixed $default
      *
      * @return mixed
      */
-    static function getAppInf($option, $default = null)
+    static function getAppInf($key, $default = null)
     {
-        return isset(self::$APP_INF[$option]) ? self::$APP_INF[$option] : $default;
+		if(is_null($key)) return self::$APP_INF;
+		if(isset(self::$APP_INF[$key])) return self::$APP_INF[$key];
+		$arr = explode(".", $key);
+		//用引用方式查找关联数组
+		$pt  = &self::$APP_INF;
+		while($arr)
+		{
+			if(!is_array($pt)) return $default;
+			$key = array_shift($arr);
+			$pt = &$pt[$key];
+		}
+		if (null === $pt) return $default;
+		return $pt;
     }
 
     /**
@@ -212,9 +231,9 @@ abstract class Qee
 
         self::loadFile($filename, true, $dirs);
 
-        if (!class_exists($classname, false)) {
-            require_once 'Qee/Exception/ExpectedClass.php';
-            throw new Qee_Exception_ExpectedClass($classname, $filename);
+        if ( !(class_exists($className, false) || interface_exists($className, false)) ) {
+            //require_once 'Qee/Exception/ExpectedClass.php';
+            throw new Qee_Exception_ExpectedClass($className, $filename);
         }
     }
 
@@ -239,76 +258,74 @@ abstract class Qee
         return self::register(new $classname(), $classname);
     }
 
-    /**
-     * 以特定名字注册一个对象，以便稍后用 registry() 方法取回该对象。
-     * 如果指定名字已经被使用，则抛出异常
-     *
-     * example:
-     * <code>
-     * // 注册一个对象
-     * Qee_Container::register(new MyObject(), 'my_obejct');
-     * .....
-     * // 稍后取出对象
-     * $obj = Qee::registry('my_object');
-     * </code>
-     *
-     * Qee_Container 提供一个对象注册表，开发者可以将一个对象以特定名称注册到其中。
-     *
-     * 当没有提供 $name 参数时，则以对象的类名称作为注册名。
-     *
-     * 当 $persistent 参数为 true 时，对象将被放入持久存储区。在下一次执行脚本时，
-     * 可以通过 Qee_Container::registry() 取出放入持久存储区的对象，无需重新构造对象。
-     * 利用这个特性，开发者可以将一些需要大量构造时间的对象放入持久存储区，
-     * 从而避免每一次执行脚本都去做对象构造操作。
-     *
-     * 使用哪一种持久化存储区来保存对象，由应用程序设置 objectPersistentProvier 决定。
-     * 该设置指定一个提供持久化服务的对象名。
-     *
-     * example:
-     * <code>
-     * if (!Qee_Container::isRegister('ApplicationObject')) {
-     * 		Qee_Container::loadClass('Application');
-     * 		Qee_Container::register(new Application(), 'ApplicationObject', true);
-     * }
-     * $app = Qee_Container::registry('ApplicationObject');
-     * </code>
-     *
-     * @param object $obj 要注册的对象
-     * @param string $name 注册的名字
-     * @param boolean $persistent 是否将对象放入持久化存储区
-     */
+	/**
+	 * 以特定名字注册一个对象，以便稍后用 registry() 方法取回该对象。
+	 * 如果指定名字已经被使用，则抛出异常
+	 *
+	 * example:
+	 * <code>
+	 * // 注册一个对象
+	 * Container::register(new MyObject(), 'my_obejct');
+	 * .....
+	 * // 稍后取出对象
+	 * $obj = Qee::registry('my_object');
+	 * </code>
+	 *
+	 * Container 提供一个对象注册表，开发者可以将一个对象以特定名称注册到其中。
+	 *
+	 * 当没有提供 $name 参数时，则以对象的类名称作为注册名。
+	 *
+	 * 当 $persistent 参数为 true 时，对象将被放入持久存储区。在下一次执行脚本时，
+	 * 可以通过 Container::registry() 取出放入持久存储区的对象，无需重新构造对象。
+	 * 利用这个特性，开发者可以将一些需要大量构造时间的对象放入持久存储区，
+	 * 从而避免每一次执行脚本都去做对象构造操作。
+	 *
+	 * 使用哪一种持久化存储区来保存对象，由应用程序设置 objectPersistentProvier 决定。
+	 * 该设置指定一个提供持久化服务的对象名。
+	 *
+	 * example:
+	 * <code>
+	 * if (!Container::isRegister('ApplicationObject')) {
+	 * 		Container::loadClass('Application');
+	 * 		Container::register(new Application(), 'ApplicationObject', true);
+	 * }
+	 * $app = Container::registry('ApplicationObject');
+	 * </code>
+	 *
+	 * @param object $obj 要注册的对象
+	 * @param string $name 注册的名字
+	 * @param boolean $persistent 是否将对象放入持久化存储区
+	 */
     static function register($obj, $name = null, $persistent = false)
     {
-        // TODO: 实现对 $persistent 参数的支持
-
         if (is_null($name)) {
             $name = get_class($obj);
         }
         if (!isset(self::$OBJECTS[$name])) {
             self::$OBJECTS[$name] = $obj;
-            return;
+			return self::$OBJECTS[$name];
         }
 
-        require_once 'Qee/Exception/DuplicateEntry.php';
+        //require_once 'Qee/Exception/DuplicateEntry.php';
         throw new Exception_DuplicateEntry('Qee_Container::register($name)', $name);
     }
 
-    /**
-     * 取得指定名字的对象实例，如果指定名字的对象不存在则抛出异常
-     *
-     * 使用示例参考 Qee_Container::register()。
-     *
-     * @param string $name 注册名
-     *
-     * @return object
-     */
+	/**
+	 * 取得指定名字的对象实例，如果指定名字的对象不存在则抛出异常
+	 *
+	 * 使用示例参考 Container::register()。
+	 *
+	 * @param string $name 注册名
+	 *
+	 * @return object
+	 */
     static function registry($name)
     {
         if (isset(self::$OBJECTS[$name])) {
             return self::$OBJECTS[$name];
         }
 
-        require_once 'Qee/Exception/NonExistentEntry.php';
+        //require_once 'Qee/Exception/NonExistentEntry.php';
         throw new Exception_NonExistentEntry('Qee_Container::registry($name)', $name);
     }
 
@@ -426,47 +443,16 @@ abstract class Qee
     }
 
     /**
-     * 初始化 WebControls，返回 Qee_WebControls 对象实例
-     *
-     * @return Qee_WebControls
-     */
-    static function initWebControls()
-    {
-        return self::getSingleton(self::getAppInf('webControlsClassName'));
-    }
-
-    /**
-     * 初始化 Ajax，返回 Qee_Ajax 对象实例
-     *
-     * @return Qee_Ajax
-     */
-    static function initAjax()
-    {
-        return self::getSingleton(self::getAppInf('ajaxClassName'));
-    }
-
-    /**
-     * 载入一个助手，返回助手对象的一个实例
-     *
-     * @param string $helperName
-     */
-    static function loadHelper($helperName)
-    {
-        $settingName = 'helper.' . strtolower($helperName);
-        $setting = self::getAppInf($settingName);
-        if ($setting) {
-            Qee_Container::loadFile($setting, true);
-        }
-    }
-
-    /**
      * QeePHP 应用程序 MVC 模式入口
      */
     static function runMVC()
     {
         self::init();
-        $dispatcher = self::getSingleton(self::getAppInf('dispatcher'));
-        return $dispatcher->dispatching();
+		$dispatcherName = self::getAppInf('dispatcher');
+		$dispatcher = self::getSingleton($dispatcherName);
+		//var_dump($dispatcher);
+		
+		return $dispatcher->dispatch();
     }
 
     /**
@@ -480,6 +466,14 @@ abstract class Qee
         if (!$firstTime) { return; }
         $firstTime = false;
 
+		/**
+		 * 自动加载对象
+		 */
+		spl_autoload_register(array('Qee', 'loadClass'));
+		/**
+		 * 设置异常处理例程
+		 */
+		set_exception_handler(array('Qee', 'printError'));
         /**
          * 载入日志服务提供程序
          */
@@ -508,9 +502,9 @@ abstract class Qee
         set_magic_quotes_runtime(0);
 
         // 根据 URL 模式设置，决定是否要载入 URL 分析过滤器
-        if (self::getAppInf('urlMode') != URL_STANDARD) {
-            require 'Qee/Filter/Uri.php';
-        }
+        //if (self::getAppInf('urlMode') != URL_STANDARD) {
+        //    require 'Qee/Filter/Uri.php';
+        //}
 
         // 处理 requestFilters
         foreach ((array)self::getAppInf('requestFilters') as $file) {
@@ -523,13 +517,13 @@ abstract class Qee
         }
 
         // 载入指定的 session 服务提供程序
-        if (self::getAppInf('sessionProvider')) {
-            self::getSingleton(self::getAppInf('sessionProvider'));
-        }
+        //if (self::getAppInf('sessionProvider')) {
+        //    self::getSingleton(self::getAppInf('sessionProvider'));
+        //}
         // 自动起用 session 会话
-        if (self::getAppInf('autoSessionStart')) {
-            session_start();
-        }
+        //if (self::getAppInf('autoSessionStart')) {
+        //    session_start();
+        //}
 
         // 定义 I18N 相关的常量
         define('RESPONSE_CHARSET', self::getAppInf('responseCharset'));
@@ -548,67 +542,49 @@ abstract class Qee
             header('Content-Type: text/html; charset=' . self::getAppInf('responseCharset'));
         }
     }
+	
+	/**
+	 * 调试和错误处理相关的全局函数
+	 */
+
+	/**
+	 * QeePHP 默认的异常处理例程
+	 *
+	 * @package Core
+	 *
+	 * @param Exception $ex
+	 */
+	function printError(Exception $ex)
+	{
+	    if (!self::getAppInf('displayErrors')) { exit; }
+	    if (self::getAppInf('friendlyErrorsMessage')) {
+	        $language = self::getAppInf('defaultLanguage');
+	        $language = preg_replace('/[^a-z0-9\-_]+/i', '', $language);
+
+	        $exclass = strtoupper(get_class($ex));
+	        $template = "Qee/_Errors/{$language}/{$exclass}.php";
+	        if (!file_exists($template)) {
+	            $template = "Qee/_Errors/{$language}/QEE_EXCEPTION.php";
+	            if (!file_exists($template)) {
+	                $template = "Qee/_Errors/default/QEE_EXCEPTION.php";
+	            }
+	        }
+	        include $template;
+	    } else {
+	        Qee_Exception::printEx($ex);
+	    }
+	    exit;
+	}
+
 }
 
 
 
- function __autoload($class)
-{
-	Qee::loadCalss($class);
-}
 
 // 加入搜索路径
 Qee::import(dirname(__FILE__));
 Qee::import(dirname(__FILE__).'/Qee');
 
-/**
- * 重定向浏览器到指定的 URL
- *
- * @param string $url 要重定向的 url
- * @param int $delay 等待多少秒以后跳转
- * @param bool $js 指示是否返回用于跳转的 JavaScript 代码
- * @param bool $jsWrapped 指示返回 JavaScript 代码时是否使用 <script> 标签进行包装
- * @param bool $return 指示是否返回生成的 JavaScript 代码
- */
-function redirect($url, $delay = 0, $js = false, $jsWrapped = true, $return = false)
-{
-    $delay = (int)$delay;
-    if (!$js) {
-        if (headers_sent() || $delay > 0) {
-            echo <<<EOT
-<html>
-<head>
-<meta http-equiv="refresh" content="{$delay};URL={$url}" />
-</head>
-</html>
-EOT;
-            exit;
-        } else {
-            header("Location: {$url}");
-            exit;
-        }
-    }
-
-    $out = '';
-    if ($jsWrapped) {
-        $out .= '<script language="JavaScript" type="text/javascript">';
-    }
-    if ($delay > 0) {
-        $out .= "window.setTimeout(function () { document.location='{$url}'; }, {$delay});";
-    } else {
-        $out .= "document.location='{$url}';";
-    }
-    if ($jsWrapped) {
-        $out .= '</script>';
-    }
-
-    if ($return) {
-        return $out;
-    }
-
-    echo $out;
-    exit;
-}
 
 /**
  * 构造 url
@@ -634,8 +610,8 @@ EOT;
  * $url = url('Login', 'checkUser');
  * // $url 现在为 ?controller=Login&action=checkUser
  *
- * $url = url('Login', 'checkUser', array('username' => 'dualface'));
- * // $url 现在为 ?controller=Login&action=checkUser&username=dualface
+ * $url = url('Login', 'checkUser', array('name' => 'test'));
+ * // $url 现在为 ?controller=Login&action=checkUser&name=test
  *
  * $url = url('Article', 'View', array('id' => 1'), '#details');
  * // $url 现在为 ?controller=Article&action=View&id=1#details
@@ -651,402 +627,9 @@ EOT;
  */
 function url($controllerName = null, $actionName = null, $params = null, $anchor = null, $options = null)
 {
-    static $baseurl = null, $currentBootstrap = null;
 
-    // 确定当前的 URL 基础地址和入口文件名
-    if ($baseurl == null) {
-        $baseurl = detect_uri_base();
-        $p = strrpos($baseurl, '/');
-        $currentBootstrap = substr($baseurl, $p + 1);
-        $baseurl = substr($baseurl, 0, $p);
-    }
-
-    // 确定生成 url 要使用的 bootstrap
-    $options = (array)$options;
-    if (isset($options['bootstrap'])) {
-        $bootstrap = $options['bootstrap'];
-    } else if ($currentBootstrap == '') {
-        $bootstrap = Qee::getAppInf('urlBootstrap');
-    } else {
-        $bootstrap = $currentBootstrap;
-    }
-
-    // 确定控制器和动作的名字
-    if ($bootstrap != $currentBootstrap && $currentBootstrap != '') {
-        $controllerName = !empty($controllerName) ? $controllerName : null;
-        $actionName = !empty($actionName) ? $actionName : null;
-    } else {
-        $controllerName = !empty($controllerName) ? $controllerName : Qee::getAppInf('defaultController');
-        $actionName = !empty($actionName) ? $actionName : Qee::getAppInf('defaultAction');
-    }
-    $lowerChar = isset($options['lowerChar']) ? $options['lowerChar'] : Qee::getAppInf('urlLowerChar');
-    if ($lowerChar) {
-        $controllerName = strtolower($controllerName);
-        $actionName = strtolower($actionName);
-    }
-
-    $url = '';
-    $mode = isset($options['mode']) ? $options['mode'] : Qee::getAppInf('urlMode');
-
-    // PATHINFO 和 REWRITE 模式
-    if ($mode == URL_PATHINFO || $mode == URL_REWRITE) {
-        $url = $baseurl;
-        if ($mode == URL_PATHINFO) {
-            $url .= '/' . $bootstrap;
-        }
-        if ($controllerName != '' && $actionName != '') {
-            $pps = isset($options['parameterPairStyle']) ? $options['parameterPairStyle'] : Qee::getAppInf('urlParameterPairStyle');
-            $url .= '/' . rawurlencode($controllerName) . '/' . rawurlencode($actionName);
-            if (is_array($params) && !empty($params)) {
-                $url .= '/' . encode_url_args($params, $mode, $pps);
-            }
-        }
-        if ($anchor) { $url .= '#' . $anchor; }
-        return $url;
-    }
-
-    // 标准模式
-    $alwaysUseBootstrap = isset($options['alwaysUseBootstrap']) ? $options['alwaysUseBootstrap'] : Qee::getAppInf('urlAlwaysUseBootstrap');
-    $url = $baseurl . '/';
-
-    if ($alwaysUseBootstrap || $bootstrap != Qee::getAppInf('urlBootstrap')) {
-        $url .= $bootstrap;
-    }
-
-    $parajoin = '?';
-    if ($controllerName != '') {
-        $url .= $parajoin . Qee::getAppInf('controllerAccessor'). '=' . rawurlencode($controllerName);
-        $parajoin = '&';
-    }
-    if ($actionName != '') {
-        $url .= $parajoin . Qee::getAppInf('actionAccessor') . '=' . rawurlencode($actionName);
-        $parajoin = '&';
-    }
-
-    if (is_array($params) && !empty($params)) {
-        $url .= $parajoin . encode_url_args($params, $mode);
-    }
-    if ($anchor) { $url .= '#' . $anchor; }
-
-    return $url;
-}
-
-/**
- * 获得当前请求的 URL 地址
- *
- * 感谢 tsingson 提供该函数，用于修正 QeePHP 原有 url() 函数不能适应 CGI 模式的问题。
- *
- * @param boolean $queryMode 是否将 URL 查询参数附加在返回结果中
- *
- * @return string
- */
-function detect_uri_base($queryMode = false)
-{
-    $aURL = array();
-
-    // Try to get the request URL
-    if (!empty($_SERVER['REQUEST_URI'])) {
-        $_SERVER['REQUEST_URI'] = str_replace(array('"',"'",'<','>'), array('%22','%27','%3C','%3E'), $_SERVER['REQUEST_URI']);
-        $p = strpos($_SERVER['REQUEST_URI'], ':');
-        if ($p > 0 && substr($_SERVER['REQUEST_URI'], $p + 1, 2) != '//') {
-            $aURL = array('path' => $_SERVER['REQUEST_URI']);
-        } else {
-            $aURL = parse_url($_SERVER['REQUEST_URI']);
-        }
-        if (isset($aURL['path']) && isset($_SERVER['PATH_INFO'])) {
-            $aURL['path'] = substr($aURL['path'], 0, - strlen($_SERVER['PATH_INFO']));
-        }
-    }
-
-    // Fill in the empty values
-    if (empty($aURL['scheme'])) {
-        if (!empty($_SERVER['HTTP_SCHEME'])) {
-            $aURL['scheme'] = $_SERVER['HTTP_SCHEME'];
-        } else {
-            $aURL['scheme'] = (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) != 'off') ? 'https' : 'http';
-        }
-    }
-
-    if (empty($aURL['host'])) {
-        if (!empty($_SERVER['HTTP_X_FORWARDED_HOST'])) {
-            $p = strpos($_SERVER['HTTP_X_FORWARDED_HOST'], ':');
-            if ($p > 0) {
-                $aURL['host'] = substr($_SERVER['HTTP_X_FORWARDED_HOST'], 0, $p);
-                $aURL['port'] = substr($_SERVER['HTTP_X_FORWARDED_HOST'], $p + 1);
-            } else {
-                $aURL['host'] = $_SERVER['HTTP_X_FORWARDED_HOST'];
-            }
-        } else if (!empty($_SERVER['HTTP_HOST'])) {
-            $p = strpos($_SERVER['HTTP_HOST'], ':');
-            if ($p > 0) {
-                $aURL['host'] = substr($_SERVER['HTTP_HOST'], 0, $p);
-                $aURL['port'] = substr($_SERVER['HTTP_HOST'], $p + 1);
-            } else {
-                $aURL['host'] = $_SERVER['HTTP_HOST'];
-            }
-        } else if (!empty($_SERVER['SERVER_NAME'])) {
-            $aURL['host'] = $_SERVER['SERVER_NAME'];
-        }
-    }
-
-    if (empty($aURL['port']) && !empty($_SERVER['SERVER_PORT'])) {
-        $aURL['port'] = $_SERVER['SERVER_PORT'];
-    }
-
-    if (empty($aURL['path'])) {
-        if (!empty($_SERVER['PATH_INFO'])) {
-            $sPath = parse_url($_SERVER['PATH_INFO']);
-        } else {
-            $sPath = parse_url($_SERVER['PHP_SELF']);
-        }
-        $aURL['path'] = str_replace(array('"',"'",'<','>'), array('%22','%27','%3C','%3E'), $sPath['path']);
-        unset($sPath);
-    }
-
-    // Build the URL: Start with scheme, user and pass
-    $sURL = $aURL['scheme'].'://';
-    if (!empty($aURL['user'])) {
-        $sURL .= $aURL['user'];
-        if (!empty($aURL['pass'])) {
-            $sURL .= ':'.$aURL['pass'];
-        }
-        $sURL .= '@';
-    }
-
-    // Add the host
-    $sURL .= $aURL['host'];
-
-    // Add the port if needed
-    if (!empty($aURL['port']) && (($aURL['scheme'] == 'http' && $aURL['port'] != 80) || ($aURL['scheme'] == 'https' && $aURL['port'] != 443))) {
-        $sURL .= ':'.$aURL['port'];
-    }
-
-    $sURL .= $aURL['path'];
-
-    // Add the path and the query string
-    if ($queryMode && isset($aURL['query'])) {
-        $sURL .= $aURL['query'];
-    }
-
-    unset($aURL);
-    return $sURL;
-}
-
-/**
- * 将数组转换为可通过 url 传递的字符串连接
- *
- * 用法：
- * <code>
- * $string = encode_url_args(array('username' => 'dualface', 'mode' => 'md5'));
- * // $string 现在为 username=dualface&mode=md5
- * </code>
- *
- * @param array $args
- * @param enum $urlMode
- * @param string $parameterPairStyle
- *
- * @return string
- */
-function encode_url_args($args, $urlMode = URL_STANDARD, $parameterPairStyle = null)
-{
-    $str = '';
-    switch ($urlMode) {
-    case URL_STANDARD:
-        if (is_null($parameterPairStyle)) {
-            $parameterPairStyle = '=';
-        }
-        $sc = '&';
-        break;
-    case URL_PATHINFO:
-    case URL_REWRITE:
-        if (is_null($parameterPairStyle)) {
-            $parameterPairStyle = Qee::getAppInf('urlParameterPairStyle');
-        }
-        $sc = '/';
-        break;
-    }
-
-    foreach ($args as $key => $value) {
-        if (is_array($value)) {
-            $append = encode_url_args($value, $urlMode);
-        } else {
-            $append = rawurlencode($key) . $parameterPairStyle . rawurlencode($value);
-        }
-        if (substr($str, -1) != $sc) {
-            $str .= $sc;
-        }
-        $str .= $append;
-    }
-    return substr($str, 1);
-}
-
-/**
- * 转换 HTML 特殊字符，等同于 htmlspecialchars()
- *
- * @param string $text
- *
- * @return string
- */
-function h($text)
-{
-    return htmlspecialchars($text);
-}
-
-/**
- * 转换 HTML 特殊字符以及空格和换行符
- *
- * 空格替换为 &nbsp; ，换行符替换为 <br />。
- *
- * @param string $text
- *
- * @return string
- */
-function t($text)
-{
-    return nl2br(str_replace(' ', '&nbsp;', htmlspecialchars($text)));
-}
-
-/**
- * 通过 JavaScript 脚本显示提示对话框，并关闭窗口或者重定向浏览器
- *
- * 用法：
- * <code>
- * js_alert('Dialog message', '', $url);
- * // 或者
- * js_alert('Dialog message', 'window.close();');
- * </code>
- *
- * @param string $message 要显示的消息
- * @param string $after_action 显示消息后要执行的动作
- * @param string $url 重定向位置
- */
-function js_alert($message = '', $after_action = '', $url = '')
-{
-    $out = "<script language=\"javascript\" type=\"text/javascript\">\n";
-    if (!empty($message)) {
-        $out .= "alert(\"";
-        $out .= str_replace("\\\\n", "\\n", t2js(addslashes($message)));
-        $out .= "\");\n";
-    }
-    if (!empty($after_action)) {
-        $out .= $after_action . "\n";
-    }
-    if (!empty($url)) {
-        $out .= "document.location.href=\"";
-        $out .= $url;
-        $out .= "\";\n";
-    }
-    $out .= "</script>";
-    echo $out;
-    exit;
-}
-
-/**
- * 将任意字符串转换为 JavaScript 字符串（不包括首尾的"）
- *
- * @param string $content
- *
- * @return string
- */
-function t2js($content)
-{
-    return str_replace(array("\r", "\n"), array('', '\n'), addslashes($content));
-}
-
-/**
- * 调试和错误处理相关的全局函数
- */
-
-/**
- * QeePHP 默认的异常处理例程
- *
- * @package Core
- *
- * @param Exception $ex
- */
-function __QEE_EXCEPTION_HANDLER(Exception $ex)
-{
-   // if (!Qee::getAppInf('displayErrors')) { exit; }
-    if (Qee::getAppInf('friendlyErrorsMessage')) {
-        $language = Qee::getAppInf('defaultLanguage');
-        $language = preg_replace('/[^a-z0-9\-_]+/i', '', $language);
-
-        $exclass = strtoupper(get_class($ex));
-        $template = "Qee/_Errors/{$language}/{$exclass}.php";
-        if (!file_exists($template)) {
-            $template = "Qee/_Errors/{$language}/QEE_EXCEPTION.php";
-            if (!file_exists($template)) {
-                $template = "Qee/_Errors/default/QEE_EXCEPTION.php";
-            }
-        }
-        include $template;
-    } else {
-        Qee_Exception::printEx($ex);
-    }
-    exit;
-}
-
-/**
- * 输出变量的内容，通常用于调试
- *
- * @package Core
- *
- * @param mixed $vars 要输出的变量
- * @param string $label
- * @param boolean $return
- */
-function dump($vars, $label = '', $return = false)
-{
-    if (ini_get('html_errors')) {
-        $content = "<pre>\n";
-        if ($label != '') {
-            $content .= "<strong>{$label} :</strong>\n";
-        }
-        $content .= htmlspecialchars(print_r($vars, true));
-        $content .= "\n</pre>\n";
-    } else {
-        $content = $label . " :\n" . print_r($vars, true);
-    }
-    if ($return) { return $content; }
-    echo $content;
-    return null;
-}
-
-/**
- * 显示应用程序执行路径，通常用于调试
- *
- * @package Core
- *
- * @return string
- */
-function dump_trace()
-{
-    $debug = debug_backtrace();
-    $lines = '';
-    $index = 0;
-    for ($i = 0; $i < count($debug); $i++) {
-        $file = $debug[$i];
-        if ($file['file'] == '') { continue; }
-        $line = "#{$index} {$file['file']}({$file['line']}): ";
-        if (isset($file['class'])) {
-            $line .= "{$file['class']}{$file['type']}";
-        }
-        $line .= "{$file['function']}(";
-        if (isset($file['args']) && count($file['args'])) {
-            foreach ($file['args'] as $arg) {
-                $line .= gettype($arg) . ', ';
-            }
-            $line = substr($line, 0, -2);
-        }
-        $line .= ')';
-        $lines .= $line . "\n";
-        $index++;
-    } // for
-    $lines .= "#{$index} main\n";
-
-    if (ini_get('html_errors')) {
-        echo nl2br(str_replace(' ', '&nbsp;', $lines));
-    } else {
-        echo $lines;
-    }
+	
+	$dispatcherName = Qee::getAppInf('dispatcher');
+	$dispatcher = Qee::getSingleton($dispatcherName);
+	return $dispatcher->url($controllerName, $actionName, $params, $anchor);
 }

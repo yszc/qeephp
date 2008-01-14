@@ -79,7 +79,7 @@ class Qee_Controller_Action
      *
      * @param string $controllerName
      */
-    public function __setController($controllerName)
+    public function setController($controllerName)
     {
         $this->_controllerName = $controllerName;
     }
@@ -89,7 +89,7 @@ class Qee_Controller_Action
      *
      * @param Qee_Dispatcher_Simple $dispatcher
      */
-    public function __setDispatcher($dispatcher)
+    public function setDispatcher($dispatcher)
     {
         $this->_dispatcher = $dispatcher;
     }
@@ -99,7 +99,7 @@ class Qee_Controller_Action
      *
      * @return Qee_Dispatcher_Auth
      */
-    protected function _getDispatcher()
+    protected function getDispatcher()
     {
         if (!is_object($this->_dispatcher)) {
             $this->_dispatcher =& Qee::getSingleton(Qee::getAppInf('dispatcher'));
@@ -129,9 +129,10 @@ class Qee_Controller_Action
      */
     protected function _forward($controllerName = null, $actionName = null)
     {
-        $this->_dispatcher->setControllerName($controllerName);
-        $this->_dispatcher->setActionName($actionName);
-        $this->_dispatcher->dispatching();
+		if (is_object($this->_dispatcher))
+		{
+			return $this->_dispatcher->forward($controller, $action, $args);
+		}
     }
 
     /**
@@ -141,7 +142,7 @@ class Qee_Controller_Action
      */
     protected function _getView()
     {
-        $viewClass = Qee::getAppInf('view');
+        $viewClass = Qee::getAppInf('viewEngine');
         if ($viewClass != 'PHP') {
             return Qee::getSingleton($viewClass);
         } else {
@@ -157,7 +158,7 @@ class Qee_Controller_Action
      */
     protected function _executeView($__flea_internal_viewName, $data = null)
     {
-        $viewClass = Qee::getAppInf('view');
+        $viewClass = Qee::getAppInf('viewEngine');
         if ($viewClass == 'PHP') {
             if (strtolower(substr($__flea_internal_viewName, -4)) != '.php') {
                 $__flea_internal_viewName .= '.php';

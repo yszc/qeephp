@@ -2,7 +2,7 @@
 /* vim: set expandtab tabstop=4 shiftwidth=4: */
 
 /**
- * ç¼“å­˜æ“ä½œç±», ä½¿ç”¨Memcache
+ * »º´æ²Ù×÷Àà, Ê¹ÓÃMemcache
  * 
  * @author      liut(liutao@it168.com)
  * @version     $Id$
@@ -36,7 +36,7 @@
  * 	$c_data = $cache->get($key);		// get
  * </code>
  */
-class Cache_Memcache extends Cache	// implements Cache_Interface
+class Cache_Memcache implements Cache_Interface
 {
 	private $_memcache  = FALSE;
 	private $_compress  = 0;
@@ -51,7 +51,7 @@ class Cache_Memcache extends Cache	// implements Cache_Interface
 	 * @return Cache_Memcache
 	 * @access public
 	 */
-	 function init($params = NULL)
+	public function init($params = NULL)
 	{
 		static $inited = FALSE;
 		if ($inited) return $this->_connected;
@@ -104,7 +104,7 @@ class Cache_Memcache extends Cache	// implements Cache_Interface
 		return $this->_connected;
 	}
 	
-	 function get($key)
+	public function get($key)
 	{
 		$ret = FALSE;
 		if ($this->init()) 
@@ -118,26 +118,26 @@ class Cache_Memcache extends Cache	// implements Cache_Interface
 		}
 		return $ret;
 	}
-	
-	 function set($key, $value, $expire)
+
+	public function set($key, $value, $expire)
 	{
 		if ($this->init()) return $this->_memcache->set($this->_group.$key, $value, $this->_compress, $expire);
 		return FALSE;
 	}
 
-	 function delete($key, $expire = NULL)
+	public function delete($key, $expire = NULL)
 	{
 		if ($this->init()) return $this->_memcache->delete($this->_group.$key, $expire);
 		return FALSE;
 	}
 
-	 function getExtendedStats()
+	public function getExtendedStats()
 	{
 		if ($this->init()) return $this->_memcache->getExtendedStats();
 		return FALSE;
 	}	
 	
-	 function log($message)
+	public function log($message)
 	{
 		if (is_null($this->_logs))
 		{
@@ -146,8 +146,9 @@ class Cache_Memcache extends Cache	// implements Cache_Interface
 		$this->_logs[] = $message;
 	}
 
-	function clean()
+	public function clean()
 	{
+		throw new Exception("Not Supported");
 	}
 
 
