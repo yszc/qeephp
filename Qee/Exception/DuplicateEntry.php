@@ -18,7 +18,7 @@
  */
 
 // {{{ includes
-require_once 'Qee/Exception.php';
+//require_once 'Qee/Exception.php';
 // }}}
 
 /**

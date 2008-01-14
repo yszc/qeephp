@@ -35,7 +35,7 @@
  * 	$c_data = $cache->get($key);		// get
  * </code>
  */
-abstract class Cache implements Cache_Interface
+abstract class Cache
 {
 	private static $_solutions = array();
 	
@@ -54,9 +54,4 @@ abstract class Cache implements Cache_Interface
 		return $_solutions[$name];
 	}
 
-	abstract public function init($params = NULL);
-	abstract public function get($key);
-	abstract public function set($key, $value, $expire);
-	abstract public function delete($key, $expire = NULL);
-	abstract public function clean();
 }
