@@ -49,7 +49,7 @@ abstract class Cache
 			}
 			$className = 'Cache_'.$params['engine'];
 			$_solutions[$name] =& new $className();
-			$_solutions[$name]->init($options);
+			$_solutions[$name]->init($params);
 		}
 		return $_solutions[$name];
 	}

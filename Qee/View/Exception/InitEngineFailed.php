@@ -9,7 +9,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 FLEA_View_Exception_InitEngineFailed 类
+ * 定义 Qee_View_Exception_InitEngineFailed 类
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author 起源科技(www.qeeyuan.com)
@@ -18,13 +18,13 @@
  */
 
 /**
- * FLEA_View_Exception_InitEngineFailed 指示无法初始化模版引擎
+ * Qee_View_Exception_InitEngineFailed 指示无法初始化模版引擎
  *
  * @package Exception
  * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
-class FLEA_View_Exception_InitEngineFailed extends FLEA_Exception
+class Qee_View_Exception_InitEngineFailed extends Qee_Exception
 {
     public $engineName;
 

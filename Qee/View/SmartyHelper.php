@@ -9,7 +9,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 FLEA_View_SmartyHelper 类
+ * 定义 Qee_View_SmartyHelper 类
  *
  * @copyright Copyright (c) 2007 - 2008 QeePHP.org (www.qeephp.org)
  * @author 起源科技(www.qeeyuan.com)
@@ -18,14 +18,14 @@
  */
 
 /**
- * FLEA_View_SmartyHelper 扩展了 Smarty 和 TemplateLite 模版引擎，
+ * Qee_View_SmartyHelper 扩展了 Smarty 和 TemplateLite 模版引擎，
  * 提供对 QeePHP 内置功能的直接支持。
  *
  * @package Core
  * @author 起源科技(www.qeeyuan.com)
  * @version 1.0
  */
-class FLEA_View_SmartyHelper
+class Qee_View_SmartyHelper
 {
     /**
      * 构造函数
@@ -81,7 +81,7 @@ class FLEA_View_SmartyHelper
         $name = isset($params['name']) ? $params['name'] : null;
         unset($params['name']);
 
-        $ui = FLEA::initWebControls();
+        $ui = Qee::initWebControls();
         return $ui->control($type, $name, $params, true);
     }
 
@@ -94,21 +94,21 @@ class FLEA_View_SmartyHelper
     }
 
     /**
-     * 提供对 FLEA::getAppInf() 方法的支持
+     * 提供对 Qee::getAppInf() 方法的支持
      */
     public function _pi_func_get_app_inf($params)
     {
-        return FLEA::getAppInf($params['key']);
+        return Qee::getAppInf($params['key']);
     }
 
     /**
-     * 输出 FLEA_Ajax 生成的脚本
+     * 输出 Qee_Ajax 生成的脚本
      */
     public function _pi_func_dump_ajax_js($params)
     {
         $wrapper = isset($params['wrapper']) ? (bool)$params['wrapper'] : true;
-        $ajax = FLEA::initAjax();
-        /* @var $ajax FLEA_Ajax */
+        $ajax = Qee::initAjax();
+        /* @var $ajax Qee_Ajax */
         return $ajax->dumpJs(true, $wrapper);
     }
 
