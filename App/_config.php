@@ -18,7 +18,7 @@ return array(
 		'enabled' => true,
 		'engine' => 'CacheLite',
 		'group' => 'qeetest',
-		'cachedir' => '/www/cache',
+		'cachedir' => APP_ROOT . DS . 'cache',
 		'lifetime' => 60*60,
 		'fileNameProtection' => FALSE,
 		'hashedDirectoryLevel' => 2,
