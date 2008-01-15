@@ -153,29 +153,29 @@ class Qee_Controller_Action
     /**
      * 执行指定的视图
      *
-     * @param string $__flea_internal_viewName
+     * @param string $__qee_internal_viewName
      * @param array $data
      */
-    protected function _executeView($__flea_internal_viewName, $data = null)
+    protected function _executeView($__qee_internal_viewName, $data = null)
     {
         $viewClass = Qee::getAppInf('viewEngine');
         if ($viewClass == 'PHP') {
-            if (strtolower(substr($__flea_internal_viewName, -4)) != '.php') {
-                $__flea_internal_viewName .= '.php';
+            if (strtolower(substr($__qee_internal_viewName, -4)) != '.php') {
+                $__qee_internal_viewName .= '.php';
             }
             $view = null;
             foreach ((array)$this->_renderCallbacks as $callback) {
                 call_user_func_array($callback, array(& $data, & $view));
             }
             if (is_array($data)) { extract($data); }
-            include $__flea_internal_viewName;
+            include $__qee_internal_viewName;
         } else {
             $view =& $this->_getView();
             foreach ((array)$this->_renderCallbacks as $callback) {
                 call_user_func_array($callback, array(& $data, & $view));
             }
             if (is_array($data)) { $view->assign($data); }
-            $view->display($__flea_internal_viewName);
+            $view->display($__qee_internal_viewName);
         }
     }
 

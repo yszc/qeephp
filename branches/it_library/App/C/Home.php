@@ -7,6 +7,8 @@ class C_Home extends Qee_Controller_Action
 	{
 		//echo DONE_INDEX;
 		print('home');
+		$data = array('title'=>'Test App Home');
+		$this->_executeView('home.htm', $data);
 		return ;
 	}
 	

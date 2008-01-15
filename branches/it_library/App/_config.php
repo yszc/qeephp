@@ -9,15 +9,15 @@ return array(
 	'cached_pages_items'  			=> array
 	(
 		// 格式: Controller.Action
-		'home.index' => 60*45, // 45 分钟
-		'test.list' => 60*25, // 25 分钟
-		'test.view' => 60*15, // 15 分钟
+		'home.index' => 45, // 45 秒，仅为测试之用，可以改成 60*60*1 （1小时）
+		'test.list' => 25, // 25 秒
+		'test.view' => 15, // 15 秒
 	),
 	'cached_pages_options'  		=> array(
 		'debug' => false,
 		'enabled' => true,
 		'engine' => 'CacheLite',
-		'group' => 'mytest',
+		'group' => 'qeetest',
 		'cachedir' => '/www/cache',
 		'lifetime' => 60*60,
 		'fileNameProtection' => FALSE,
@@ -47,12 +47,15 @@ return array(
 	 */
     'dispatcher'                => 'Qee_Dispatcher',
 
-    'viewEngine' => 'View_Smarty',
+    'viewEngine' => 'Qee_View_Smarty',
     'viewConfig' => array(
-        'root'         => APP_ROOT . '/',
+		'smartyDir'    => 'C:\php\PEAR\smarty',	// 此处需要修改为正确的路径
+        'root'         => APP_ROOT . DS,
         'tplrefresh'         => 1,
-        'template_dir'      => APP_ROOT . '/templates',
-        'compile_dir'       => APP_ROOT . '/templates_c',
+		'template_dir'      => APP_ROOT . DS . 'templates',
+        'compile_dir'       => APP_ROOT . DS . 'templates_c',
+        'left_delimiter'    => '<!--{',
+        'right_delimiter'   => '}-->',
     ),
 
 	//数据表前缀
