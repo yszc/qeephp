@@ -12,38 +12,45 @@ class Test_QDBO extends PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        $this->dbo = QDBO_Abstract::get_dbo();
+        $this->dbo = QDBO_Abstract::getInstance();
+    }
+    
+    function testGetDSN()
+    {
+        $dsn = $this->dbo->getDSN();
+        $this->assertTrue(!empty($dsn));
     }
 
-    function test_get_id()
+    function testGetID()
     {
-        $id = $this->dbo->get_id();
+        $id = $this->dbo->getID();
         $this->assertTrue(!empty($id));
     }
 
-    function test_get_schema()
+    function testGetSchema()
     {
-        $schema = $this->dbo->get_schema();
+        $schema = $this->dbo->getSchema();
         $this->assertEquals(Q::getIni('dsn/database'), $schema);
     }
 
-    function test_get_table_prefix()
+    function testGetTablePrefix()
     {
-        $prefix = $this->dbo->get_table_prefix();
+        $prefix = $this->dbo->getTablePrefix();
         $this->assertEquals(Q::getIni('dsn/prefix'), $prefix);
     }
 
-    function test_connect()
+    function testConnect()
     {
         $this->dbo->connect();
+        $this->assertTrue(!is_null($this->dbo->handle()));
     }
 
-    function test_is_connected()
+    function testIsConnected()
     {
-        $this->assertTrue($this->dbo->is_connected());
+        $this->assertTrue($this->dbo->isConnected());
     }
 
-    function test_qstr()
+    function testQstr()
     {
         switch (Q::getIni('dsn/driver')) {
         case 'mysql':
@@ -75,48 +82,48 @@ class Test_QDBO extends PHPUnit_Framework_TestCase
         }
     }
 
-    function test_qinto()
+    function testQinto()
     {
-        switch($this->dbo->param_style()) {
+        switch($this->dbo->paramStyle()) {
         case QDBO_Abstract::param_qm:
-            $sql = "SELECT * FROM test_table WHERE level_ix > ? AND int_x = ?";
+            $sql = "SELECT * FROM testtable WHERE level_ix > ? AND int_x = ?";
             $args = array(1, 2);
             break;
         case QDBO_Abstract::param_cl_named:
-            $sql = "SELECT * FROM test_table WHERE level_ix > :level_ix AND int_x = :int_x";
+            $sql = "SELECT * FROM testtable WHERE level_ix > :level_ix AND int_x = :int_x";
             $args = array('level_ix' => 1, 'int_x' => 2);
             break;
         case QDBO_Abstract::param_dl_sequence:
-            $sql = "SELECT * FROM test_table WHERE level_ix > $1 AND int_x = $2";
+            $sql = "SELECT * FROM testtable WHERE level_ix > $1 AND int_x = $2";
             $args = array(1, 2);
             break;
         case QDBO_Abstract::param_at_named:
-            $sql = "SELECT * FROM test_table WHERE level_ix > @level_ix AND int_x = @int_x";
+            $sql = "SELECT * FROM testtable WHERE level_ix > @level_ix AND int_x = @int_x";
             $args = array('level_ix' => 1, 'int_x' => 2);
             break;
         }
 
-        $expected = 'SELECT * FROM test_table WHERE level_ix > 1 AND int_x = 2';
+        $expected = 'SELECT * FROM testtable WHERE level_ix > 1 AND int_x = 2';
         $this->assertEquals($expected, $this->dbo->qinto($sql, $args));
     }
 
-    function test_qinto2()
+    function testQinto2()
     {
         $checks = array(
-            array("SELECT * FROM test_table WHERE level_ix > ? AND int_x = ?", array(1, 2), QDBO_Abstract::param_qm),
-            array("SELECT * FROM test_table WHERE level_ix > :level_ix AND int_x = :int_x", array('level_ix' => 1, 'int_x' => 2), QDBO_Abstract::param_cl_named),
-            array("SELECT * FROM test_table WHERE level_ix > $1 AND int_x = $2", array(1, 2), QDBO_Abstract::param_dl_sequence),
-            array("SELECT * FROM test_table WHERE level_ix > @level_ix AND int_x = @int_x", array('level_ix' => 1, 'int_x' => 2), QDBO_Abstract::param_at_named),
+            array("SELECT * FROM testtable WHERE level_ix > ? AND int_x = ?", array(1, 2), QDBO_Abstract::param_qm),
+            array("SELECT * FROM testtable WHERE level_ix > :level_ix AND int_x = :int_x", array('level_ix' => 1, 'int_x' => 2), QDBO_Abstract::param_cl_named),
+            array("SELECT * FROM testtable WHERE level_ix > $1 AND int_x = $2", array(1, 2), QDBO_Abstract::param_dl_sequence),
+            array("SELECT * FROM testtable WHERE level_ix > @level_ix AND int_x = @int_x", array('level_ix' => 1, 'int_x' => 2), QDBO_Abstract::param_at_named),
         );
 
-        $expected = 'SELECT * FROM test_table WHERE level_ix > 1 AND int_x = 2';
+        $expected = 'SELECT * FROM testtable WHERE level_ix > 1 AND int_x = 2';
         foreach ($checks as $check) {
             list($sql, $args, $param_style) = $check;
             $this->assertEquals($expected, $this->dbo->qinto($sql, $args, $param_style), $sql);
         }
     }
 
-    function test_qtable()
+    function testQtable()
     {
         switch (Q::getIni('dsn/driver')) {
         case 'mysql':
@@ -148,7 +155,7 @@ class Test_QDBO extends PHPUnit_Framework_TestCase
         }
     }
 
-    function test_qfield()
+    function testQfield()
     {
         switch (Q::getIni('dsn/driver')) {
         case 'mysql':
@@ -181,37 +188,67 @@ class Test_QDBO extends PHPUnit_Framework_TestCase
         }
     }
 
-    function test_next_id()
+    function testQfields()
     {
-        $id = $this->dbo->next_id('test_seq');
-        $next_id = $this->dbo->next_id('test_seq');
+        switch (Q::getIni('dsn/driver')) {
+        case 'mysql':
+        case 'mysqli':
+        case 'pdomysql':
+            $checks = array(
+                array(array('post_id, title', null), '`post_id`, `title`'),
+                array(array(array('post_id', 'title'), 'posts'), '`posts`.`post_id`, `posts`.`title`'),
+                array(array('post_id', 'posts', 'test'), '`test`.`posts`.`post_id`'),
+            );
+            break;
+        case 'pgsql':
+        case 'pdopgsql':
+            break;
+        case 'oci8':
+        case 'pdooci8':
+            break;
+        case 'mssql':
+        case 'pdomssql':
+            break;
+        }
+
+        foreach ($checks as $check) {
+            list($args, $expected) = $check;
+            $actual = call_user_func_array(array($this->dbo, 'qfields'), $args);
+            $this->assertEquals($expected, $actual);
+        }
+    }
+
+    function testNextID()
+    {
+        $id = $this->dbo->nextID('testseq');
+        $next_id = $this->dbo->nextID('testseq');
         $this->assertTrue($next_id > $id, "\$next_id({$next_id}) > \$id({$id})");
     }
 
-    function test_insert_id()
+    function testInsertID()
     {
-        $id_list = $this->insert_into_posts(1);
-        $id = reset($id_list);
-        $this->assertTrue(!empty($id), '!empty($id)');
+        $idList = $this->insertIntoPosts(1);
+        $id = reset($idList);
+        $this->assertEquals($id, $this->dbo->insertID());
     }
 
-    function test_insert_id2()
+    function testInsertID2()
     {
-        $id = $this->dbo->next_id('test_seq');
-        $insert_id = $this->dbo->insert_id();
-        $this->assertEquals($id, $insert_id, '$id == $insert_id');
+        $id = $this->dbo->nextID('testseq');
+        $insertID = $this->dbo->insertID();
+        $this->assertEquals($id, $insertID, '$id == $insertID');
     }
 
-    function test_affected_rows()
+    function testAffectedRows()
     {
-        $id_list = implode(',', $this->insert_into_posts(10));
-        $sql = "DELETE FROM rx_posts WHERE post_id IN ({$id_list})";
+        $idList = implode(',', $this->insertIntoPosts(10));
+        $sql = "DELETE FROM rx_posts WHERE post_id IN ({$idList})";
         $this->dbo->execute($sql);
-        $affected_rows = $this->dbo->affected_rows();
-        $this->assertEquals(10, $affected_rows, '10 == $affected_rows');
+        $affectedRows = $this->dbo->affectedRows();
+        $this->assertEquals(10, $affectedRows, '10 == $affectedRows');
     }
 
-    function test_execute()
+    function testExecute()
     {
         switch (Q::getIni('dsn/driver')) {
         case 'mysql':
@@ -234,97 +271,113 @@ class Test_QDBO extends PHPUnit_Framework_TestCase
         $this->dbo->execute($sql, $args);
     }
 
-    function test_select_limit()
+    function testSelectLimit()
     {
         $this->dbo->execute('DELETE FROM rx_posts');
-        $id_list = $this->insert_into_posts(10);
+        $idList = $this->insertIntoPosts(10);
         $sql = "SELECT post_id FROM rx_posts ORDER BY post_id ASC";
 
         $length = 10;
         $offset = 0;
-        $rowset = $this->dbo->select_limit($sql, $length, $offset)->fetch_all();
+        $rowset = $this->dbo->selectLimit($sql, $length, $offset)->fetchAll();
         $this->assertEquals($length, count($rowset), "\$rowset = \$this->dbo->select_limit('{$sql}', {$length}, {$offset});");
         for ($i = $offset; $i < $offset + $length; $i++) {
-            $this->assertEquals($id_list[$i], $rowset[$i - $offset]['post_id'], "\$length = {$length}, \$offset = {$offset}");
+            $this->assertEquals($idList[$i], $rowset[$i - $offset]['post_id'], "\$length = {$length}, \$offset = {$offset}");
         }
 
         $length = 3; 
         $offset = 5;
-        $rowset = $this->dbo->select_limit($sql, $length, $offset)->fetch_all();
+        $rowset = $this->dbo->selectLimit($sql, $length, $offset)->fetchAll();
         $this->assertEquals($length, count($rowset), "\$rowset = \$this->dbo->select_limit('{$sql}', {$length}, {$offset});");
         for ($i = $offset; $i < $offset + $length; $i++) {
-            $this->assertEquals($id_list[$i], $rowset[$i - $offset]['post_id'], "\$length = {$length}, \$offset = {$offset}");
+            $this->assertEquals($idList[$i], $rowset[$i - $offset]['post_id'], "\$length = {$length}, \$offset = {$offset}");
         }
     }
 
-    function test_get_all()
+    function testGetAll()
     {
         $this->dbo->execute('DELETE FROM rx_posts');
-        $id_list = $this->insert_into_posts(10);
+        $idList = $this->insertIntoPosts(10);
 
         $sql = "SELECT post_id FROM rx_posts ORDER BY post_id ASC";
-        $rowset = $this->dbo->get_all($sql);
+        $rowset = $this->dbo->getAll($sql);
         for ($i = 0; $i < 10; $i++) {
-            $this->assertEquals($id_list[$i], $rowset[$i]['post_id']);
+            $this->assertEquals($idList[$i], $rowset[$i]['post_id']);
         }
     }
 
-    function test_get_col()
+    function testGetCol()
     {
         $this->dbo->execute('DELETE FROM rx_posts');
-        $id_list = $this->insert_into_posts(10);
+        $idList = $this->insertIntoPosts(10);
 
         $sql = "SELECT post_id FROM rx_posts ORDER BY post_id ASC";
-        $rowset = $this->dbo->get_col($sql);
+        $rowset = $this->dbo->getCol($sql);
         for ($i = 0; $i < 10; $i++) {
-            $this->assertEquals($id_list[$i], $rowset[$i]);
+            $this->assertEquals($idList[$i], $rowset[$i]);
         }
     }
 
-    function test_begin_trans()
+    function testBeginTrans()
     {
         $sql = 'SELECT COUNT(*) FROM rx_posts';
-        $count = $this->dbo->get_one($sql);
-        $tran = $this->dbo->begin_trans();
+        $count = $this->dbo->getOne($sql);
+        $tran = $this->dbo->beginTrans();
         $this->assertType('QDBO_Transaction', $tran);
-        $this->insert_into_posts(10);
+        $this->insertIntoPosts(10);
         unset($tran);
-        $new_count = $this->dbo->get_one($sql);
-        $this->assertEquals($count + 10, $new_count);
+        $newCount = $this->dbo->getOne($sql);
+        $this->assertEquals($count + 10, $newCount);
     }
 
-    function test_begin_trans2()
+    function testBeginTrans2()
     {
         $sql = 'SELECT COUNT(*) FROM rx_posts';
-        $count = $this->dbo->get_one($sql);
-        $tran = $this->dbo->begin_trans();
+        $count = $this->dbo->getOne($sql);
+        $tran = $this->dbo->beginTrans();
         $this->assertType('QDBO_Transaction', $tran);
-        $this->insert_into_posts(10);
+        $this->insertIntoPosts(10);
 
         // 明确的回滚事务
         $tran->rollback();
         unset($tran);
-        $new_count = $this->dbo->get_one($sql);
-        $this->assertEquals($count, $new_count);
+        $newCount = $this->dbo->getOne($sql);
+        $this->assertEquals($count, $newCount);
     }
 
-    function test_begin_trans3()
+    function testBeginTrans3()
     {
         $sql = 'SELECT COUNT(*) FROM rx_posts';
-        $count = $this->dbo->get_one($sql);
-        $tran = $this->dbo->begin_trans();
+        $count = $this->dbo->getOne($sql);
+        $tran = $this->dbo->beginTrans();
         $this->assertType('QDBO_Transaction', $tran);
-        $this->insert_into_posts(10);
+        $this->insertIntoPosts(10);
+
+        // 明确的回滚事务
+        $tran->failTrans();
+        unset($tran);
+        $newCount = $this->dbo->getOne($sql);
+        $this->assertEquals($count, $newCount);
+    }
+
+    function testBeginTrans4()
+    {
+        $sql = 'SELECT COUNT(*) FROM rx_posts';
+        $count = $this->dbo->getOne($sql);
+        $tran = $this->dbo->beginTrans();
+        $this->assertType('QDBO_Transaction', $tran);
+        $this->insertIntoPosts(10);
         try {
             // 当事务中出现数据库操作错误时回滚
             $this->dbo->execute('INSERT XXXX'); // must failed query
         } catch (Exception $ex) { }
+        $this->assertTrue($this->dbo->hasFailedQuery(), '$this->dbo->hasFailedQuery() == true');
         unset($tran);
-        $new_count = $this->dbo->get_one($sql);
-        $this->assertEquals($count, $new_count);
+        $newCount = $this->dbo->getOne($sql);
+        $this->assertEquals($count, $newCount);
     }
 
-    function test_get_insert_sql()
+    function testGetInsertSQL()
     {
         $row = array(
             'title' => 'Title :' . mt_rand(),
@@ -332,38 +385,37 @@ class Test_QDBO extends PHPUnit_Framework_TestCase
             'created' => time(),
             'updated' => time(),
         );
-        $sql = $this->dbo->get_insert_sql($row, 'rx_posts');
+        $sql = $this->dbo->getInsertSQL($row, 'rx_posts');
         $this->dbo->execute($sql, $row);
-        $sql = 'SELECT * FROM rx_posts WHERE post_id = ' . $this->dbo->insert_id();
-        $exists = $this->dbo->get_row($sql);
+        $sql = 'SELECT * FROM rx_posts WHERE post_id = ' . $this->dbo->insertID();
+        $exists = $this->dbo->getRow($sql);
         $this->assertEquals($row['title'], $exists['title']);
     }
 
-    function test_get_update_sql()
+    function testGetUpdateSQL()
     {
-        $id_list = $this->insert_into_posts(1);
-        $id = reset($id_list);
+        $idList = $this->insertIntoPosts(1);
+        $id = reset($idList);
         $sql = "SELECT * FROM rx_posts WHERE post_id = {$id}";
-        $row = $this->dbo->get_row($sql);
+        $row = $this->dbo->getRow($sql);
         $row['title'] = 'Title +' . mt_rand();
-        $update_sql = $this->dbo->get_update_sql($row, 'post_id', 'rx_posts');
-        $this->dbo->execute($update_sql, $row);
+        $updateSQL = $this->dbo->getUpdateSQL($row, 'post_id', 'rx_posts');
+        $this->dbo->execute($updateSQL, $row);
 
-        $exists = $this->dbo->get_row($sql);
+        $exists = $this->dbo->getRow($sql);
         $this->assertEquals($row['title'], $exists['title']);
     }
 
 
-    private function insert_into_posts($nums)
+    private function insertIntoPosts($nums)
     {
         $time = time();
         $sql = "INSERT INTO rx_posts (title, body, created, updated) VALUES ('title', 'body', {$time}, {$time})";
-        $id_list = array();
+        $idList = array();
         for ($i = 0; $i < $nums; $i++) {
             $this->dbo->execute($sql);
-            $id_list[] = $this->dbo->insert_id();
+            $idList[] = $this->dbo->insertID();
         }
-        return $id_list;
+        return $idList;
     }
 }
-
