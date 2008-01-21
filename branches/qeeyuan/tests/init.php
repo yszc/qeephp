@@ -1,6 +1,6 @@
 <?php
 
-require dirname(__FILE__) . '/../library/qexpress.php';
+require dirname(__FILE__) . '/../library/QExpress.php';
 
 Q::setIni('internal_cache_dir', dirname(__FILE__) . '/../tmp');
 
