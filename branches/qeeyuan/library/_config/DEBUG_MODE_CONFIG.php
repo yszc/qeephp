@@ -1,0 +1,219 @@
+<?php
+/////////////////////////////////////////////////////////////////////////////
+// QeePHP Framework
+//
+// Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
+//
+// 许可协议，请查看源代码中附带的 LICENSE.txt 文件，
+// 或者访问 http://www.qeephp.org/ 获得详细信息。
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * “调试”模式的 QeePHP 应用程序的默认设置
+ *
+ * @copyright Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
+ * @author 起源科技 (www.qeeyuan.com)
+ * @package Config
+ * @version $Id$
+ */
+
+return array(
+    // {{{ 核心配置
+
+    /**
+     * 指示控制器的 url 参数名和默认控制器名
+     *
+     * 控制器名字只能是a-z字母和0-9数字，以及“_”下划线。
+     */
+    'controller_accessor'       => 'controller',
+    'default_controller'        => 'default',
+
+    /**
+     * 指示 动作方法的 url 参数名和默认 动作方法名
+     */
+    'action_accessor'           => 'action',
+    'default_action'            => 'index',
+
+    'dispatcher'                => 'QDispatcher',
+    'on_access_denied'          => array('QExpress', 'on_access_denied'),
+    'on_action_not_found'       => array('QExpress', 'on_page_not_found'),
+
+    /**
+     * url 参数的传递模式，可以是标准、PATHINFO、URL 重写等模式
+     */
+    'url_mode'                  => 'standard',
+
+    /**
+     * 指示默认的应用程序入口文件名
+     */
+    'url_bootstrap'             => 'index.php',
+
+    /**
+     * 指示在生成 url 时，是否总是使用应用程序入口文件名，仅限 standard 模式
+     *
+     * 如果该设置为 false，则生成的 url 类似：
+     *
+     * http://www.example.com/?controller=xxx&action=yyy
+     */
+    'url_always_use_bootstrap'  => true,
+
+    /**
+     * QeePHP 内部及 cache 系列函数使用的缓存目录
+     * 应用程序必须设置该选项才能使用 cache 功能。
+     */
+    'internal_cache_dir'        => null,
+
+    /**
+     * 默认使用的缓存服务
+     */
+    'default_cache_backend'     => 'QCache_File',
+
+    /**
+     * 默认的时区设置
+     */
+    'default_timezone'          => 'Asia/Shanghai',
+
+    // }}}
+
+    // {{{ 数据库相关
+
+    /**
+     * 数据库配置，可以是数组，也可以是 DSN 字符串
+     */
+    'dsn'                       => null,
+
+    /**
+     * 数据表元数据缓存时间（秒），如果 db_meta_cached 设置为 false，则不会缓存数据表元数据
+     * 通常开发时，该设置为 10，以便修改数据库表结构后应用程序能够立刻刷新元数据
+     */
+    'db_meta_lifetime'          => 0,
+
+    /**
+     * 指示是否缓存数据表的元数据
+     */
+    'db_meta_cached'            => true,
+
+    /**
+     * 缓存元数据使用的缓存服务
+     */
+    'db_meta_cache_backend'     => 'QCache_File',
+
+    // }}}
+
+    // {{{ View 相关
+
+    /**
+     * 要使用的模板引擎，'PHP' 表示使用 PHP 语言本身作模板引擎
+     */
+    'view_engine'               => 'QView_Simple',
+
+    /**
+     * 模板引擎要使用的配置信息
+     */
+    'view_config'               => null,
+
+    /**
+     * QWebControls 扩展控件的保存目录
+     */
+    'webcontrols_ext_dir'       => array(QEE_DIR . '/_webcontrols'),
+
+    // }}}
+
+    // {{{ I18N
+
+    /**
+     * 指示 QeePHP 应用程序内部处理数据和输出内容要使用的编码
+     */
+    'response_charset'          => 'utf-8',
+
+    /**
+     * 是否自动输出 Content-Type: text/html; charset=response_charset
+     */
+    'auto_response_header'      => true,
+
+    /**
+     * 指示是否启用多语言支持
+     */
+    'multi_languages'           => false,
+
+    'auto_session'              => true,
+
+    /**
+     * 调度器要使用的验证服务提供程序
+     */
+    'dispatcher_acl'            => 'QACL',
+
+    /**
+     * 指示当没有为控制器提供 ACT 时，要使用的默认 ACT
+     */
+    'default_act'               => array('allow' => 'acl_everyone'),
+
+    /**
+     * 全局 ACT，当没有指定 ACT 时则从全局 ACT 中查找指定控制器的 ACT
+     */
+    'global_act'                => null,
+
+    /**
+     * 指示 ACL 组件用什么键名在 session 中保存用户数据
+     *
+     * 如果在一个域名下同时运行多个应用程序，
+     * 请务必为每一个应用程序使用自己独一无二的键名
+     */
+    'acl_session_key'           => 'ACL_USERDATA',
+
+    /**
+     * 指示 ACL 组件用什么键名在 session 中保存用户角色信息
+     */
+    'acl_roles_key'             => 'ACL_ROLES',
+
+    // }}}
+
+    // {{{ 日志和错误处理
+    /**
+     * 指示是否启用日志服务
+     */
+    'log_enabled'               => true,
+
+    /**
+     * 指示日志服务的程序
+     */
+    'log_provider'              => 'QLog',
+
+    /**
+     * 指示用什么目录保存日志文件
+     *
+     * 如果没有指定日志存放目录，则保存到内部缓存目录中
+     */
+    'log_files_dir'             => null,
+
+    /**
+     * 指示用什么文件名保存日志
+     */
+    'log_filename'              => 'access.log',
+
+    /**
+     * 指示当日志文件超过多少 KB 时，自动创建新的日志文件，单位是 KB，不能小于 512KB
+     */
+    'log_file_maxsize'          => 4096,
+
+    /**
+     * 指示哪些级别的错误要保存到日志中
+     */
+    'log_level'                 => 'notice, debug, warning, error, exception, log',
+
+    /**
+     * 指示是否显示错误信息
+     */
+    'display_errors'            => true,
+
+    /**
+     * 指示是否显示友好的错误信息
+     */
+    'friendly_errors'           => true,
+
+    /**
+     * 指示是否在错误信息中显示出错位置的源代码
+     */
+    'display_source'            => true,
+
+);
