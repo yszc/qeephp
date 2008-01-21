@@ -291,8 +291,6 @@ abstract class Q
     {
         static $loaded = array();
 
-        if ($once && isset($loaded[$filename])) { return null; }
-
         if (preg_match('/[^a-z0-9\-_.]/i', $filename)) {
             // LC_MSG: Security check: Illegal character in filename "%s".
             throw new QException(__('Security check: Illegal character in filename "%s".', $filename));
@@ -300,20 +298,32 @@ abstract class Q
 
         if (is_null($dirs)) {
             $dirs = array();
-        } else if (is_string($dirs)) {
+        } elseif (is_string($dirs)) {
             $dirs = explode(PATH_SEPARATOR, $dirs);
         }
         foreach ($dirs as $dir) {
             $path = rtrim($dir, '\\/') . DS . $filename;
             if (self::isReadable($path)) {
-                if ($once) { $loaded[$filename] = true; }
+                if ($once) {
+                    if (isset($loaded[$path])) { 
+                        return null; 
+                    } else {
+                        $loaded[$path] = true;
+                    }
+                }
                 return include $path;
             }
         }
 
         // include 会在 include_path 中寻找文件
         if (self::isReadable($filename)) {
-            if ($once) { $loaded[$filename] = true; }
+            if ($once) {
+                if (isset($loaded[$path])) { 
+                    return null; 
+                } else {
+                    $loaded[$path] = true;
+                }
+            }
             return include $filename;
         }
 
