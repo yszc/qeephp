@@ -141,11 +141,11 @@ abstract class Q
 
         if (is_null($backend)) {
             if (is_null($obj)) {
-                $obj = self::getInstance(self::getIni('default_cache_backend'));
+                $obj = self::getSingleton(self::getIni('default_cache_backend'));
             }
             return $obj->get($id, $policy);
         } else {
-            $cache = self::getInstance($backend);
+            $cache = self::getSingleton($backend);
             return $cache->get($id, $policy);
         }
     }
@@ -166,11 +166,11 @@ abstract class Q
 
         if (is_null($backend)) {
             if (is_null($obj)) {
-                $obj = self::getInstance(self::getIni('default_cache_backend'));
+                $obj = self::getSingleton(self::getIni('default_cache_backend'));
             }
             $obj->set($id, $data, $policy);
         } else {
-            $cache = self::getInstance($backend);
+            $cache = self::getSingleton($backend);
             $cache->set($id, $data, $policy);
         }
     }
@@ -187,9 +187,9 @@ abstract class Q
     static function removeCache($id, array $policy = null, $backend = null)
     {
         if (is_null($backend)) {
-            $cache = self::getInstance(self::getIni('default_cache_backend'));
+            $cache = self::getSingleton(self::getIni('default_cache_backend'));
         } else {
-            $cache = self::getInstance($backend);
+            $cache = self::getSingleton($backend);
         }
         $cache->remove($id, $policy);
     }
