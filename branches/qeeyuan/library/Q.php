@@ -28,8 +28,8 @@ define('DS', DIRECTORY_SEPARATOR);
 // 自动载入需要的类
 Q::import(QEE_DIR);
 
-if (function_exists('spl_autoload_reg')) {
-    spl_autoload_reg(array('Q', 'autoLoad'));
+if (function_exists('spl_autoload_register')) {
+    spl_autoload_register(array('Q', 'loadClass'));
 } elseif (!function_exists('__autoload')) {
     function __autoload($className)
     {
