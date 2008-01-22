@@ -22,7 +22,7 @@
  *
  * 所有 QTable_Base 的扩展都是 Table_Extension_Abstract 的继承类，并且类名称必须为 Extension_????。
  *
- * 对于每一个 QTable_Base 的继承类，开发者必须通过 $table_name 成员变量指定要操作的数据表。
+ * 对于每一个 QTable_Base 的继承类，开发者必须通过 $tableName 成员变量指定要操作的数据表。
  *
  * @package core
  * @author 起源科技 (www.qeeyuan.com)
@@ -49,21 +49,21 @@ class QTable_Base
      *
      * @var string
      */
-    public $table_name;
+    public $tableName;
 
     /**
      * 包含前缀的数据表名称
      *
      * @var string
      */
-    public $full_table_name;
+    public $fullTableName;
 
     /**
      * 数据表的完全限定名（不包含 schema）
      *
      * @var string
      */
-    public $q_table_name;
+    public $qtableName;
 
     /**
      * 主键字段名
@@ -77,35 +77,35 @@ class QTable_Base
      *
      * @var string
      */
-    public $q_pk;
+    public $qpk;
 
     /**
      * 定义 HAS ONE 关联
      *
      * @var array
      */
-    protected $has_one;
+    protected $hasOne;
 
     /**
      * 定义 HAS MANY 关联
      *
      * @var array
      */
-    protected $has_many;
+    protected $hasMany;
 
     /**
      * 定义 BELONGS TO 关联
      *
      * @var array
      */
-    protected $belongs_to;
+    protected $belongsTo;
 
     /**
      * 定义 MANY TO MANY 关联
      *
      * @var array
      */
-    protected $many_to_many;
+    protected $manyToMany;
 
     /**
      * 保存该表数据入口的所有关联
@@ -122,7 +122,7 @@ class QTable_Base
      *
      * @var array
      */
-    protected $created_time_fields = array('created', 'updated');
+    protected $createdTimeFields = array('created', 'updated');
 
     /**
      * 创建和更新记录时，要自动填入当前时间的字段
@@ -132,7 +132,7 @@ class QTable_Base
      *
      * @var array
      */
-    protected $updated_time_fields = array('updated');
+    protected $updatedTimeFields = array('updated');
 
     /**
      * 数据库访问对象
@@ -149,7 +149,7 @@ class QTable_Base
      *
      * @var boolean
      */
-    protected $is_init = false;
+    protected $isInit = false;
 
     /**
      * 当前数据表的元数据
@@ -159,15 +159,15 @@ class QTable_Base
      *
      * @var array
      */
-    protected static $tables_meta;
+    protected static $tablesMETA;
 
     /**
      * 构造 Table 实例
      *
      * $params 参数允许有下列选项：
      *   - schema: 指定数据表的 schema
-     *   - table_name: 指定数据表的名称
-     *   - full_table_name: 指定数据表的完整名称（忽略 table_name）
+     *   - tableName: 指定数据表的名称
+     *   - fullTableName: 指定数据表的完整名称
      *   - pk: 指定主键字段名
      *   - dbo: 指定数据库访问对象
      *
@@ -176,31 +176,39 @@ class QTable_Base
      *
      * @return Table
      */
-    function __construct(array $params = null, $connect_now = false)
+    function __construct(array $params = null, $connectNow = false)
     {
         if (!empty($params['schema'])) {
             $this->schema = $params['schema'];
         }
-        if (!empty($params['table_name'])) {
-            $this->table_name = $params['table_name'];
+        if (!empty($params['tableName'])) {
+            $this->tableName = $params['tableName'];
         }
-        if (!empty($params['full_table_name'])) {
-            $this->full_table_name = $params['full_table_name'];
-            if (empty($this->table_name)) {
-                $this->table_name = $this->full_table_name;
+        if (!empty($params['fullTableName'])) {
+            $this->fullTableName = $params['fullTableName'];
+            if (empty($this->tableName)) {
+                $this->tableName = $this->fullTableName;
             }
         }
         if (!empty($params['pk'])) {
             $this->pk = $params['pk'];
         }
         if (!empty($params['dbo'])) {
-            $this->set_dbo($params['dbo']);
+            $this->setDBO($params['dbo']);
         }
-        if ($connect_now) {
+        if ($connectNow) {
             $this->connect();
         }
 
         $this->relinks();
+    }
+    
+    function clearLinks()
+    {
+        foreach ($this->links as $offset => $link) {
+            unset($this->links[$offset]);
+            unset($link);    
+        }
     }
 
     /**
@@ -208,18 +216,18 @@ class QTable_Base
      */
     function relinks()
     {
-        $this->clear_links();
-        if (is_array($this->has_one)) {
-            $this->create_link($this->has_one,       self::has_one);
+        $this->clearLinks();
+        if (is_array($this->hasOne)) {
+            $this->createLink($this->hasOne, self::has_one);
         }
-        if (is_array($this->belongs_to)) {
-            $this->create_link($this->belongs_to,    self::belongs_to);
+        if (is_array($this->belongsTo)) {
+            $this->createLink($this->belongsTo, self::belongs_to);
         }
-        if (is_array($this->has_many)) {
-            $this->create_link($this->has_many,      self::has_many);
+        if (is_array($this->hasMany)) {
+            $this->createLink($this->hasMany, self::has_many);
         }
-        if (is_array($this->many_to_many)) {
-            $this->create_link($this->many_to_many,  self::many_to_many);
+        if (is_array($this->manyToMany)) {
+            $this->createLink($this->manyToMany, self::many_to_many);
         }
     }
 
@@ -231,17 +239,24 @@ class QTable_Base
      *
      * @return QTable_Link_Abstract
      */
-    function create_link(array $link_define, $type)
+    function createLink(array $linkDefine, $type)
     {
-        if (!is_array(reset($link_define))) {
-            $link_define = $link_define;
+        if (!is_array(reset($linkDefine))) {
+            $linkDefine = $linkDefine;
         }
-        foreach ($link_define as $def) {
+        $return = array();
+        foreach ($linkDefine as $def) {
             if (!is_array($def)) {
-                throw new QTable_Exception(__('$link_define typemismatch, expected array, actual is %s', gettype($def)));
+                throw new QTable_Exception(__('$linkDefine typemismatch, expected array, actual is %s', gettype($def)));
             }
-            $link = QTable_Link_Abstract::create_link($def, $type, $this);
+            $link = QTable_Link_Abstract::createLink($def, $type, $this);
             $this->links[$link->name] = $link;
+            $return[] = $link;
+        }
+        if (count($return) == 1) {
+            return $return[0];
+        } else {
+            return $return;
         }
     }
 
@@ -266,9 +281,9 @@ class QTable_Base
      *
      * @return array
      */
-    function find_by_sql($sql, array $args = null)
+    function findBySQL($sql, array $args = null)
     {
-        return $this->dbo->get_all($sql, $args);
+        return $this->dbo->getAll($sql, $args);
     }
 
     /**
@@ -280,19 +295,19 @@ class QTable_Base
      */
     function create(array $row)
     {
-        $this->fill_fields_with_current_time($row, $this->created_time_fields);
+        $this->_fillFieldsWithCurrentTime($row, $this->createdTimeFields);
         if (empty($row[$this->pk]) || $row[$this->pk] == 0) {
             unset($row[$this->pk]);
         }
         $mpk = strtolower($this->pk);
-        if (!isset($row[$this->pk]) && !self::$tables_meta[$this->cache_id][$mpk]['auto_incr']) {
+        if (!isset($row[$this->pk]) && !self::$tablesMETA[$this->cacheID][$mpk]['autoIncr']) {
             // 如果主键字段不是自增字段，并且 $row 没有包含主键字段值时，则获取一个新的主键字段值
-            $row[$this->pk] = $this->next_id();
+            $row[$this->pk] = $this->nextID();
         }
-        $sql = $this->dbo->get_insert_sql($row, $this->full_table_name, $this->schema);
+        $sql = $this->dbo->getInsertSQL($row, $this->fullTableName, $this->schema);
         $this->dbo->execute($sql, $row);
-        $insert_id = !empty($row[$this->pk]) ? $row[$this->pk] : $this->dbo->insert_id();
-        return $insert_id;
+        $insertID = !empty($row[$this->pk]) ? $row[$this->pk] : $this->dbo->insertID();
+        return $insertID;
     }
 
     /**
@@ -302,7 +317,7 @@ class QTable_Base
      *
      * @return array
      */
-    function create_rowset(array $rowset)
+    function createRowset(array $rowset)
     {
         $return = array();
         foreach (array_keys($rowset) as $offset) {
@@ -320,10 +335,10 @@ class QTable_Base
      */
     function update(array $row)
     {
-        $this->fill_fields_with_current_time($row, $this->updated_time_fields);
-        $sql = $this->dbo->get_update_sql($row, $this->pk, $this->full_table_name, $this->schema);
+        $this->_fillFieldsWithCurrentTime($row, $this->updatedTimeFields);
+        $sql = $this->dbo->getUpdateSQL($row, $this->pk, $this->fullTableName, $this->schema);
         $this->dbo->execute($sql, $row);
-        return $this->dbo->affected_rows();
+        return $this->dbo->affectedRows();
     }
 
     /**
@@ -331,7 +346,7 @@ class QTable_Base
      *
      * @param array $rowset
      */
-    function update_rowset(array $rowset)
+    function updateRowset(array $rowset)
     {
         $update_count = 0;
         foreach (array_keys($rowset) as $offset) {
@@ -349,21 +364,21 @@ class QTable_Base
      *
      * @return int
      */
-    function update_where(array $pairs, $where, array $args = null)
+    function updateWhere(array $pairs, $where, array $args = null)
     {
-        $where = $this->parse_where($where, $args);
+        $where = $this->parseWhere($where, $args);
         if (is_array($where)) {
             $where = reset($where);
         }
 
-        $args = $this->dbo->get_placeholder_pairs($pairs);
-        $sql = "UPDATE {$this->q_table_name} SET " . implode(',', $args[0]);
+        $args = $this->dbo->getPlaceholderPairs($pairs);
+        $sql = "UPDATE {$this->qtableName} SET " . implode(',', $args[0]);
         if (!empty($where)) {
             $sql .= " WHERE {$where}";
         }
 
         $this->dbo->execute($sql, $args[1]);
-        return $this->dbo->affected_rows();
+        return $this->dbo->affectedRows();
     }
 
     /**
@@ -373,15 +388,15 @@ class QTable_Base
      *
      * @return int
      */
-    function update_by_sql($sql)
+    function updateBySQL($sql)
     {
         $parts = preg_split('/[ \n]set[ \n]/i', $sql);
-        $sql = $parts[0] . ' SET ' . $this->get_updated_time_sql() . ', ';
+        $sql = $parts[0] . ' SET ' . $this->getUpdatedTimeSQL() . ', ';
         for ($i = 1, $max = count($parts); $i < $max; $i++) {
             $sql .= $parts[$i];
         }
         $this->dbo->execute($sql);
-        return $this->dbo->affected_rows();
+        return $this->dbo->affectedRows();
     }
 
     /**
@@ -389,38 +404,27 @@ class QTable_Base
      *
      * @return string
      */
-    function get_updated_time_sql()
+    function getUpdatedTimeSQL()
     {
         $sql = '';
-        foreach ($this->updated_time_fields as $field) {
+        $time = time();
+        $db_time = $this->dbo->dbTimestamp($time);
+        foreach ($this->updatedTimeFields as $field) {
             $field = strtolower($field);
-            $sql .= self::$tables_meta[$this->cache_id][$field]['name'];
+            $sql .= self::$tablesMETA[$this->cacheID][$field]['name'];
             $sql .= ' = ';
-            switch (self::$tables_meta[$this->cache_id][$field]['ptype']) {
+            switch (self::$tablesMETA[$this->cacheID][$field]['ptype']) {
             case 'd':
             case 't':
-                $sql .= $this->dbo->db_timestamp(time());
+                $sql .= $db_time;
                 break;
             default:
-                $sql .= time();
+                $sql .= $time;
             }
             $sql .= ', ';
         }
 
         return substr($sql, 0, -2);
-    }
-
-
-    protected function incr_decr_where_base($field, $step, $is_incr, $where, arary $args = null)
-    {
-        $where = $this->parse_where($where, $args);
-        if (is_array($where)) { $where = reset($where); }
-        $field = $this->dbo->qfield($field);
-        $step = (int)$step;
-        $op = ($is_incr) ? '+' : '-';
-        $sql = "UPDATE {$this->q_table_name} SET {$field} = {$field} {$op} {$step}";
-        if (!empty($where)) { $sql .= " WHERE {$where}"; }
-        return $this->update_by_sql($sql);
     }
 
     /**
@@ -433,9 +437,9 @@ class QTable_Base
      *
      * @return mixed
      */
-    function incr_where($field, $step = 1, $where, array $args = null)
+    function incrWhere($field, $step = 1, $where, array $args = null)
     {
-        return $this->incr_decr_where_base($field, $step, true, $where, $args);
+        return $this->_incrDecrWhereBase($field, $step, true, $where, $args);
     }
 
     /**
@@ -448,9 +452,9 @@ class QTable_Base
      *
      * @return mixed
      */
-    function decr_where($field, $step = 1, $where, array $args = null)
+    function decrWhere($field, $step = 1, $where, array $args = null)
     {
-        return $this->incr_decr_where_base($field, $step, false, $where, $args);
+        return $this->_incrDecrWhereBase($field, $step, false, $where, $args);
     }
 
     /**
@@ -475,7 +479,7 @@ class QTable_Base
      *
      * @return array
      */
-    function save_rowset(array $rowset)
+    function saveRowset(array $rowset)
     {
         $return = array();
         foreach (array_keys($rowset) as $offset) {
@@ -493,10 +497,10 @@ class QTable_Base
      */
     function replace(array $row)
     {
-        $this->fill_fields_with_current_time($row, $this->created_time_fields);
-        $sql = $this->dbo->get_replace_sql($row, $this->q_table_name);
+        $this->_fillFieldsWithCurrentTime($row, $this->createdTimeFields);
+        $sql = $this->dbo->getReplaceSQL($row, $this->qtableName);
         $this->dbo->execute($sql, $row);
-        return empty($row[$this->pk]) ? $this->dbo->insert_id() : $row[$this->pk];
+        return empty($row[$this->pk]) ? $this->dbo->insertID() : $row[$this->pk];
     }
 
     /**
@@ -506,7 +510,7 @@ class QTable_Base
      *
      * @return array
      */
-    function replace_rowset(array $rowset)
+    function replaceRowset(array $rowset)
     {
         $return = array();
         foreach (array_keys($rowset) as $offset) {
@@ -525,9 +529,9 @@ class QTable_Base
     function remove($pkv)
     {
         $pkv = $this->dbo->qstr($pkv);
-        $sql = "DELETE FROM {$this->q_table_name} WHERE {$this->q_pk} = {$pkv}";
+        $sql = "DELETE FROM {$this->qtableName} WHERE {$this->qpk} = {$pkv}";
         $this->dbo->execute($sql);
-        return $this->dbo->affected_rows();
+        return $this->dbo->affectedRows();
     }
 
     /**
@@ -538,19 +542,19 @@ class QTable_Base
      *
      * @return ini
      */
-    function remove_where($where, array $args = null)
+    function removeWhere($where, array $args = null)
     {
-        $where = $this->parse_where($where, $args);
+        $where = $this->parseWhere($where, $args);
         if (is_array($where)) {
             $where = reset($where);
         }
 
-        $sql = "DELETE FROM {$this->q_table_name}";
+        $sql = "DELETE FROM {$this->qtableName}";
         if (!empty($where)) {
             $sql .= " WHERE {$where}";
         }
         $this->dbo->execute($sql);
-        return $this->dbo->affected_rows();
+        return $this->dbo->affectedRows();
     }
 
     /**
@@ -558,10 +562,10 @@ class QTable_Base
      *
      * @return mixed
      */
-    function next_id()
+    function nextID()
     {
-        $seqname = $this->dbo->qtable($this->full_table_name . '_seq', $this->schema);
-        return $this->dbo->next_id($seqname);
+        $seqname = $this->dbo->qtable($this->fullTableName . '_seq', $this->schema);
+        return $this->dbo->nextID($seqname);
     }
 
     /**
@@ -572,7 +576,7 @@ class QTable_Base
     function columns()
     {
         $this->connect();
-        return self::$tables_meta[$this->cache_id];
+        return self::$tablesMETA[$this->cacheID];
     }
 
     /**
@@ -580,17 +584,17 @@ class QTable_Base
      *
      * @return boolean
      */
-    function is_connected()
+    function isConnected()
     {
-        return !is_null($this->dbo) && $this->dbo->is_connected();
+        return !is_null($this->dbo) && $this->dbo->isConnected();
     }
 
     /**
      * 返回该表数据入口对象使用的数据访问对象
      *
-     * @return DBO_Abstract
+     * @return QDBO_Abstract
      */
-    function get_dbo()
+    function getDBO()
     {
         return $this->dbo;
     }
@@ -598,21 +602,21 @@ class QTable_Base
     /**
      * 设置数据库访问对象
      *
-     * @param DBO_Abstract $dbo
+     * @param QDBO_Abstract $dbo
      */
-    function set_dbo($dbo)
+    function setDBO($dbo)
     {
         $this->dbo = $dbo;
-        if ($this->schema == '' && $dbo->get_schema() != '') {
-            $this->schema = $dbo->get_schema();
+        if ($this->schema == '' && $dbo->getSchema() != '') {
+            $this->schema = $dbo->getSchema();
         }
-        if ($this->full_table_name == '' && $dbo->get_table_prefix() != '') {
-            $this->full_table_name = $dbo->get_table_prefix() . $this->table_name;
+        if ($this->fullTableName == '' && $dbo->getTablePrefix() != '') {
+            $this->fullTableName = $dbo->getTablePrefix() . $this->tableName;
         } else {
-            $this->full_table_name = $this->table_name;
+            $this->fullTableName = $this->tableName;
         }
-        $this->q_table_name = $this->dbo->qtable($this->full_table_name);
-        $this->q_pk = $this->dbo->qfield($this->pk, $this->full_table_name, $this->schema);
+        $this->qtableName = $this->dbo->qtable($this->fullTableName);
+        $this->qpk = $this->dbo->qfield($this->pk, $this->fullTableName, $this->schema);
     }
 
     /**
@@ -625,12 +629,12 @@ class QTable_Base
     function __get($varname)
     {
         /**
-         * 当第一次访问对象的 cache_id 属性时，将连接数据库
+         * 当第一次访问对象的 cacheID 属性时，将连接数据库
          * 通过这个技巧，可以避免无谓的判断和函数调用
          */
-        if ($varname == 'cache_id') {
+        if ($varname == 'cacheID') {
             $this->connect();
-            return $this->cache_id;
+            return $this->cacheID;
         }
         throw new QTable_Exception(__('Undefined property "%s"', $varname));
     }
@@ -640,49 +644,49 @@ class QTable_Base
      */
     function connect()
     {
-        if ($this->is_init) { return; }
+        if ($this->isInit) { return; }
 
         if (is_null($this->dbo)) {
-            $dbo = QDBO_Abstract::get_dbo();
-            $this->set_dbo($dbo);
+            $dbo = QDBO_Abstract::getInstance();
+            $this->setDBO($dbo);
         }
 
-        if (!$this->dbo->is_connected()) {
+        if (!$this->dbo->isConnected()) {
             $this->dbo->connect();
         }
-        $this->cache_id = $this->dbo->get_id() . '/' . $this->q_table_name;
-        $this->prepare_meta();
+        $this->cacheID = $this->dbo->getID() . '/' . $this->qtableName;
+        $this->_prepareMETA();
 
         // 如果没有指定主键，则自动设置主键字段
         if ($this->pk == '') {
-            foreach (self::$tables_meta[$this->cache_id] as $field) {
+            foreach (self::$tablesMETA[$this->cacheID] as $field) {
                 if ($field['pk']) {
                     $this->pk = $field['name'];
                     break;
                 }
             }
             if ($this->pk == '') {
-                throw new QTable_Exception(__('Not found primary key in table "%s"', $this->qtable_name));
+                throw new QTable_Exception(__('Not found primary key in table "%s"', $this->qtableName));
             }
         }
 
-        // 过滤 created_time_fields 和 updated_time_fields
-        foreach ($this->created_time_fields as $offset => $field) {
-            if (!isset(self::$tables_meta[$this->cache_id][strtolower($field)])) {
-                unset($this->created_time_fields[$offset]);
+        // 过滤 createdTimeFields 和 updatedTimeFields
+        foreach ($this->createdTimeFields as $offset => $field) {
+            if (!isset(self::$tablesMETA[$this->cacheID][strtolower($field)])) {
+                unset($this->createdTimeFields[$offset]);
             }
         }
 
-        foreach ($this->updated_time_fields as $offset => $field) {
-            if (!isset(self::$tables_meta[$this->cache_id][strtolower($field)])) {
-                unset($this->updated_time_fields[$offset]);
+        foreach ($this->updatedTimeFields as $offset => $field) {
+            if (!isset(self::$tablesMETA[$this->cacheID][strtolower($field)])) {
+                unset($this->updatedTimeFields[$offset]);
             }
         }
     }
 
     function qfields($fields)
     {
-        return $this->dbo->qfields($fields, $this->full_table_name, $this->schema);
+        return $this->dbo->qfields($fields, $this->fullTableName, $this->schema);
     }
 
     /**
@@ -704,15 +708,15 @@ class QTable_Base
      *
      * @return array|string
      */
-    function parse_where($where, array $args = null)
+    function parseWhere($where, array $args = null)
     {
         if (is_null($args)) {
             $args = array();
         }
         if (is_array($where)) {
-            return $this->parse_where_array($where);
+            return $this->_parseWhereArray($where);
         } else {
-            return $this->parse_where_string($where, $args);
+            return $this->_parseWhereString($where, $args);
         }
     }
     
@@ -723,7 +727,7 @@ class QTable_Base
      *
      * @return array|string
      */
-    protected function parse_where_array(array $where)
+    protected function _parseWhereArray(array $where)
     {
         /**
          * 模式2：
@@ -749,7 +753,7 @@ class QTable_Base
                 if ($next_op != '') {
                     $parts[] = $next_op;
                 }
-                $field = $this->parse_where_qfield(array('', $key));
+                $field = $this->_parseWhereQfield(array('', $key));
                 if (is_array($value)) {
                     $value = array_map($callback, $value);
                     $parts[] = $field . ' IN (' . implode(',', $value) . ')';
@@ -772,7 +776,7 @@ class QTable_Base
      *
      * @return array|string
      */
-    protected function parse_where_string($where, array $args = null)
+    protected function _parseWhereString($where, array $args = null)
     {
         /**
          * 模式1：
@@ -786,10 +790,8 @@ class QTable_Base
         // 首先从查询条件中提取出可以识别的字段名
         if (strpos($where, '`') !== false) {
             // 提取字段名
-            $where = preg_replace_callback('/`([a-z0-9_\-\.]+)`/i', array($this, 'parse_where_qfield'), $where);
+            $where = preg_replace_callback('/`([a-z0-9_\-\.]+)`/i', array($this, '_parseWhereQfield'), $where);
         }
-
-        $callback = array($this->dbo, 'qstr');
 
         // 分析查询条件中的参数占位符
         if (strpos($where, '?') !== false) {
@@ -812,20 +814,20 @@ class QTable_Base
      *
      * @return string
      */
-    private function parse_where_qfield($matches)
+    private function _parseWhereQfield($matches)
     {
         $p = explode('.', $matches[1]);
         switch (count($p)) {
         case 3:
             list($schema, $table, $field) = $p;
-            if ($table == $this->table_name) {
-                $table = $this->full_table_name;
+            if ($table == $this->tableName) {
+                $table = $this->fullTableName;
             }
             return $this->dbo->qfield($field, $table, $schema);
         case 2:
             list($table, $field) = $p;
-            if ($table == $this->table_name) {
-                $table = $this->full_table_name;
+            if ($table == $this->tableName) {
+                $table = $this->fullTableName;
             }
             return $this->dbo->qfield($field, $table);
         default:
@@ -839,15 +841,15 @@ class QTable_Base
      * @param array $row
      * @param array $fields
      */
-    protected function fill_fields_with_current_time(array & $row, array $fields)
+    protected function _fillFieldsWithCurrentTime(array & $row, array $fields)
     {
         $curr = time();
-        $curr_db_time = $this->dbo->db_timestamp($curr);
+        $curr_db_time = $this->dbo->dbTimestamp($curr);
 
         foreach ($fields as $field) {
             $mf = strtolower($field);
-            if (!isset(self::$tables_meta[$this->cache_id][$mf])) { continue; }
-            switch (self::$tables_meta[$this->cache_id][$mf]['ptype']) {
+            if (!isset(self::$tablesMETA[$this->cacheID][$mf])) { continue; }
+            switch (self::$tablesMETA[$this->cacheID][$mf]['ptype']) {
             case 'd':
             case 't':
                 $row[$field] = $curr_db_time;
@@ -858,34 +860,45 @@ class QTable_Base
         }
     }
 
+    protected function _incrDecrWhereBase($field, $step, $is_incr, $where, arary $args = null)
+    {
+        $where = $this->parseWhere($where, $args);
+        if (is_array($where)) { $where = reset($where); }
+        $field = $this->dbo->qfield($field);
+        $step = (int)$step;
+        $op = ($is_incr) ? '+' : '-';
+        $sql = "UPDATE {$this->qtableName} SET {$field} = {$field} {$op} {$step}";
+        if (!empty($where)) { $sql .= " WHERE {$where}"; }
+        return $this->updateBySQL($sql);
+    }
+    
     /**
      * 准备当前数据表的元数据
      *
      * @return boolean
      */
-    private function prepare_meta()
+    private function _prepareMETA()
     {
-        if (isset(self::$tables_meta[$this->cache_id])) { return; }
+        if (isset(self::$tablesMETA[$this->cacheID])) { return; }
         $cached = Q::getIni('db_meta_cached');
 
         if ($cached) {
             // 尝试从缓存读取
             $policy = array('encoding_filename' => true, 'serialize' => true);
             $backend = Q::getIni('db_meta_cache_backend');
-            $meta = Q::getCache($this->cache_id, $policy, $backend);
+            $meta = Q::getCache($this->cacheID, $policy, $backend);
             if (is_array($meta)) {
-                self::$tables_meta[$this->cache_id] = $meta;
+                self::$tablesMETA[$this->cacheID] = $meta;
                 return;
             }
         }
 
         // 从数据库获得 meta
-        $meta = $this->dbo->meta_columns($this->full_table_name, $this->schema);
-        self::$tables_meta[$this->cache_id] = $meta;
+        $meta = $this->dbo->metaColumns($this->fullTableName, $this->schema);
+        self::$tablesMETA[$this->cacheID] = $meta;
         if ($cached) {
             // 缓存数据
-            Q::setCache($this->cache_id, $meta, $policy, $backend);
+            Q::setCache($this->cacheID, $meta, $policy, $backend);
         }
     }
 }
-
