@@ -11,36 +11,36 @@ class Test_QTable extends PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        $dbo = QDBO_Abstract::get_dbo();
+        $dbo = QDBO_Abstract::getInstance();
         $params = array(
-            'table_name' => 'posts',
+            'tableName'  => 'posts',
             'pk'         => 'post_id',
             'dbo'        => $dbo
         );
         $this->table = new QTable_Base($params, false);
     }
 
-    function test_connect()
+    function testConnect()
     {
         $this->table->connect();
-        $this->assertTrue($this->table->is_connected());
+        $this->assertTrue($this->table->isConnected());
     }
 
-    function test_find()
+    function testFind()
     {
         $select = $this->table->find();
         $this->assertType('QTable_Select', $select);
     }
 
-    function test_find2()
+    function testFind2()
     {
         $select = $this->table->find('`post_id` = :post_id AND created > :created', array('post_id' => 1, 'created' => 0));
-        $actual = trim($select->to_string());
+        $actual = trim($select->toString());
         $expected = 'SELECT * FROM `rx_posts` WHERE (`post_id` = 1 AND created > 0)';
         $this->assertEquals($expected, $actual);
     }
 
-    function test_create()
+    function testCreate()
     {
         $row = array(
             'title' => 'Title :' . mt_rand(),
@@ -49,7 +49,7 @@ class Test_QTable extends PHPUnit_Framework_TestCase
         $id = $this->table->create($row);
         $this->assertFalse(empty($id));
 
-        $find = $this->table->find_by_sql("SELECT * FROM {$this->table->q_table_name} WHERE post_id = {$id}");
+        $find = $this->table->findBySQL("SELECT * FROM {$this->table->qtableName} WHERE post_id = {$id}");
         $this->assertType('array', $find);
         $find = reset($find);
         $this->assertEquals($row['title'], $find['title']);
@@ -58,18 +58,18 @@ class Test_QTable extends PHPUnit_Framework_TestCase
         $this->assertFalse(empty($find['updated']));
     }
 
-    function test_create_rowset()
+    function testCreateRowset()
     {
         $rowset = array();
         for ($i = 0, $max = mt_rand(1, 5); $i < $max; $i++) {
             $rowset[] = array('title' => 'Title :' . mt_rand() . ':', 'body' => 'Body :' . mt_rand());
         }
 
-        $id_list = $this->table->create_rowset($rowset);
+        $id_list = $this->table->createRowset($rowset);
         $this->assertEquals($max, count($id_list));
     }
 
-    function test_update()
+    function testUpdate()
     {
         $row = array(
             'title' => 'Title :' . mt_rand(),
@@ -78,8 +78,8 @@ class Test_QTable extends PHPUnit_Framework_TestCase
         $id = $this->table->create($row);
         $this->assertFalse(empty($id));
 
-        $sql = "SELECT * FROM {$this->table->q_table_name} WHERE post_id = {$id}";
-        $find = $this->table->find_by_sql($sql);
+        $sql = "SELECT * FROM {$this->table->qtableName} WHERE post_id = {$id}";
+        $find = $this->table->findBySQL($sql);
         $find = reset($find);
 
         sleep(2);
@@ -88,36 +88,36 @@ class Test_QTable extends PHPUnit_Framework_TestCase
         $affected_rows = $this->table->update($find);
         $this->assertEquals(1, $affected_rows);
 
-        $find2 = $this->table->find_by_sql($sql);
+        $find2 = $this->table->findBySQL($sql);
         $find2 = reset($find2);
 
         $this->assertTrue($find2['updated'] > $find['updated']);
     }
 
-    function test_update_where1()
+    function testUpdateWhere1()
     {
-        $rowset = $this->table->find_by_sql("SELECT COUNT(*) AS row_count FROM {$this->table->q_table_name}");
+        $rowset = $this->table->findBySQL("SELECT COUNT(*) AS row_count FROM {$this->table->qtableName}");
         $row = reset($rowset);
         $count = $row['row_count'];
 
         $pairs = array('title' => 'Title =' . mt_rand());
-        $affected_rows = $this->table->update_where($pairs, null);
+        $affected_rows = $this->table->updateWhere($pairs, null);
 
         $this->assertEquals($count, $affected_rows);
     }
 
-    function test_update_where2()
+    function testUpdateWhere2()
     {
-        $rowset = $this->table->find_by_sql("SELECT COUNT(*) AS row_count FROM {$this->table->q_table_name}");
+        $rowset = $this->table->findBySQL("SELECT COUNT(*) AS row_count FROM {$this->table->qtableName}");
         $row = reset($rowset);
         $count = $row['row_count'];
 
         $pairs = array('title' => 'Title =' . mt_rand(), 'body' => 'Body =' . mt_rand());
-        $affected_rows = $this->table->update_where($pairs, 'created > ?', array(0));
+        $affected_rows = $this->table->updateWhere($pairs, 'created > ?', array(0));
         $this->assertEquals($count, $affected_rows);
     }
 
-    function test_incr_where()
+    function testIncrWhere()
     {
         $row = array(
             'title' => 'Title :' . mt_rand(),
@@ -126,21 +126,21 @@ class Test_QTable extends PHPUnit_Framework_TestCase
         );
         $id = $this->table->create($row);
 
-        $sql = "SELECT * FROM {$this->table->q_table_name} WHERE post_id = {$id}";
-        $exists = $this->table->find_by_sql($sql);
+        $sql = "SELECT * FROM {$this->table->qtableName} WHERE post_id = {$id}";
+        $exists = $this->table->findBySQL($sql);
         $exists = reset($exists);
 
         sleep(2);
-        $this->table->incr_where('hint', 1, "`post_id` = {$id}");
+        $this->table->incrWhere('hint', 1, "`post_id` = {$id}");
 
-        $row = $this->table->find_by_sql($sql);
+        $row = $this->table->findBySQL($sql);
         $row = reset($row);
 
         $this->assertEquals($exists['hint'] + 1, $row['hint']);
         $this->assertTrue($row['updated'] > $exists['updated']);
     }
 
-    function test_decr_where()
+    function testDecrWhere()
     {
         $row = array(
             'title' => 'Title :' . mt_rand(),
@@ -149,135 +149,135 @@ class Test_QTable extends PHPUnit_Framework_TestCase
         );
         $id = $this->table->create($row);
 
-        $sql = "SELECT * FROM {$this->table->q_table_name} WHERE post_id = {$id}";
-        $exists = $this->table->find_by_sql($sql);
+        $sql = "SELECT * FROM {$this->table->qtableName} WHERE post_id = {$id}";
+        $exists = $this->table->findBySQL($sql);
         $exists = reset($exists);
 
         sleep(2);
-        $this->table->decr_where('hint', 2, "`post_id` = {$id}");
+        $this->table->decrWhere('hint', 2, "`post_id` = {$id}");
 
-        $row = $this->table->find_by_sql($sql);
+        $row = $this->table->findBySQL($sql);
         $row = reset($row);
 
         $this->assertEquals($exists['hint'] - 2, $row['hint']);
         $this->assertTrue($row['updated'] > $exists['updated']);
     }
 
-    function test_remove()
+    function testRemove()
     {
-        $sql = "SELECT post_id FROM {$this->table->q_table_name} ORDER BY post_id ASC";
-        $row = $this->table->find_by_sql($sql);
+        $sql = "SELECT post_id FROM {$this->table->qtableName} ORDER BY post_id ASC";
+        $row = $this->table->findBySQL($sql);
         $row = reset($row);
         $id = $row['post_id'];
 
         $this->table->remove($id);
-        $sql = "SELECT post_id FROM {$this->table->q_table_name} WHERE post_id = {$id}";
-        $row = $this->table->find_by_sql($sql);
+        $sql = "SELECT post_id FROM {$this->table->qtableName} WHERE post_id = {$id}";
+        $row = $this->table->findBySQL($sql);
         $this->assertTrue(empty($row));
     }
 
-    function test_remove_where()
+    function testRemoveWhere()
     {
         $row = array('title' => 'delete', 'body' => 'delete');
         $id = $this->table->create($row);
-        $affected_rows = $this->table->remove_where("post_id = {$id}");
+        $affected_rows = $this->table->removeWhere("post_id = {$id}");
         $this->assertEquals(1, $affected_rows);
 
-        $affected_rows = $this->table->remove_where(null);
+        $affected_rows = $this->table->removeWhere(null);
         $this->assertTrue($affected_rows > 1);
     }
 
-    function test_next_id()
+    function testNextID()
     {
-        $id = $this->table->next_id();
-        $next_id = $this->table->next_id();
+        $id = $this->table->nextID();
+        $next_id = $this->table->nextID();
         $this->assertTrue($next_id > $id);
     }
 
-    function test_parse_where_string1()
+    function testParseWhereString1()
     {
         $where = 'user_id = 1';
-        $this->assertEquals($where, $this->table->parse_where($where));
+        $this->assertEquals($where, $this->table->parseWhere($where));
     }
 
-    function test_parse_where_string2()
+    function testParseWhereString2()
     {
         $where = 'user_id = ?';
         $args = array(1);
         $expected = 'user_id = 1';
-        $actual = $this->table->parse_where($where, $args);
+        $actual = $this->table->parseWhere($where, $args);
         $this->assertEquals($expected, $actual);
     }
 
-    function test_parse_where_string3()
+    function testParseWhereString3()
     {
         $where = 'user_id IN (?)';
         $args = array(array(1, 2, 3));
         $expected = 'user_id IN (1,2,3)';
-        $actual = $this->table->parse_where($where, $args);
+        $actual = $this->table->parseWhere($where, $args);
         $this->assertEquals($expected, $actual);
     }
 
-    function test_parse_where_string4()
+    function testParseWhereString4()
     {
         $where = '`user_id` = ? AND `level_ix` > ?';
         $args = array(1, 3);
         $expected = '`user_id` = 1 AND `level_ix` > 3';
-        $actual = $this->table->parse_where($where, $args);
+        $actual = $this->table->parseWhere($where, $args);
         $this->assertEquals($expected, $actual);
     }
 
-    function test_parse_where_string5()
+    function testParseWhereString5()
     {
         $where = '`posts.user_id` = :user_id AND `level.level_ix` > :level_ix';
         $args = array('user_id' => 2, 'level_ix' => 55);
         $expected = '`rx_posts`.`user_id` = 2 AND `level`.`level_ix` > 55';
-        $actual = $this->table->parse_where($where, $args);
+        $actual = $this->table->parseWhere($where, $args);
         $this->assertEquals($expected, $actual);
     }
 
 
-    function test_parse_where_string6()
+    function testParseWhereString6()
     {
         $where = '`user_id` IN (:users_id) AND `schema.level.level_ix` > :level_ix';
         $args = array('users_id' => array(1, 2, 3), 'level_ix' => 55);
         $expected = '`user_id` IN (1,2,3) AND `schema`.`level`.`level_ix` > 55';
-        $actual = $this->table->parse_where($where, $args);
+        $actual = $this->table->parseWhere($where, $args);
         $this->assertEquals($expected, $actual);
     }
 
-    function test_parse_where_array1()
+    function testParseWhereArray1()
     {
         $where = array(
             'user_id' => 1,
             'level_ix' => 3,
         );
         $expected = '`user_id` = 1 AND `level_ix` = 3';
-        $actual = $this->table->parse_where($where);
+        $actual = $this->table->parseWhere($where);
         $this->assertEquals($expected, $actual);
     }
 
-    function test_parse_where_array2()
+    function testParseWhereArray2()
     {
         $where = array('(', 'user_id' => 1, 'OR', 'level_ix' => 3, ')', 'credits' => 5, 'test' => 6);
         $expected = '( `user_id` = 1 OR `level_ix` = 3 ) AND `credits` = 5 AND `test` = 6';
-        $actual = $this->table->parse_where($where);
+        $actual = $this->table->parseWhere($where);
         $this->assertEquals($expected, $actual);
     }
 
-    function test_parse_where_array3()
+    function testParseWhereArray3()
     {
         $where = array('(', 'user_id' => array(1,2,3), 'OR', 'level_ix' => 3, ')', 'credits' => 5, 'test' => 6);
         $expected = '( `user_id` IN (1,2,3) OR `level_ix` = 3 ) AND `credits` = 5 AND `test` = 6';
-        $actual = $this->table->parse_where($where);
+        $actual = $this->table->parseWhere($where);
         $this->assertEquals($expected, $actual);
     }
 
-    function test_parse_where_array4()
+    function testParseWhereArray4()
     {
         $where = array('posts.user_id' => 1, 'OR', '(' , 'level.level_ix' => 3, 'schema.mytable.credits' => 5, ')');
         $expected = '`rx_posts`.`user_id` = 1 OR ( `level`.`level_ix` = 3 AND `schema`.`mytable`.`credits` = 5 )';
-        $actual = $this->table->parse_where($where);
+        $actual = $this->table->parseWhere($where);
         $this->assertEquals($expected, $actual);
     }
 }
