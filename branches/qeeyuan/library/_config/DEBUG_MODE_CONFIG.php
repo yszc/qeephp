@@ -136,7 +136,10 @@ return array(
      */
     'multi_languages'           => false,
 
-    'auto_session'              => true,
+    /**
+     * 是否启动session_start，对负载有影响，建议关闭。如果需要验证等功能，请使用cookie代替
+     */
+    'auto_session'              => false,
 
     /**
      * 调度器要使用的验证服务提供程序

@@ -92,11 +92,14 @@ class QLog
         }
         $dir = rtrim(realpath($dir), '\\/');
         $this->_filesDir = $dir;
-        $this->_filename = $this->_filesDir . DIRECTORY_SEPARATOR . Q::getIni('_filename');
+		$filename = Q::getIni('log_filename');
+		if(empty($filename)) $filename = 'qee.log';
+        $this->_filename = $this->_filesDir . DIRECTORY_SEPARATOR . $filename;
 
-        $this->level = array_flip(normalize(strtolower(Q::getIni('log_level'))));
+        $this->level = array_flip(Q::normalize(strtolower(Q::getIni('log_level'))));
 
         global $___qee_loaded_time;
+		if(empty($___qee_loaded_time)) $___qee_loaded_time = microtime();
         list($usec, $sec) = explode(' ', $___qee_loaded_time);
         $this->_log = sprintf("[%s %s] ======= QeePHP Loaded =======\n", date($this->_dateFormat, $sec), $usec);
 
@@ -138,13 +141,14 @@ class QLog
         $level = strtolower($level);
         if (!isset($this->level[$level])) { return; }
 
+        $output = str_replace("\n", "\\n", print_r($msg, true));
         if ($title != '') {
             $format = "[%s] [%s] [%s]: %s\n";
+			$msg = sprintf($format, date($this->_dateFormat), $level, $title, $output);
         } else {
             $format = "[%s] [%s]: %s\n";
+			$msg = sprintf($format, date($this->_dateFormat), $level, $output);
         }
-        $output = str_replace("\n", "\\n", print_r($msg, true));
-        $msg = sprintf($format, date($this->_dateFormat), $level, $title, $output);
         $this->_log .= $msg;
     }
 
