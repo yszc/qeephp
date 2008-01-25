@@ -280,4 +280,53 @@ class Test_QTable extends PHPUnit_Framework_TestCase
         $actual = $this->table->parseWhere($where);
         $this->assertEquals($expected, $actual);
     }
+
+    function testFindHasOne1()
+    {
+    }
+
+    function testFindHasOne2()
+    {
+    }
+
+    function testFindHasOne3()
+    {
+    }
+
+    function testFindHasMany1()
+    {
+    }
+
+    function testFindHasMany2()
+    {
+    }
+
+    function testFindHasMany3()
+    {
+    }
+
+    function testFindBelongsTo1()
+    {
+    }
+
+    function testFindBelongsTo2()
+    {
+    }
+
+    function testFindBelongsTo3()
+    {
+    }
+
+    function testFindManyToMany1()
+    {
+    }
+
+    function testFindManyToMany2()
+    {
+    }
+
+    function testFindManyToMany3()
+    {
+    }
+
 }

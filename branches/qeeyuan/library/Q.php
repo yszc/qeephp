@@ -24,20 +24,6 @@ define('QEE_DIR', dirname(__FILE__));
 define('DS', DIRECTORY_SEPARATOR);
 // }}}
 
-// {{{ init
-// 自动载入需要的类
-Q::import(QEE_DIR);
-
-if (function_exists('spl_autoload_register')) {
-    spl_autoload_register(array('Q', 'loadClass'));
-} elseif (!function_exists('__autoload')) {
-    function __autoload($className)
-    {
-        Q::loadClass($className);
-    }
-}
-// }}}
-
 /**
  * Q 类提供了 QeePHP 框架的基本服务
  *
