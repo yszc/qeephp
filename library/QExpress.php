@@ -17,7 +17,7 @@
 
 
 // {{{ includes
-require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'Q.php';
+require dirname(__FILE__) . DIRECTORY_SEPARATOR . 'Q.php';
 // }}}
 
 // {{{ init
@@ -30,7 +30,7 @@ if (!defined('DEPLOY_MODE') || DEPLOY_MODE != true) {
     Q::setIni(Q::loadFile('DEBUG_MODE_CONFIG.php', false, QEE_DIR . DS . '_config'));
     if (!defined('DEPLOY_MODE')) { define('DEPLOY_MODE', false); }
 } else {
-    Q::setIni(Q::load_file('DEPLOY_MODE_CONFIG.php', false, QEE_DIR . DS . '_config'));
+    Q::setIni(Q::loadFile('DEPLOY_MODE_CONFIG.php', false, QEE_DIR . DS . '_config'));
     if (!defined('DEPLOY_MODE')) { define('DEPLOY_MODE', true); }
 }
 
@@ -41,6 +41,19 @@ if (!defined('DEPLOY_MODE') || DEPLOY_MODE != true) {
 //}
 
 set_exception_handler(array('QExpress', 'exceptionHandler'));
+
+
+// 允许 QeePHP 自动载入需要的类
+Q::import(QEE_DIR);
+
+if (function_exists('spl_autoload_register')) {
+    spl_autoload_register(array('Q', 'loadClass'));
+} elseif (!function_exists('__autoload')) {
+    function __autoload($className)
+    {
+        Q::loadClass($className);
+    }
+}
 // }}}
 
 /**
