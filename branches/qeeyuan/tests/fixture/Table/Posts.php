@@ -10,7 +10,6 @@ class Table_Posts extends QTable_Base
             'tableClass' => 'Table_Comments',
             'mappingName' => 'comments',
             'foreignKey' => 'post_id',
-            'counterCache' => 'comments_count',
         ),
     );
 
@@ -19,7 +18,6 @@ class Table_Posts extends QTable_Base
             'tableClass' => 'Table_PostsCopy',
             'mappingName' => 'copy',
             'foreignKey' => 'post_id',
-            'counterCache' => 'has_copy',
         ),
     );
 
@@ -43,7 +41,6 @@ class Table_Posts extends QTable_Base
             'midTableName' => 'post_has_diggs',
             'foreignKey' => 'post_id',
             'assocForeignKey' => 'digg_id',
-            'counterCache' => 'diggs_count',
         ),
     );
 

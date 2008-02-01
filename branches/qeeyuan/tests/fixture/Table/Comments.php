@@ -10,7 +10,6 @@ class Table_Comments extends QTable_Base
             'tableClass' => 'Table_Posts',
             'mappingName' => 'post',
             'foreignKey' => 'post_id',
-            'counterCache' => 'comments_count',
         ),
     );
 
