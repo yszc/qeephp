@@ -2,7 +2,7 @@
 require_once 'PHPUnit/Framework.php';
 require_once dirname(__FILE__) . '/../init.php';
 
-class Test_QTable extends PHPUnit_Framework_TestCase
+class TestQTable extends PHPUnit_Framework_TestCase
 {
     /**
      * @var QTable_Base
