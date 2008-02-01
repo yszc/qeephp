@@ -34,7 +34,7 @@ class Test_QTable extends PHPUnit_Framework_TestCase
 
     function testFind2()
     {
-        $select = $this->table->find('`post_id` = :post_id AND created > :created', array('post_id' => 1, 'created' => 0));
+        $select = $this->table->find('[post_id] = :post_id AND created > :created', array('post_id' => 1, 'created' => 0));
         $actual = trim($select->toString());
         $expected = 'SELECT * FROM `rx_posts` WHERE (`post_id` = 1 AND created > 0)';
         $this->assertEquals($expected, $actual);
@@ -220,7 +220,7 @@ class Test_QTable extends PHPUnit_Framework_TestCase
 
     function testParseWhereString4()
     {
-        $where = '`user_id` = ? AND `level_ix` > ?';
+        $where = '[user_id] = ? AND [level_ix] > ?';
         $args = array(1, 3);
         $expected = '`user_id` = 1 AND `level_ix` > 3';
         $actual = $this->table->parseWhere($where, $args);
@@ -229,7 +229,7 @@ class Test_QTable extends PHPUnit_Framework_TestCase
 
     function testParseWhereString5()
     {
-        $where = '`posts.user_id` = :user_id AND `level.level_ix` > :level_ix';
+        $where = '[posts.user_id] = :user_id AND [level.level_ix] > :level_ix';
         $args = array('user_id' => 2, 'level_ix' => 55);
         $expected = '`rx_posts`.`user_id` = 2 AND `level`.`level_ix` > 55';
         $actual = $this->table->parseWhere($where, $args);
@@ -239,7 +239,7 @@ class Test_QTable extends PHPUnit_Framework_TestCase
 
     function testParseWhereString6()
     {
-        $where = '`user_id` IN (:users_id) AND `schema.level.level_ix` > :level_ix';
+        $where = '[user_id] IN (:users_id) AND [schema.level.level_ix] > :level_ix';
         $args = array('users_id' => array(1, 2, 3), 'level_ix' => 55);
         $expected = '`user_id` IN (1,2,3) AND `schema`.`level`.`level_ix` > 55';
         $actual = $this->table->parseWhere($where, $args);
@@ -280,53 +280,4 @@ class Test_QTable extends PHPUnit_Framework_TestCase
         $actual = $this->table->parseWhere($where);
         $this->assertEquals($expected, $actual);
     }
-
-    function testFindHasOne1()
-    {
-    }
-
-    function testFindHasOne2()
-    {
-    }
-
-    function testFindHasOne3()
-    {
-    }
-
-    function testFindHasMany1()
-    {
-    }
-
-    function testFindHasMany2()
-    {
-    }
-
-    function testFindHasMany3()
-    {
-    }
-
-    function testFindBelongsTo1()
-    {
-    }
-
-    function testFindBelongsTo2()
-    {
-    }
-
-    function testFindBelongsTo3()
-    {
-    }
-
-    function testFindManyToMany1()
-    {
-    }
-
-    function testFindManyToMany2()
-    {
-    }
-
-    function testFindManyToMany3()
-    {
-    }
-
 }
