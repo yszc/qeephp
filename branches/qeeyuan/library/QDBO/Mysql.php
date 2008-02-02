@@ -78,11 +78,6 @@ class QDBO_Mysql extends QDBO_Abstract
         $this->_connect(false, true);
     }
 
-    function isConnected()
-    {
-        return !is_null($this->_conn);
-    }
-
     function close()
     {
         if ($this->_conn) { mysql_close($this->_conn); }
@@ -189,7 +184,7 @@ class QDBO_Mysql extends QDBO_Abstract
     function execute($sql, $inputarr = null)
     {
         $this->queryCount++;
-        if ($this->LOG_QUERY) {
+        if ($this->_LOG_QUERY) {
             $this->log[] = $sql;
         }
 
@@ -251,7 +246,7 @@ class QDBO_Mysql extends QDBO_Abstract
             } else {
                 $this->execute('ROLLBACK');
             }
-        } elseif ($this->SAVEPOINT_ENABLED) {
+        } elseif ($this->_SAVEPOINT_ENABLED) {
             $savepoint = array_pop($this->_savepointsStack);
             if ($this->_hasFailedQuery || $commitOnNoErrors == false) {
                 $this->execute("ROLLBACK TO SAVEPOINT `{$savepoint}`");
@@ -307,7 +302,7 @@ class QDBO_Mysql extends QDBO_Abstract
         if (!$rs) { return false; }
         /* @var $rs QDBO_Result_Abstract */
         $retarr = array();
-        $rs->fetchMode = self::fetch_mode_array;
+        $rs->fetchMode = self::FETCH_MODE_ARRAY;
         while (($row = $rs->fetchRow())) {
             $field = array();
             $field['name'] = $row['Field'];
@@ -333,20 +328,20 @@ class QDBO_Mysql extends QDBO_Abstract
                 $field['length'] = -1;
             }
             $field['ptype'] = $typeMap[strtolower($field['type'])];
-            $field['notNull'] = ($row['Null'] != 'YES');
+            $field['not_null'] = ($row['Null'] != 'YES');
             $field['pk'] = ($row['Key'] == 'PRI');
-            $field['autoIncr'] = (strpos($row['Extra'], 'auto_incr') !== false);
-            if ($field['autoIncr']) { $field['ptype'] = 'r'; }
+            $field['auto_incr'] = (strpos($row['Extra'], 'auto_incr') !== false);
+            if ($field['auto_incr']) { $field['ptype'] = 'r'; }
             $field['binary'] = (strpos($type,'blob') !== false);
             $field['unsigned'] = (strpos($type,'unsigned') !== false);
 
             if (!$field['binary']) {
                 $d = $row['Default'];
                 if ($d != '' && $d != 'NULL') {
-                    $field['hasDefault'] = true;
+                    $field['has_default'] = true;
                     $field['default'] = $d;
                 } else {
-                    $field['hasDefault'] = false;
+                    $field['has_default'] = false;
                 }
             }
 
