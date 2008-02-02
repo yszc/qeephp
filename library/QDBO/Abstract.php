@@ -39,16 +39,16 @@ abstract class QDBO_Abstract
     /**
      * 参数占位符类型
      */
-    const param_qm          = '?'; // 问号作为参数占位符
-    const param_cl_named    = ':'; // 冒号开始的命名参数
-    const param_dl_sequence = '$'; // $符号开始的序列
-    const param_at_named    = '@'; // @开始的命名参数
+    const PARAM_QM          = '?'; // 问号作为参数占位符
+    const PARAM_CL_NAMED    = ':'; // 冒号开始的命名参数
+    const PARAM_DL_SEQUENCE = '$'; // $符号开始的序列
+    const PARAM_AT_NAMED    = '@'; // @开始的命名参数
 
     /**
      * 可用的查询结果集返回形式
      */
-    const fetch_mode_array      = 1; // 返回的每一个记录就是一个索引数组
-    const fetch_mode_assoc      = 2; // 返回的每一个记录就是一个以字段名作为键名的数组
+    const FETCH_MODE_ARRAY  = 1; // 返回的每一个记录就是一个索引数组
+    const FETCH_MODE_ASSOC  = 2; // 返回的每一个记录就是一个以字段名作为键名的数组
 
     /**
      * 数据库连接信息
@@ -76,7 +76,7 @@ abstract class QDBO_Abstract
      *
      * @var const
      */
-    protected $_fetchMode = self::fetch_mode_assoc;
+    protected $_fetchMode = self::FETCH_MODE_ASSOC;
 
     /**
      * 数据库连接句柄
@@ -150,7 +150,7 @@ abstract class QDBO_Abstract
      *
      * @var string
      */
-    protected $_PARAM_STYLE  = self::param_qm;
+    protected $_PARAM_STYLE  = self::PARAM_QM;
 
     /**
      * 指示数据库是否有自增字段功能
@@ -237,7 +237,7 @@ abstract class QDBO_Abstract
         $this->_dsn = $dsn;
         $this->_id = $id;
         if (defined('DEPLOY_MODE') && !DEPLOY_MODE) {
-            $this->LOG_QUERY = true;
+            $this->_LOG_QUERY = true;
         }
     }
 
@@ -307,7 +307,10 @@ abstract class QDBO_Abstract
      *
      * @return boolean
      */
-    abstract function isConnected();
+    function isConnected()
+    {
+    	return !is_null($this->_conn);
+    }
 
     /**
      * 关闭数据库连接
@@ -373,8 +376,7 @@ abstract class QDBO_Abstract
      * ... 检查 $title、$body 是否为空 ...
      *
      * $sql = "INSERT INTO posts (title, body) VALUES (:title, :body)";
-     * // 使用引用来构造数组，避免 $title、$body 的数据占用双倍内存
-     * $dbo->execute($sql, array('title' => & $title, 'body' => & $body));
+     * $dbo->execute($sql, array('title' => $title, 'body' => $body));
      * </code>
      *
      * @param mixed $value
@@ -400,9 +402,9 @@ abstract class QDBO_Abstract
 
         $callback = array($this, 'qstr');
         switch ($paramStyle) {
-        case self::param_qm:
-        case self::param_dl_sequence:
-            if ($paramStyle == self::param_qm) {
+        case self::PARAM_QM:
+        case self::PARAM_DL_SEQUENCE:
+            if ($paramStyle == self::PARAM_QM) {
                 $parts = explode('?', $sql);
             } else {
                 $parts = preg_split('/\$[0-9]+/', $sql);
@@ -424,9 +426,9 @@ abstract class QDBO_Abstract
             }
             return $str;
 
-        case self::param_cl_named:
-        case self::param_at_named:
-            $split = ($paramStyle == self::param_cl_named) ? ':' : '@';
+        case self::PARAM_CL_NAMED:
+        case self::PARAM_AT_NAMED:
+            $split = ($paramStyle == self::PARAM_CL_NAMED) ? ':' : '@';
             $parts = preg_split('/(' . $split . '[a-z0-9_\-]+)/i', $sql, -1, PREG_SPLIT_DELIM_CAPTURE);
             $max = count($parts);
             if (count($params) * 2 + 1 != $max) {
@@ -796,7 +798,7 @@ abstract class QDBO_Abstract
      * }
      * </code>
      *
-     * 如果在 $dbo->execute($sql) 抛出了异常，那么 $tran 对象在销毁前会自动回滚事务。
+     * 如果在 $dbo->execute($sql) 抛出了异常，那么 $tran 对象在销毁前会自动提交或回滚事务。
      * 正常执行到 doSometing() 函数结束时，$tran 对象会在销毁前自动提交事务。
      *
      * <strong>
@@ -975,10 +977,10 @@ abstract class QDBO_Abstract
         foreach (array_keys($inputarr) as $offset => $key) {
             if (!isset($fields[strtolower($key)])) { continue; }
             switch($this->_PARAM_STYLE) {
-            case self::param_qm:
+            case self::PARAM_QM:
                 $holders[] = '?';
                 break;
-            case self::param_dl_sequence:
+            case self::PARAM_DL_SEQUENCE:
                 $holders[] = '$' . ($offset + 1);
                 break;
             default:
@@ -1009,10 +1011,10 @@ abstract class QDBO_Abstract
             if (!isset($fields[strtolower($key)])) { continue; }
             $qkey = $this->qfield($key);
             switch($this->_PARAM_STYLE) {
-            case self::param_qm:
+            case self::PARAM_QM:
                 $pairs[] = "{$qkey}={$this->_PARAM_STYLE}"; 
                 break;
-            case self::param_dl_sequence:
+            case self::PARAM_DL_SEQUENCE:
                 $pairs[] = "{$qkey}=\$" . ($offset + 1);
                 break;
             default:
@@ -1046,5 +1048,4 @@ abstract class QDBO_Abstract
 
         return $dsn;
     }
-
 }

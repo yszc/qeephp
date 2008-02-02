@@ -32,10 +32,10 @@ class QTable_Base
     /**
      * 关联关系
      */
-    const has_one       = 'has one';
-    const has_many      = 'has many';
-    const belongs_to    = 'belongs to';
-    const many_to_many  = 'many to many';
+    const HAS_ONE       = 'has one';
+    const HAS_MANY      = 'has many';
+    const BELONGS_TO    = 'belongs to';
+    const MANY_TO_MAMNY  = 'many to many';
 
     /**
      * 数据表的 schema
@@ -788,9 +788,9 @@ class QTable_Base
          */
 
         // 首先从查询条件中提取出可以识别的字段名
-        if (strpos($where, '`') !== false) {
+        if (strpos($where, '[') !== false) {
             // 提取字段名
-            $where = preg_replace_callback('/`([a-z0-9_\-\.]+)`/i', array($this, '_parseWhereQfield'), $where);
+            $where = preg_replace_callback('/\[([a-z0-9_\-\.]+)\]/i', array($this, '_parseWhereQfield'), $where);
         }
 
         // 分析查询条件中的参数占位符
