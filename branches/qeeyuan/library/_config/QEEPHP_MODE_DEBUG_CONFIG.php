@@ -144,7 +144,7 @@ return array(
     /**
      * 调度器要使用的验证服务提供程序
      */
-    'dispatcher_acl'            => 'QACL',
+    'dispatcher_acl_provider'   => 'QACL',
 
     /**
      * 指示当没有为控制器提供 ACT 时，要使用的默认 ACT

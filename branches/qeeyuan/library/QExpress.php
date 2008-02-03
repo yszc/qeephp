@@ -11,10 +11,9 @@
 /**
  * 实现 Express 模式
  *
- * @package Core
+ * @package core
  * @version $Id$
  */
-
 
 // {{{ includes
 require dirname(__FILE__) . DIRECTORY_SEPARATOR . 'Q.php';
@@ -24,24 +23,27 @@ require dirname(__FILE__) . DIRECTORY_SEPARATOR . 'Q.php';
 /**
  * 初始化 QeePHP 框架
  */
-define('EXPRESS_MODE', true);
+define('QEEPHP_EXPRESS', true);
 
-if (!defined('DEPLOY_MODE') || DEPLOY_MODE != true) {
-    Q::setIni(Q::loadFile('DEBUG_MODE_CONFIG.php', false, QEE_DIR . DS . '_config'));
-    if (!defined('DEPLOY_MODE')) { define('DEPLOY_MODE', false); }
-} else {
-    Q::setIni(Q::loadFile('DEPLOY_MODE_CONFIG.php', false, QEE_DIR . DS . '_config'));
-    if (!defined('DEPLOY_MODE')) { define('DEPLOY_MODE', true); }
+if (!defined('RUN_MODE')) {
+	define('RUN_MODE', QEEPHP_MODE_DEBUG);
 }
 
-//if (!DEPLOY_MODE) {
-    error_reporting(E_ALL | E_STRICT);
-//} else {
-//    error_reporting(0);
-//}
+switch (RUN_MODE) {
+case QEEPHP_MODE_DEBUG:
+    require QEE_DIR . DS . 'QDebug.php';
+	Q::setIni(Q::loadFile('QEEPHP_MODE_DEBUG_CONFIG.php', false, QEE_DIR . DS . '_config'));
+	break;
+case QEEPHP_MODE_DEPLOY:
+    Q::setIni(Q::loadFile('QEEPHP_MODE_DEPLOY_CONFIG.php', false, QEE_DIR . DS . '_config'));
+    break;
+case QEEPHP_MODE_TEST:
+	require QEE_DIR . DS . 'QDebug.php';
+    Q::setIni(Q::loadFile('QEEPHP_MODE_TEST_CONFIG.php', false, QEE_DIR . DS . '_config'));
+}
 
+error_reporting(E_ALL | E_STRICT);
 set_exception_handler(array('QExpress', 'exceptionHandler'));
-
 
 // 允许 QeePHP 自动载入需要的类
 Q::import(QEE_DIR);
@@ -59,8 +61,7 @@ if (function_exists('spl_autoload_register')) {
 /**
  * QExpress 类提供了一系列便利方法，以及一些预定义的辅助方法
  *
- * @package Core
- * @author 起源科技 (www.qeeyuan.com)
+ * @package core
  */
 class QExpress
 {
@@ -75,6 +76,7 @@ class QExpress
 
         // 载入调度器并转发请求到控制器
         $dispatcherClass = Q::getIni('dispatcher');
+        Q::loadClass($dispatcherClass);
         $dispatcher = new $dispatcherClass($_GET);
         Q::reg($dispatcher, 'current_dispatcher');
         Q::reg($dispatcher, $dispatcherClass);
@@ -99,10 +101,6 @@ class QExpress
          */
         if (Q::getIni('log_enabled') && Q::getIni('log_provider')) {
             Q::loadClass(Q::getIni('log_provider'));
-        }
-        if (!function_exists('log_message')) {
-            // 如果没有指定日志服务提供程序，就定义一个空的 log_message() 函数
-            function log_message() {};
         }
 
         /**
@@ -130,14 +128,11 @@ class QExpress
         set_magic_quotes_runtime(0);
 
         if (Q::getIni('session_provider')) {
-            Q::getSingleton(Q::getIni('session_provider'));
+            Q::loadClass(Q::getIni('session_provider'));
         }
         if (Q::getIni('auto_session')) {
             session_start();
         }
-
-        // 定义 I18N 相关的常量
-        define('RESPONSE_CHARSET', Q::getIni('response_charset'));
 
         // 检查是否启用多语言支持
         if (Q::getIni('multi_language_support')) {
@@ -146,105 +141,19 @@ class QExpress
     }
 
     /**
-     * 载入 YAML 文件，返回分析结果
-     *
-     * loadYAML() 会自动使用缓存，只有当 YAML 文件被改变后，缓存才会更新。
-     *
-     * 关于 YAML 的详细信息,请参考 www.yaml.org 。
-     *
-     * 用法：
-     * <code>
-     * $data = QExpress::loadYAML('myData.yaml');
-     * </code>
-     *
-     * 注意：为了安全起见，不要将 yaml 文件置于浏览器能够访问的目录中。
-     * 或者将 YAML 文件的扩展名设置为 .yaml.php，并且在每一个 YAML 文件开头添加“exit()”。
-     * 例如：
-     * <code>
-     * # <?php exit(); ?>
-     *
-     * invoice: 34843
-     * date   : 2001-01-23
-     * bill-to: &id001
-     * ......
-     * </code>
-     *
-     * 这样可以确保即便浏览器直接访问该 .yaml.php 文件，也无法看到内容。
-     *
-     * 当 $cache 为 true 时，将使用默认设置对载入的 YAML 内容进行缓存。
-     * 如果希望自行指定缓存策略以及要使用的缓存服务，可以将 $cache 参数设置为
-     * $cache = array($policy, $backend)。
-     *
-     * 当 $cache 为 false 时，将不会对载入的 YAML 内容进行缓存。
-     *
-     * @param string $filename
-     * @param array $replace 对于 YAML 内容要进行自动替换的字符串对
-     * @param boolean $cache 缓存设置
-     *
-     * @return array
-     */
-    static function loadYAML($filename, $replace = null, $cache = true)
-    {
-        static $callback;
-
-        if (is_array($cache)) {
-            if (isset($cache[0])) {
-                $policy = $cache[0];
-            } else {
-                $policy = Q::getIni('default_yaml_cache_policy');
-            }
-            if (isset($cache[1])) {
-                $backend = $cache[1];
-            } else {
-                $backend = null;
-            }
-            $cacheEnabled = true;
-        } elseif ($cache) {
-            $cacheEnabled = true;
-            $policy = Q::getIni('default_yaml_cache_policy');
-            $backend = null;
-        } else {
-            $cacheEnabled = false;
-        }
-
-        if ($cacheEnabled) {
-            $yaml = Q::getCache('YAML-' . $filename, $policy);
-            if ($yaml) { return $yaml; }
-        }
-
-        if (!Q::isReadable($filename)) {
-            // LC_MSG: File "%s" not found.
-            throw new QException(__('File "%s" not found.', $filename));
-        }
-
-        Q::loadFile(QEE_DIR . DS . '_vendor' . DS . 'spyc.php', true);
-        $yaml = Spyc::YAMLLoad($filename);
-
-        if (is_null($callback)) {
-            $callback = create_function('& $v, $key, $replace', 'foreach ($replace as $search => $rep) { $v = str_replace($search, $rep, $v); }; return $v;');
-        }
-        array_walk_recursive($yaml, $callback, $replace);
-
-        if ($cacheEnabled) {
-            Q::setCache('YAML-' . $filename, $yaml, $policy, $backend);
-        }
-        return $yaml;
-    }
-
-    /**
      * 默认的 on_access_denied 事件处理函数
      */
-    static function onAccessDenied($controllerName, $actionName)
+    static function onAccessDenied($controller_name, $action_name)
     {
-        throw new QException("Access denied for \"{$controllerName}::{$actionName}\" action.");
+        throw new QException("Access denied for \"{$controller_name}::{$action_name}\" action.");
     }
 
     /**
      * 默认的 on_action_not_found 事件处理函数
      */
-    static function onActionNotFound($controllerName, $actionName)
+    static function onActionNotFound($controller_name, $action_name)
     {
-        throw new QException("Request to action {$controllerName}::{$actionName} not found");
+        throw new QException("Request to action {$controller_name}::{$action_name} not found");
     }
 
     /**
@@ -255,4 +164,3 @@ class QExpress
         QException::dump($ex);
     }
 }
-

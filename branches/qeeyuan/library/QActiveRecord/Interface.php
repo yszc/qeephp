@@ -1,14 +1,24 @@
 <?php
+/////////////////////////////////////////////////////////////////////////////
+// QeePHP Framework
+//
+// Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
+//
+// 许可协议，请查看源代码中附带的 LICENSE.TXT 文件，
+// 或者访问 http://www.qeephp.org/ 获得详细信息。
+/////////////////////////////////////////////////////////////////////////////
 
 /**
  * 定义 QActiveRecord_Interface 接口
  *
- * QActiveRecord_Interface 要求所有的 QActiveRecord_Abstract 继承类都必须定义一个静态的 find() 方法用于查找对象实例。
- *
- * @copyright Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
- * @author 起源科技(www.qeeyuan.com)
  * @package core
  * @version $Id$
+ */
+
+/**
+ * QActiveRecord_Interface 接口确定了所有 QActiveRecord_Abstract 继承类必须实现的静态方法
+ *
+ * @package core
  */
 interface QActiveRecord_Interface
 {
@@ -19,7 +29,7 @@ interface QActiveRecord_Interface
      *
      * @return array
      */
-    static function define();
+    static function __define();
 
     /**
      * 开启一个查询
@@ -28,20 +38,19 @@ interface QActiveRecord_Interface
      *
      * @return QActiveRecord_Select
      */
-    static function find_where();
+    static function find();
 
     /**
      * 删除符合条件的记录
      *
      * @static
      */
-    static function delete_where();
+    static function delete();
 
     /**
      * 实例化所有符合条件的对象，并调用这些对象的 destroy() 方法
      *
      * @static
      */
-    static function destroy_where();
+    static function destroy();
 }
-

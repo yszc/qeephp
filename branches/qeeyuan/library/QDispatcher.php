@@ -2,26 +2,23 @@
 /////////////////////////////////////////////////////////////////////////////
 // QeePHP Framework
 //
-// Copyright (c) 2005 - 2007 QeePHP.org (www.qee.org)
+// Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
 //
-// 许可协议，请查看源代码中附带的 LICENSE.txt 文件，
+// 许可协议，请查看源代码中附带的 LICENSE.TXT 文件，
 // 或者访问 http://www.qeephp.org/ 获得详细信息。
 /////////////////////////////////////////////////////////////////////////////
 
 /**
  * 定义 QDispatcher 类
  *
- * @copyright Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
- * @author 起源科技 (www.qeeyuan.com)
  * @package core
  * @version $Id$
  */
 
 /**
- * QDispatcher 分析 HTTP 请求，并转发到合适的 Controller 对象处理
+ * QDispatcher 分析 HTTP 请求，并转发到合适的 QController_Abstract 继承类实例处理
  *
  * @package core
- * @author 起源科技 (www.qeeyuan.com)
  */
 class QDispatcher
 {
@@ -30,37 +27,40 @@ class QDispatcher
      *
      * @var string
      */
-    protected $_controllerName;
+    protected $controller_name;
 
     /**
      * 当前请求的动作名字
      *
      * @var string
      */
-    protected $_actionName;
+    protected $action_name;
 
     /**
      * 用于提供验证服务的对象实例
      *
      * @var QACL
      */
-    protected $_acl;
+    protected $acl;
 
     /**
      * 构造函数
      *
      * @param array $request
      */
-    function __construct($request)
+    function __construct(array $request)
     {
         $c = strtolower(Q::getIni('controller_accessor'));
         $a = strtolower(Q::getIni('action_accessor'));
         $r = array_change_key_case($request, CASE_LOWER);
-        $this->_controllerName = isset($r[$c]) ? $r[$c] : Q::getIni('default_controller');
-        $this->_actionName = isset($r[$a]) ? $r[$a] : Q::getIni('default_action');
-        $this->_controllerName = strtolower(preg_replace('/[^a-z0-9_]+/i', '', $this->_controllerName));
-        $this->_actionName = strtolower(preg_replace('/[^a-z0-9_]+/i', '', $this->_actionName));
-        $this->_acl = Q::getSingleton(Q::getIni('dispatcher_acl'));
+        
+        $this->controller_name = isset($r[$c]) ? $r[$c] : Q::getIni('default_controller');
+        $this->action_name = isset($r[$a]) ? $r[$a] : Q::getIni('default_action');
+        
+        $this->controller_name = strtolower(preg_replace('/[^a-z0-9_]+/i', '', $this->controller_name));
+        $this->action_name = strtolower(preg_replace('/[^a-z0-9_]+/i', '', $this->action_name));
+        
+        $this->acl = Q::getSingleton(Q::getIni('dispatcher_acl_provider'));
     }
 
     /**
@@ -70,7 +70,7 @@ class QDispatcher
      */
     function dispatching()
     {
-        $ret = $this->executeAction($this->_controllerName, $this->_actionName);
+        $ret = $this->executeAction($this->controller_name, $this->action_name);
         if (is_object($ret) && method_exists($ret, 'execute')) {
             return $ret->execute();
         } else {
@@ -81,69 +81,72 @@ class QDispatcher
     /**
      * 执行指定的 Action 方法
      *
-     * @param string $controllerName
-     * @param string $actionName
+     * @param string $controller_name
+     * @param string $action_name
      *
      * @return mixed
      */
-    function executeAction($controllerName, $actionName)
+    function executeAction($controller_name, $action_name)
     {
+        Q::setIni('q/currentcontroller_name', $controller_name);
+        Q::setIni('q/currentaction_name', $action_name);
+    	
         // 检查是否有权限访问
-        if (!$this->checkAuthorized($controllerName, $actionName)) {
-            return call_user_func_array(Q::getIni('on_access_denied'), array($controllerName, $actionName));
+        if (!$this->checkAuthorized($controller_name, $action_name)) {
+            return call_user_func_array(Q::getIni('on_access_denied'), array($controller_name, $action_name));
         }
 
-        Q::setIni('q/current_controller_name', $controllerName);
-        Q::setIni('q/current_action_name', $actionName);
         // 初始化控制器
-        $className = 'Controller_' . ucfirst($controllerName);
-        $controller = new $className();
+        $class_name = 'Controller_' . ucfirst($controller_name);
+        Q::loadClass($class_name);
+        $controller = new $class_name();
         /* @var $controller QController_Abstract */
+        
         Q::reg($controller);
         Q::reg($controller, 'current_controller');
 
-        return $controller->execute($actionName);
+        return $controller->execute($action_name);
     }
 
     /**
      * 检查当前用户是否有权限访问指定的控制器和动作
      *
-     * @param string $controllerName
-     * @param string $actionName
+     * @param string $controller_name
+     * @param string $action_name
      *
      * @return boolean
      */
-    function checkAuthorized($controllerName, $actionName)
+    function checkAuthorized($controller_name, $action_name)
     {
         // 如果控制器没有提供 ACT，或者提供了一个空的 ACT，则假定允许用户访问
-        $rawACT = $this->getControllerACT($controllerName);
-        if (is_null($rawACT) || empty($rawACT)) { return true; }
+        $raw_act = $this->getControllerACT($controller_name);
+        if (is_null($raw_act) || empty($raw_act)) { return true; }
 
-        $act = $this->_acl->formatACT($rawACT);
+        $act = $this->acl->formatACT($raw_act);
         $act['actions'] = array();
-        if (isset($rawACT['actions']) && is_array($rawACT['actions'])) {
-            foreach ($rawACT['actions'] as $rawactionName => $rawActionsACT) {
-                if ($rawactionName !== 'action_all') {
-                    $rawactionName = strtolower($rawactionName);
+        if (isset($raw_act['actions']) && is_array($raw_act['actions'])) {
+            foreach ($raw_act['actions'] as $rawaction_name => $raw_actions_act) {
+                if ($rawaction_name !== 'action_all') {
+                    $rawaction_name = strtolower($rawaction_name);
                 }
-                $act['actions'][$rawactionName] = $this->_acl->formatACT($rawActionsACT);
+                $act['actions'][$rawaction_name] = $this->acl->formatACT($raw_actions_act);
             }
         }
 
         // 取出用户角色信息
         $roles = $this->getUserRoles();
         // 首先检查用户是否可以访问该控制器
-        if (!$this->_acl->check($roles, $act)) { return false; }
+        if (!$this->acl->check($roles, $act)) { return false; }
 
         // 接下来验证用户是否可以访问指定的控制器方法
-        $actionName = strtolower($actionName);
-        if (isset($act['actions'][$actionName])) {
-            return $this->_acl->check($roles, $act['actions'][$actionName]);
+        $action_name = strtolower($action_name);
+        if (isset($act['actions'][$action_name])) {
+            return $this->acl->check($roles, $act['actions'][$action_name]);
         }
 
         // 如果当前要访问的控制器方法没有在 act 中指定，则检查 act 中是否提供了 ACTION_ALL
         if (!isset($act['actions']['action_all'])) { return true; }
-        return $this->_acl->check($roles, $act['actions']['action_all']);
+        return $this->acl->check($roles, $act['actions']['action_all']);
     }
 
     /**
@@ -155,7 +158,7 @@ class QDispatcher
      */
     function getControllerName()
     {
-        return $this->_controllerName;
+        return $this->controller_name;
     }
 
     /**
@@ -167,7 +170,7 @@ class QDispatcher
      */
     function getActionName()
     {
-        return $this->_actionName;
+        return $this->action_name;
     }
 
     /**
@@ -177,20 +180,20 @@ class QDispatcher
      */
     function getACL()
     {
-        return $this->_acl;
+        return $this->acl;
     }
 
     /**
      * 获取指定控制器的访问控制表（ACT）
      *
-     * @param string $controllerName
+     * @param string $controller_name
      *
      * @return array
      */
-    function getControllerACT($controllerName)
+    function getControllerACT($controller_name)
     {
         // 首先尝试从全局 ACT 查询控制器的 ACT
-        $act = Q::getIni('global_act/' . $controllerName);
+        $act = Q::getIni('global_act/' . $controller_name);
         if ($act) {
             return $act;
         } else {
