@@ -34,165 +34,165 @@ abstract class QDBO_Abstract
      *
      * @var int
      */
-    public $queryCount = 0;
+    public $query_count = 0;
 
     /**
      * 参数占位符类型
      */
-    const PARAM_QM          = '?'; // 问号作为参数占位符
-    const PARAM_CL_NAMED    = ':'; // 冒号开始的命名参数
-    const PARAM_DL_SEQUENCE = '$'; // $符号开始的序列
-    const PARAM_AT_NAMED    = '@'; // @开始的命名参数
+    const param_qm          = '?'; // 问号作为参数占位符
+    const param_cl_named    = ':'; // 冒号开始的命名参数
+    const param_dl_sequence = '$'; // $符号开始的序列
+    const param_at_named    = '@'; // @开始的命名参数
 
     /**
      * 可用的查询结果集返回形式
      */
-    const FETCH_MODE_ARRAY  = 1; // 返回的每一个记录就是一个索引数组
-    const FETCH_MODE_ASSOC  = 2; // 返回的每一个记录就是一个以字段名作为键名的数组
+    const fetch_mode_array  = 1; // 返回的每一个记录就是一个索引数组
+    const fetch_mode_assoc  = 2; // 返回的每一个记录就是一个以字段名作为键名的数组
 
     /**
      * 数据库连接信息
      *
      * @var mixed
      */
-    protected $_dsn;
+    protected $dsn;
 
     /**
      * 数据库访问对象 ID
      *
      * @var string
      */
-    protected $_id;
+    protected $id;
 
     /**
      * 默认的 schema
      *
      * @var string
      */
-    protected $_schema = '';
+    protected $schema = '';
 
     /**
      * 指示返回结果集的形式
      *
      * @var const
      */
-    protected $_fetchMode = self::FETCH_MODE_ASSOC;
+    protected $fetch_mode = self::fetch_mode_assoc;
 
     /**
      * 数据库连接句柄
      *
      * @var resource
      */
-    protected $_conn;
+    protected $conn;
 
     /**
      * 最后一次数据库操作的错误信息
      *
      * @var mixed
      */
-    protected $_lastErr;
+    protected $last_err;
 
     /**
      * 最后一次数据库操作的错误代码
      *
      * @var mixed
      */
-    protected $_lastErrCode;
+    protected $last_err_code;
 
     /**
      * 最近一次插入操作或者 nextID() 操作返回的插入 ID
      *
      * @var mixed
      */
-    protected $_insertID;
+    protected $insert_id;
 
     /**
      * 指示事务启动次数
      *
      * @var int
      */
-    protected $_transCount = 0;
+    protected $trans_count = 0;
 
     /**
      * 指示事务执行期间是否发生了错误
      *
      * @var boolean
      */
-    protected $_hasFailedQuery = false;
+    protected $has_failed_query = false;
 
     /**
      * SAVEPOINT 堆栈
      *
      * @var array
      */
-    protected $_savepointsStack = array();
+    protected $savepoints_stack = array();
 
     /**
      * 用于描绘 true、false 和 null 的数据库值
      */
-    protected $_TRUE_VALUE      = 1;
-    protected $_FALSE_VALUE     = 0;
-    protected $_NULL_VALUE      = 'NULL';
+    protected $TRUE_VALUE       = 1;
+    protected $FALSE_VALUE      = 0;
+    protected $NULL_VALUE       = 'NULL';
 
     /**
      * 数据库接受的日期格式
      */
-    protected $_TIMESTAMP_FORMAT = 'Y-m-d H:i:s';
+    protected $TIMESTAMP_FORMAT = 'Y-m-d H:i:s';
 
     /**
      * 指示驱动是否支持原生的参数绑定
      *
      * @var boolean
      */
-    protected $_BIND_ENABLED = true;
+    protected $BIND_ENABLED = true;
     /**
      * 指示使用何种样式的参数占位符
      *
      * @var string
      */
-    protected $_PARAM_STYLE  = self::PARAM_QM;
+    protected $PARAM_STYLE  = self::param_qm;
 
     /**
      * 指示数据库是否有自增字段功能
      *
      * @var boolean
      */
-    protected $_HAS_INSERT_ID = true;
+    protected $HAS_INSERT_ID = true;
 
     /**
      * 指示数据库是否能获得更新、删除操作影响的记录行数量
      *
      * @var boolean
      */
-    protected $_AFFECTED_ROWS_ENABLED = true;
+    protected $AFFECTED_ROWS_ENABLED = true;
 
     /**
      * 指示数据库是否支持事务
      *
      * @var boolean
      */
-    protected $_TRANSACTION_ENABLED = true;
+    protected $TRANSACTION_ENABLED = true;
 
     /**
      * 指示数据库是否支持事务中的 SAVEPOINT 功能
      *
      * @var boolean
      */
-    protected $_SAVEPOINT_ENABLED = false;
+    protected $SAVEPOINT_ENABLED = false;
 
     /**
      * 指示是否将查询语句放入 log 数组
      *
      * @var boolean
      */
-    protected $_LOG_QUERY = false;
+    protected $LOG_QUERY = false;
 
     /**
      * 指示是否将查询结果中的字段名转换为全小写
      *
      * @var boolean
      */
-    protected $_RESULT_FIELD_NAME_LOWER = false;
+    protected $RESULT_FIELD_NAME_LOWER = false;
 
     /**
      * 开发者必须通过该方法获得数据库访问对象实例
@@ -212,14 +212,15 @@ abstract class QDBO_Abstract
             $dsn = Q::getIni('dsn');
         }
         $dbtype = $dsn['driver'];
-        $objID = "dbo_{$dbtype}_" .  md5(serialize($dsn));
-        if (Q::isRegistered($objID)) {
-            return Q::registry($objID);
+        $objid = "dbo_{$dbtype}_" .  md5(serialize($dsn));
+        if (Q::isRegistered($objid)) {
+            return Q::registry($objid);
         }
 
-        $className = 'QDBO_' . ucfirst($dbtype);
-        $dbo = new $className($dsn, $objID);
-        Q::register($dbo, $objID);
+        $class_name = 'QDBO_' . ucfirst($dbtype);
+        Q::loadClass($class_name);
+        $dbo = new $class_name($dsn, $objid);
+        Q::register($dbo, $objid);
         if ($default) {
             Q::register($dbo, 'dbo_default');
         }
@@ -234,11 +235,8 @@ abstract class QDBO_Abstract
      */
     protected function __construct($dsn, $id)
     {
-        $this->_dsn = $dsn;
-        $this->_id = $id;
-        if (defined('DEPLOY_MODE') && !DEPLOY_MODE) {
-            $this->_LOG_QUERY = true;
-        }
+        $this->dsn = $dsn;
+        $this->id = $id;
     }
 
     /**
@@ -248,7 +246,7 @@ abstract class QDBO_Abstract
      */
     function getDSN()
     {
-        return $this->_dsn;
+        return $this->dsn;
     }
 
     /**
@@ -258,7 +256,7 @@ abstract class QDBO_Abstract
      */
     function getID()
     {
-        return $this->_id;
+        return $this->id;
     }
 
     /**
@@ -268,7 +266,7 @@ abstract class QDBO_Abstract
      */
     function getSchema()
     {
-        return $this->_schema;
+        return $this->schema;
     }
 
     /**
@@ -278,7 +276,7 @@ abstract class QDBO_Abstract
      */
     function getTablePrefix()
     {
-        return isset($this->_dsn['prefix']) ? $this->_dsn['prefix'] : '';
+        return isset($this->dsn['prefix']) ? $this->dsn['prefix'] : '';
     }
 
     /**
@@ -309,7 +307,7 @@ abstract class QDBO_Abstract
      */
     function isConnected()
     {
-    	return !is_null($this->_conn);
+    	return !is_null($this->conn);
     }
 
     /**
@@ -317,11 +315,11 @@ abstract class QDBO_Abstract
      */
     function close()
     {
-        $this->_conn = null;
-        $this->_lastErr = null;
-        $this->_lastErrCode = null;
-        $this->_insertID = null;
-        $this->_transCount = 0;
+        $this->conn = null;
+        $this->last_err = null;
+        $this->last_err_code = null;
+        $this->insert_id = null;
+        $this->trans_count = 0;
     }
 
     /**
@@ -331,7 +329,7 @@ abstract class QDBO_Abstract
      */
     function handle()
     {
-        return $this->_conn;
+        return $this->conn;
     }
 
     /**
@@ -390,21 +388,21 @@ abstract class QDBO_Abstract
      *
      * @param string $sql
      * @param array $params
-     * @param enum $paramStyle
+     * @param enum $param_style
      *
      * @return string
      */
-    function qinto($sql, array $params = null, $paramStyle = null)
+    function qinto($sql, array $params = null, $param_style = null)
     {
-        if (is_null($paramStyle)) {
-            $paramStyle = $this->_PARAM_STYLE;
+        if (is_null($param_style)) {
+            $param_style = $this->_PARAM_STYLE;
         }
 
         $callback = array($this, 'qstr');
-        switch ($paramStyle) {
-        case self::PARAM_QM:
-        case self::PARAM_DL_SEQUENCE:
-            if ($paramStyle == self::PARAM_QM) {
+        switch ($param_style) {
+        case self::param_qm:
+        case self::param_dl_sequence:
+            if ($param_style == self::param_qm) {
                 $parts = explode('?', $sql);
             } else {
                 $parts = preg_split('/\$[0-9]+/', $sql);
@@ -415,20 +413,20 @@ abstract class QDBO_Abstract
 
             $str = $parts[0];
             $offset = 1;
-            foreach ($params as $argValue) {
-                if (is_array($argValue)) {
-                    $argValue = array_map($callback, $argValue);
-                    $str .= implode(',', $argValue) . $parts[$offset];
+            foreach ($params as $arg_value) {
+                if (is_array($arg_value)) {
+                    $arg_value = array_map($callback, $arg_value);
+                    $str .= implode(',', $arg_value) . $parts[$offset];
                 } else {
-                    $str .= $this->qstr($argValue) . $parts[$offset];
+                    $str .= $this->qstr($arg_value) . $parts[$offset];
                 }
                 $offset++;
             }
             return $str;
 
-        case self::PARAM_CL_NAMED:
-        case self::PARAM_AT_NAMED:
-            $split = ($paramStyle == self::PARAM_CL_NAMED) ? ':' : '@';
+        case self::param_cl_named:
+        case self::param_at_named:
+            $split = ($param_style == self::param_cl_named) ? ':' : '@';
             $parts = preg_split('/(' . $split . '[a-z0-9_\-]+)/i', $sql, -1, PREG_SPLIT_DELIM_CAPTURE);
             $max = count($parts);
             if (count($params) * 2 + 1 != $max) {
@@ -437,15 +435,15 @@ abstract class QDBO_Abstract
             $str = $parts[0];
 
             for ($offset = 1; $offset < $max; $offset += 2) {
-                $argName = substr($parts[$offset], 1);
-                if (!isset($params[$argName])) {
-                    throw new QDBO_Exception(__('Invalid parameter "%s" for "%s"', $argName, $sql));
+                $arg_name = substr($parts[$offset], 1);
+                if (!isset($params[$arg_name])) {
+                    throw new QDBO_Exception(__('Invalid parameter "%s" for "%s"', $arg_name, $sql));
                 }
-                if (is_array($params[$argName])) {
-                    $argValue = array_map($callback, $params[$argName]);
-                    $str .= implode(',', $argValue) . $parts[$offset + 1];
+                if (is_array($params[$arg_name])) {
+                    $arg_value = array_map($callback, $params[$arg_name]);
+                    $str .= implode(',', $arg_value) . $parts[$offset + 1];
                 } else {
-                    $str .= $this->qstr($params[$argName]) . $parts[$offset + 1];
+                    $str .= $this->qstr($params[$arg_name]) . $parts[$offset + 1];
                 }
             }
             return $str;
@@ -472,12 +470,12 @@ abstract class QDBO_Abstract
      *
      * 注意：不同数据库驱动，产生的完全限定名是不同的。
      *
-     * @param string $tableName
+     * @param string $table_name
      * @param string $schema
      *
      * @return string
      */
-    abstract function qtable($tableName, $schema = null);
+    abstract function qtable($table_name, $schema = null);
 
     /**
      * 返回字段名称的完全限定名
@@ -489,26 +487,26 @@ abstract class QDBO_Abstract
      * $field = 'post_id';
      * $tablename = 'posts';
      * $schema = 'test_db';
-     * $identifier = $dbo->qfield($field, $tablename, $schema);
+     * $identifier = $dbo->qfield($field, $table_name, $schema);
      * // 如果是 MySQL 驱动，则 $identifier 的值为 `test_db`.`posts`.`post_id`
      * </code>
      *
      * 注意：不同数据库驱动，产生的完全限定名是不同的。
      *
-     * @param string $fieldName
-     * @param string $tableName
+     * @param string $field_name
+     * @param string $table_name
      * @param string $schema
      *
      * @return string
      */
-    abstract function qfield($fieldName, $tableName = null, $schema = null);
+    abstract function qfield($field_name, $table_name = null, $schema = null);
 
     /**
      * 返回多个字段名称的完全限定名
      *
      * 转换的结果是以“,”连接的、包含所有字段完全限定名的字符串，
      * 或者一个包含所有字段的完全限定名的数组。
-     * 默认返回字符串，如果要返回数组，将 $returnArray 参数指定为 true。
+     * 默认返回字符串，如果要返回数组，将 $return_array 参数指定为 true。
      *
      * example:
      * <code>
@@ -523,23 +521,23 @@ abstract class QDBO_Abstract
      * </code>
      *
      * @param string|array $fields
-     * @param string $tableName
+     * @param string $table_name
      * @param string $schema
-     * @param boolean $returnArray
+     * @param boolean $return_array
      *
      * @return string
      */
-    function qfields($fields, $tableName = null, $schema = null, $returnArray = false)
+    function qfields($fields, $table_name = null, $schema = null, $return_array = false)
     {
         if (!is_array($fields)) {
             $fields = explode(',', $fields);
             $fields = array_map('trim', $fields);
         }
         $return = array();
-        foreach ($fields as $fieldName) {
-            $return[] = $this->qfield($fieldName, $tableName, $schema);
+        foreach ($fields as $field_name) {
+            $return[] = $this->qfield($field_name, $table_name, $schema);
         }
-        return $returnArray ? $return : implode(', ', $return);
+        return $return_array ? $return : implode(', ', $return);
     }
 
     /**
@@ -551,20 +549,20 @@ abstract class QDBO_Abstract
      * 假设本次调用 nextID() 返回 3，那么下一次调用 nextID() 就会返回一个比 3 更大的值。
      * nextID() 返回的序列值，可以作为记录的主键字段值，以便确保插入记录时总是使用不同的主键值。
      *
-     * 可以使用多个序列，只需要指定不同的 $seqName 参数即可。
+     * 可以使用多个序列，只需要指定不同的 $seq_name 参数即可。
      *
      * 在不同的数据库中，序列的产生方式各有不同。
      * PostgreSQL、Oracle 等数据库中，会使用数据库自带的序列功能来实现。
      * 其他部分数据库会创建一个后缀为 _seq 表来存放序列值。
      *
-     * 例如 $seqName 为 posts，则存放该序列的表名称为 posts_seq。
+     * 例如 $seq_name 为 posts，则存放该序列的表名称为 posts_seq。
      *
-     * @param string $seqName
-     * @param string $startValue
+     * @param string $seq_name
+     * @param string $start_value
      *
      * @return int
      */
-    abstract function nextID($seqName = 'qdbo_global_seq', $startValue = 1);
+    abstract function nextID($seq_name = 'qdbo_global_seq', $start_value = 1);
 
     /**
      * 创建一个新的序列，失败时抛出异常
@@ -572,17 +570,17 @@ abstract class QDBO_Abstract
      * 调用 nextID() 时，如果指定的序列不存在，则会自动调用 create_seq() 创建。
      * 开发者也可以自行调用 create_seq() 创建一个新序列。
      *
-     * @param string $seqName
-     * @param int $startValue
+     * @param string $seq_name
+     * @param int $start_value
      */
-    abstract function createSeq($seqName = 'qdbo_global_seq', $startValue = 1);
+    abstract function createSeq($seq_name = 'qdbo_global_seq', $start_value = 1);
 
     /**
      * 删除一个序列，失败时抛出异常
      *
-     * @param string $seqName
+     * @param string $seq_name
      */
-    abstract function dropSeq($seqName = 'qdbo_global_seq');
+    abstract function dropSeq($seq_name = 'qdbo_global_seq');
 
     /**
      * 获取自增字段的最后一个值或者 nextID() 方法产生的最后一个值
@@ -836,7 +834,7 @@ abstract class QDBO_Abstract
      */
     function failTrans()
     {
-        $this->_hasFailedQuery = true;
+        $this->has_failed_query = true;
     }
 
     /**
@@ -844,7 +842,7 @@ abstract class QDBO_Abstract
      */
     function hasFailedQuery()
     {
-        return $this->_hasFailedQuery;
+        return $this->has_failed_query;
     }
 
     /**
@@ -880,12 +878,12 @@ abstract class QDBO_Abstract
      * - r 自动增量
      * - p 非自增的主键字段
      *
-     * @param string $tableName
+     * @param string $table_name
      * @param string $schema
      *
      * @return array
      */
-    abstract function metaColumns($tableName, $schema = null);
+    abstract function metaColumns($table_name, $schema = null);
 
     /**
      * 获得所有数据表的名称
@@ -977,10 +975,10 @@ abstract class QDBO_Abstract
         foreach (array_keys($inputarr) as $offset => $key) {
             if (!isset($fields[strtolower($key)])) { continue; }
             switch($this->_PARAM_STYLE) {
-            case self::PARAM_QM:
+            case self::param_qm:
                 $holders[] = '?';
                 break;
-            case self::PARAM_DL_SEQUENCE:
+            case self::param_dl_sequence:
                 $holders[] = '$' . ($offset + 1);
                 break;
             default:
@@ -1011,10 +1009,10 @@ abstract class QDBO_Abstract
             if (!isset($fields[strtolower($key)])) { continue; }
             $qkey = $this->qfield($key);
             switch($this->_PARAM_STYLE) {
-            case self::PARAM_QM:
+            case self::param_qm:
                 $pairs[] = "{$qkey}={$this->_PARAM_STYLE}"; 
                 break;
-            case self::PARAM_DL_SEQUENCE:
+            case self::param_dl_sequence:
                 $pairs[] = "{$qkey}=\$" . ($offset + 1);
                 break;
             default:

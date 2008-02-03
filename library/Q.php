@@ -21,14 +21,24 @@ if (defined('QEE_VERSION')) { return; }
 // 定义 QeePHP 版本号常量和 QeePHP 所在路径
 define('QEE_VERSION', '2.0');
 define('QEE_DIR', dirname(__FILE__));
+
+// DIRECTORY_SEPARATOR 的简写
 define('DS', DIRECTORY_SEPARATOR);
+
+// 定义可用的运行模式
+define('QEEPHP_MODE_DEBUG',     'debug');
+define('QEEPHP_MODE_DEPLOY',    'deploy');
+define('QEEPHP_MODE_TEST',      'test');
+// }}}
+
+// {{{ includes
+require QEE_DIR . DS . 'QException.php';
 // }}}
 
 /**
  * Q 类提供了 QeePHP 框架的基本服务
  *
- * @package Core
- * @author 起源科技 (www.qeeyuan.com)
+ * @package core
  */
 abstract class Q
 {
@@ -38,21 +48,21 @@ abstract class Q
      *
      * @var array
      */
-    private static $__config = array();
+    private static $config = array();
 
     /**
      * 对象注册表
      *
      * @var array
      */
-    private static $__objects = array();
+    private static $objects = array();
 
     /**
      * 类搜索路径
      *
      * @var array
      */
-    private static $__classpath = array();
+    private static $class_path = array();
     // }}}
 
     // {{{ getIni()
@@ -67,10 +77,10 @@ abstract class Q
     static function getIni($option, $default = null)
     {
         if (strpos($option, '/') === false) {
-            return isset(self::$__config[$option]) ? self::$__config[$option] : $default;
+            return isset(self::$config[$option]) ? self::$config[$option] : $default;
         }
         $parts = explode('/', $option);
-        $pos =& self::$__config;
+        $pos =& self::$config;
         foreach ($parts as $part) {
             if (!isset($pos[$part])) { return $default; }
             $pos =& $pos[$part];
@@ -89,13 +99,13 @@ abstract class Q
     static function setIni($option, $data = null)
     {
         if (is_array($option)) {
-            self::$__config = array_merge(self::$__config, $option);
+            self::$config = array_merge(self::$config, $option);
         } elseif (strpos($option, '/') === false) {
-            self::$__config[$option] = $data;
+            self::$config[$option] = $data;
         } else {
             $parts = explode('/', $option);
             $max = count($parts) - 1;
-            $pos =& self::$__config;
+            $pos =& self::$config;
             for ($i = 0; $i <= $max; $i++) {
                 $part = $parts[$i];
                 if ($i < $max) {
@@ -202,23 +212,23 @@ abstract class Q
      * @param string|array $dirs
      * @param string $suffix
      */
-    static function loadClass($className, $dirs = null, $suffix = null)
+    static function loadClass($class_name, $dirs = null, $suffix = null)
     {
-        if (class_exists($className, false) || interface_exists($className, false)) {
+        if (class_exists($class_name, false) || interface_exists($class_name, false)) {
             return;
         }
 
-        $filename = str_replace('_', DS, $className);
+        $filename = str_replace('_', DS, $class_name);
         if (!is_null($suffix)) {
             $suffix = trim($suffix, '\\/');
             $suffix = DS . $suffix;
         }
-
-        if ($filename != $className) {
+        
+        if ($filename != $class_name) {
             $dirname = dirname($filename);
             if (is_null($dirs)) {
                 $dirs = array();
-                foreach (self::$__classpath as $dir) {
+                foreach (self::$class_path as $dir) {
                     if ($dir == '.') {
                         $dirs[] = $dirname . $suffix;
                     } else {
@@ -236,23 +246,14 @@ abstract class Q
             }
             $filename = basename($filename) . '.php';
         } else {
-            $dirs = self::$__classpath;
+            $dirs = self::$class_path;
             $filename .= '.php';
         }
+        
+        QDebug::dump($filename, '$filename');
+        QDebug::dump($dirs, '$dirs');
 
         self::loadFile($filename, true, $dirs);
-    }
-    // }}}
-
-    // {{{ useSupport
-    /**
-     * 使用指定的支持库
-     *
-     * @param string $libname
-     */
-    static function useSupport($libname)
-    {
-        self::loadFile(strtolower($libname) . '.php', true, QEE_DIR . '/support/');
     }
     // }}}
 
@@ -277,6 +278,12 @@ abstract class Q
     {
         static $loaded = array();
 
+        $id = $filename . implode(':', (array)$dirs);
+        
+        QDebug::dump($id, '$id');
+        QDebug::dump($loaded, '$loaded');
+        
+        if ($once && isset($loaded[$id])) { return null; }
         if (preg_match('/[^a-z0-9\-_.]/i', $filename)) {
             // LC_MSG: Security check: Illegal character in filename "%s".
             throw new QException(__('Security check: Illegal character in filename "%s".', $filename));
@@ -290,27 +297,23 @@ abstract class Q
         foreach ($dirs as $dir) {
             $path = rtrim($dir, '\\/') . DS . $filename;
             if (self::isReadable($path)) {
-                if ($once) {
-                    if (isset($loaded[$path])) { 
-                        return null; 
-                    } else {
-                        $loaded[$path] = true;
-                    }
+                if ($once) { 
+                    $loaded[$id] = true;
+                    return include_once $path; 
+                } else {
+                	return include $path;
                 }
-                return include $path;
             }
         }
 
         // include 会在 include_path 中寻找文件
         if (self::isReadable($filename)) {
             if ($once) {
-                if (isset($loaded[$path])) { 
-                    return null; 
-                } else {
-                    $loaded[$path] = true;
-                }
+            	$loaded[$id] = true;
+            	return include $filename;
+            } else {
+                return include $filename;
             }
-            return include $filename;
         }
 
         if ($throw) {
@@ -326,17 +329,17 @@ abstract class Q
     /**
      * 返回指定对象的唯一实例，如果指定类无法载入或不存在，则抛出异常
      *
-     * @param string $className 要获取的对象的类名字
+     * @param string $class_name 要获取的对象的类名字
      *
      * @return object
      */
-    static function getSingleton($className)
+    static function getSingleton($class_name)
     {
-        if (isset(self::$__objects[$className])) {
-            return self::$__objects[$className];
+        if (isset(self::$objects[$class_name])) {
+            return self::$objects[$class_name];
         }
-        self::loadClass($className);
-        return self::register(new $className(), $className);
+        self::loadClass($class_name);
+        return self::register(new $class_name(), $class_name);
     }
     // }}}
 
@@ -390,7 +393,7 @@ abstract class Q
         if (is_null($name)) {
             $name = get_class($obj);
         }
-        self::$__objects[$name] = $obj;
+        self::$objects[$name] = $obj;
         return $obj;
     }
     // }}}
@@ -405,8 +408,8 @@ abstract class Q
      */
     static function registry($name)
     {
-        if (isset(self::$__objects[$name])) {
-            return self::$__objects[$name];
+        if (isset(self::$objects[$name])) {
+            return self::$objects[$name];
         }
         // LC_MSG: No object is registered of name "%s".
         throw new QException(__('No object is registered of name "%s".', $name));
@@ -423,7 +426,7 @@ abstract class Q
      */
     static function isRegistered($name)
     {
-        return isset(self::$__objects[$name]);
+        return isset(self::$objects[$name]);
     }
     // }}}
 
@@ -448,8 +451,8 @@ abstract class Q
      */
     static function import($dir)
     {
-    	if (!isset(self::$__classpath[$dir]) || !is_dir($dir)) {
-    		self::$__classpath[$dir] = realpath($dir);
+    	if (!isset(self::$class_path[$dir]) || !is_dir($dir)) {
+    		self::$class_path[$dir] = realpath($dir);
     	}
     }
     // }}}
@@ -497,6 +500,94 @@ abstract class Q
         }
         $input = array_map('trim', $input);
         return array_filter($input, 'strlen');
+    }
+    // }}}
+
+    // {{{ loadYAML()
+    /**
+     * 载入 YAML 文件，返回分析结果
+     *
+     * loadYAML() 会自动使用缓存，只有当 YAML 文件被改变后，缓存才会更新。
+     *
+     * 关于 YAML 的详细信息,请参考 www.yaml.org 。
+     *
+     * 用法：
+     * <code>
+     * $data = QExpress::loadYAML('myData.yaml');
+     * </code>
+     *
+     * 注意：为了安全起见，不要将 yaml 文件置于浏览器能够访问的目录中。
+     * 或者将 YAML 文件的扩展名设置为 .yaml.php，并且在每一个 YAML 文件开头添加“exit()”。
+     * 例如：
+     * <code>
+     * # <?php exit(); ?>
+     *
+     * invoice: 34843
+     * date   : 2001-01-23
+     * bill-to: &id001
+     * ......
+     * </code>
+     *
+     * 这样可以确保即便浏览器直接访问该 .yaml.php 文件，也无法看到内容。
+     *
+     * 当 $cache 为 true 时，将使用默认设置对载入的 YAML 内容进行缓存。
+     * 如果希望自行指定缓存策略以及要使用的缓存服务，可以将 $cache 参数设置为
+     * $cache = array($policy, $backend)。
+     *
+     * 当 $cache 为 false 时，将不会对载入的 YAML 内容进行缓存。
+     *
+     * @param string $filename
+     * @param array $replace 对于 YAML 内容要进行自动替换的字符串对
+     * @param boolean $cache 缓存设置
+     *
+     * @return array
+     */
+    static function loadYAML($filename, $replace = null, $cache = true)
+    {
+        static $callback;
+
+        if (is_array($cache)) {
+            if (isset($cache[0])) {
+                $policy = $cache[0];
+            } else {
+                $policy = self::getIni('default_yaml_cache_policy');
+            }
+            if (isset($cache[1])) {
+                $backend = $cache[1];
+            } else {
+                $backend = null;
+            }
+            $cache_enabled = true;
+        } elseif ($cache) {
+            $cache_enabled = true;
+            $policy = self::getIni('default_yaml_cache_policy');
+            $backend = null;
+        } else {
+            $cache_enabled = false;
+        }
+
+        if ($cache_enabled) {
+            $yaml = self::getCache('YAML-' . $filename, $policy);
+            if ($yaml) { return $yaml; }
+        }
+
+        if (!Q::isReadable($filename)) {
+            // LC_MSG: File "%s" not found.
+            throw new QException(__('File "%s" not found.', $filename));
+        }
+
+        self::loadFile(QEE_DIR . DS . '_vendor' . DS . 'spyc.php', true);
+        $yaml = Spyc::YAMLLoad($filename);
+
+        if (is_null($callback)) {
+            $callback = create_function('& $v, $key, $replace', 'foreach ($replace as $search => $rep) { $v = str_replace($search, $rep, $v); }; return $v;');
+        }
+        array_walk_recursive($yaml, $callback, $replace);
+
+        if ($cache_enabled) {
+            self::setCache('yaml:' . $filename, $yaml, $policy, $backend);
+        }
+        return $yaml;
     }
     // }}}
 }

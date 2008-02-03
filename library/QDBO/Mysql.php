@@ -194,6 +194,7 @@ class QDBO_Mysql extends QDBO_Abstract
 
         $result = mysql_query($sql, $this->_conn);
         if (is_resource($result)) {
+        	Q::loadClass('QDBO_Result_Mysql');
             return new QDBO_Result_Mysql($result, $this->_fetchMode);
         } elseif ($result) {
             $this->_lastErr = null;
