@@ -27,14 +27,14 @@ class QDBO_Transaction
      *
      * @var QDBO_Abstract
      */
-    protected $_dbo;
+    protected $dbo;
 
     /**
      * 指示当前是否在事务中
      *
      * @var boolean
      */
-    protected $_inTran;
+    protected $in_tran;
 
     /**
      * 构造函数
@@ -43,9 +43,9 @@ class QDBO_Transaction
      */
     function __construct(QDBO_Abstract $dbo)
     {
-        $this->_dbo = $dbo;
-        $this->_dbo->startTrans();
-        $this->_inTran = true;
+        $this->dbo = $dbo;
+        $this->dbo->startTrans();
+        $this->in_tran = true;
     }
 
     /**
@@ -53,8 +53,8 @@ class QDBO_Transaction
      */
     function __destruct()
     {
-        if ($this->_inTran) {
-            $this->_dbo->completeTrans();
+        if ($this->in_tran) {
+            $this->dbo->completeTrans();
         }
     }
 
@@ -68,7 +68,7 @@ class QDBO_Transaction
      */
     function commit($commitOnNoErrors = true)
     {
-        $this->_dbo->completeTrans($commitOnNoErrors);
+        $this->dbo->completeTrans($commitOnNoErrors);
         $this->inTran = false;
     }
 
@@ -77,7 +77,7 @@ class QDBO_Transaction
      */
     function rollback()
     {
-        $this->_dbo->completeTrans(false);
+        $this->dbo->completeTrans(false);
         $this->inTran = false;
     }
 
@@ -86,7 +86,7 @@ class QDBO_Transaction
      */
     function failTrans()
     {
-        $this->_dbo->failTrans();
+        $this->dbo->failTrans();
     }
 
     /**
@@ -94,6 +94,6 @@ class QDBO_Transaction
      */
     function hasFailedQuery()
     {
-        return $this->_dbo->hasFailedQuery();
+        return $this->dbo->hasFailedQuery();
     }
 }
