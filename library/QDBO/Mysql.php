@@ -20,7 +20,7 @@
  *
  * @package DB
  */
-class QDBO_Mysql extends QDBO_Abstract
+class QDBO_Adapter_Mysql extends QDBO_Abstract
 {
     protected $BIND_ENABLED = false;
 

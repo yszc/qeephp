@@ -217,7 +217,7 @@ abstract class QDBO_Abstract
             return Q::registry($objid);
         }
 
-        $class_name = 'QDBO_' . ucfirst($dbtype);
+        $class_name = 'QDBO_Adapter_' . ucfirst($dbtype);
         Q::loadClass($class_name);
         $dbo = new $class_name($dsn, $objid);
         Q::register($dbo, $objid);
@@ -395,7 +395,7 @@ abstract class QDBO_Abstract
     function qinto($sql, array $params = null, $param_style = null)
     {
         if (is_null($param_style)) {
-            $param_style = $this->_PARAM_STYLE;
+            $param_style = $this->PARAM_STYLE;
         }
 
         $callback = array($this, 'qstr');
@@ -943,7 +943,7 @@ abstract class QDBO_Abstract
      */
     function bindEnabled()
     {
-        return $this->_BIND_ENABLED;
+        return $this->BIND_ENABLED;
     }
 
     /**
@@ -953,7 +953,7 @@ abstract class QDBO_Abstract
      */
     function paramStyle()
     {
-        return $this->_PARAM_STYLE;
+        return $this->PARAM_STYLE;
     }
 
     /**
@@ -974,7 +974,7 @@ abstract class QDBO_Abstract
         $fields = array_change_key_case(array_flip($fields), CASE_LOWER);
         foreach (array_keys($inputarr) as $offset => $key) {
             if (!isset($fields[strtolower($key)])) { continue; }
-            switch($this->_PARAM_STYLE) {
+            switch($this->PARAM_STYLE) {
             case self::param_qm:
                 $holders[] = '?';
                 break;
@@ -982,7 +982,7 @@ abstract class QDBO_Abstract
                 $holders[] = '$' . ($offset + 1);
                 break;
             default:
-                $holders[] = $this->_PARAM_STYLE . $key;
+                $holders[] = $this->PARAM_STYLE . $key;
             }
             $values[$key] = $inputarr[$key];
         }
@@ -1008,15 +1008,15 @@ abstract class QDBO_Abstract
         foreach (array_keys($inputarr) as $offset => $key) {
             if (!isset($fields[strtolower($key)])) { continue; }
             $qkey = $this->qfield($key);
-            switch($this->_PARAM_STYLE) {
+            switch($this->PARAM_STYLE) {
             case self::param_qm:
-                $pairs[] = "{$qkey}={$this->_PARAM_STYLE}"; 
+                $pairs[] = "{$qkey}={$this->PARAM_STYLE}"; 
                 break;
             case self::param_dl_sequence:
                 $pairs[] = "{$qkey}=\$" . ($offset + 1);
                 break;
             default:
-                $pairs[] = "{$qkey}={$this->_PARAM_STYLE}{$key}";
+                $pairs[] = "{$qkey}={$this->PARAM_STYLE}{$key}";
             }
             $values[$key] = $inputarr[$key];
         }
