@@ -22,7 +22,7 @@
  */
 class QDBO_Mysql extends QDBO_Abstract
 {
-    protected $_BIND_ENABLED = false;
+    protected $BIND_ENABLED = false;
 
     function __construct($dsn, $id)
     {
@@ -30,103 +30,103 @@ class QDBO_Mysql extends QDBO_Abstract
             $dsn = QDBO_Abstract::parseDSN($dsn);
         }
         parent::__construct($dsn, $id);
-        $this->_schema = $dsn['database'];
+        $this->schema = $dsn['database'];
     }
 
     function connect($pconnect = false, $forcenew = false)
     {
-        if ($this->_conn) { return; }
+        if ($this->conn) { return; }
 
-        $this->_lastErr = null;
-        $this->_lastErrCode = null;
+        $this->last_err = null;
+        $this->last_err_code = null;
 
-        if (isset($this->_dsn['port']) && $this->_dsn['port'] != '') {
-            $host = $this->_dsn['host'] . ':' . $this->_dsn['port'];
+        if (isset($this->dsn['port']) && $this->dsn['port'] != '') {
+            $host = $this->dsn['host'] . ':' . $this->dsn['port'];
         } else {
-            $host = $this->_dsn['host'];
+            $host = $this->dsn['host'];
         }
-        if (!isset($this->_dsn['login'])) { $this->_dsn['login'] = ''; }
-        if (!isset($this->_dsn['password'])) { $this->_dsn['password'] = ''; }
+        if (!isset($this->dsn['login'])) { $this->dsn['login'] = ''; }
+        if (!isset($this->dsn['password'])) { $this->dsn['password'] = ''; }
 
         if ($pconnect) {
-            $this->_conn = mysql_pconnect($host, $this->_dsn['login'], $this->_dsn['password'], $forcenew);
+            $this->conn = mysql_pconnect($host, $this->dsn['login'], $this->dsn['password'], $forcenew);
         } else {
-            $this->_conn = mysql_connect($host, $this->_dsn['login'], $this->_dsn['password'], $forcenew);
+            $this->conn = mysql_connect($host, $this->dsn['login'], $this->dsn['password'], $forcenew);
         }
 
-        if (!$this->_conn) {
+        if (!$this->conn) {
             throw new QDBO_Exception('CONNECT DATABASE', mysql_error(), mysql_errno());
         }
 
-        if (!empty($this->_dsn['database'])) {
-            $this->selectDB($this->_dsn['database']);
+        if (!empty($this->dsn['database'])) {
+            $this->selectDB($this->dsn['database']);
         }
 
-        if (isset($this->_dsn['charset']) && $this->_dsn['charset'] != '') {
-            $charset = $this->_dsn['charset'];
+        if (isset($this->dsn['charset']) && $this->dsn['charset'] != '') {
+            $charset = $this->dsn['charset'];
             $this->execute("SET NAMES '" . $charset . "'");
         }
     }
 
     function pconnect()
     {
-        $this->_connect(true);
+        $this->connect(true);
     }
 
     function nconnect()
     {
-        $this->_connect(false, true);
+        $this->connect(false, true);
     }
 
     function close()
     {
-        if ($this->_conn) { mysql_close($this->_conn); }
+        if ($this->conn) { mysql_close($this->conn); }
         parent::close();
     }
 
     function selectDB($database)
     {
-        if (!mysql_select_db($database, $this->_conn)) {
-            throw new QDBO_Exception("USE {$database}", mysql_error($this->_conn), mysql_errno($this->_conn));
+        if (!mysql_select_db($database, $this->conn)) {
+            throw new QDBO_Exception("USE {$database}", mysql_error($this->conn), mysql_errno($this->conn));
         }
     }
 
     function qstr($value)
     {
         if (is_int($value)) { return $value; }
-        if (is_bool($value)) { return $value ? $this->_TRUE_VALUE : $this->_FALSE_VALUE; }
-        if (is_null($value)) { return $this->_NULL_VALUE; }
-        return "'" . mysql_real_escape_string($value, $this->_conn) . "'";
+        if (is_bool($value)) { return $value ? $this->TRUE_VALUE : $this->FALSE_VALUE; }
+        if (is_null($value)) { return $this->NULL_VALUE; }
+        return "'" . mysql_real_escape_string($value, $this->conn) . "'";
     }
 
-    function qtable($tableName, $schema = null)
+    function qtable($table_name, $schema = null)
     {
-        if (strpos($tableName, '.') !== false) {
-            $parts = explode('.', $tableName);
-            $tableName = $parts[1];
+        if (strpos($table_name, '.') !== false) {
+            $parts = explode('.', $table_name);
+            $table_name = $parts[1];
             $schema = $parts[0];
         }
-        $tableName = trim($tableName, '`');
+        $table_name = trim($table_name, '`');
         $schema = trim($schema, '`');
-        return $schema != '' ? "`{$schema}`.`{$tableName}`" : "`{$tableName}`";
+        return $schema != '' ? "`{$schema}`.`{$table_name}`" : "`{$table_name}`";
     }
 
-    function qfield($fieldName, $tableName = null, $schema = null)
+    function qfield($fieldName, $table_name = null, $schema = null)
     {
         if (strpos($fieldName, '.') !== false) {
             $parts = explode('.', $fieldName);
             if (isset($parts[2])) {
                 $schema = $parts[0];
-                $tableName = $parts[1];
+                $table_name = $parts[1];
                 $fieldName = $parts[2];
             } elseif (isset($parts[1])) {
-                $tableName = $parts[0];
+                $table_name = $parts[0];
                 $fieldName = $parts[1];
             }
         }
         $fieldName = trim($fieldName, '`');
         $fieldName = ($fieldName == '*') ? '*' : "`{$fieldName}`";
-        return $tableName != '' ? $this->qtable($tableName, $schema) . '.' . $fieldName : $fieldName;
+        return $table_name != '' ? $this->qtable($table_name, $schema) . '.' . $fieldName : $fieldName;
     }
 
     function nextID($seqname = 'qdbo_global_seq', $startValue = 1)
@@ -155,8 +155,8 @@ class QDBO_Mysql extends QDBO_Abstract
             $this->execute($nextSql);
         }
         // 获得新的序列值
-        $this->_insertID = $this->insertID();
-        return $this->_insertID;
+        $this->insert_id = $this->insertID();
+        return $this->insert_id;
     }
 
     function createSeq($seqname = 'qdbo_global_seq', $startValue = 1)
@@ -173,18 +173,18 @@ class QDBO_Mysql extends QDBO_Abstract
 
     function insertID()
     {
-        return mysql_insert_id($this->_conn);
+        return mysql_insert_id($this->conn);
     }
 
     function affectedRows()
     {
-        return mysql_affected_rows($this->_conn);
+        return mysql_affected_rows($this->conn);
     }
 
     function execute($sql, $inputarr = null)
     {
-        $this->queryCount++;
-        if ($this->_LOG_QUERY) {
+        $this->query_count++;
+        if ($this->LOG_QUERY) {
             $this->log[] = $sql;
         }
 
@@ -192,19 +192,19 @@ class QDBO_Mysql extends QDBO_Abstract
             $sql = $this->fakebind($sql, $inputarr);
         }
 
-        $result = mysql_query($sql, $this->_conn);
+        $result = mysql_query($sql, $this->conn);
         if (is_resource($result)) {
         	Q::loadClass('QDBO_Result_Mysql');
-            return new QDBO_Result_Mysql($result, $this->_fetchMode);
+            return new QDBO_Result_Mysql($result, $this->fetch_mode);
         } elseif ($result) {
-            $this->_lastErr = null;
-            $this->_lastErrCode = null;
+            $this->last_err = null;
+            $this->last_err_code = null;
             return $result;
         } else {
-            $this->_lastErr = mysql_error($this->_conn);
-            $this->_lastErrCode = mysql_errno($this->_conn);
-            $this->_hasFailedQuery = true;
-            throw new QDBO_Exception($sql, $this->_lastErr, $this->_lastErrCode);
+            $this->last_err = mysql_error($this->conn);
+            $this->last_err_code = mysql_errno($this->conn);
+            $this->has_failed_query = true;
+            throw new QDBO_Exception($sql, $this->last_err, $this->last_err_code);
         }
     }
 
@@ -225,37 +225,37 @@ class QDBO_Mysql extends QDBO_Abstract
 
     function startTrans()
     {
-        if (!$this->_TRANSACTION_ENABLED) { return false; }
-        if ($this->_transCount == 0) {
+        if (!$this->TRANSACTION_ENABLED) { return false; }
+        if ($this->trans_count == 0) {
             $this->execute('START TRANSACTION');
-            $this->_hasFailedQuery = false;
-        } elseif ($this->_transCount && $this->_SAVEPOINT_ENABLED) {
-            $savepoint = 'savepoint_' . $this->_transCount;
+            $this->has_failed_query = false;
+        } elseif ($this->trans_count && $this->SAVEPOINT_ENABLED) {
+            $savepoint = 'savepoint_' . $this->trans_count;
             $this->execute("SAVEPOINT `{$savepoint}`");
-            array_push($this->_savepointsStack, $savepoint);
+            array_push($this->savepoints_stack, $savepoint);
         }
-        $this->_transCount++;
+        $this->trans_count++;
     }
 
     function completeTrans($commitOnNoErrors = true)
     {
-        if ($this->_transCount == 0) { return; }
-        $this->_transCount--;
-        if ($this->_transCount == 0) {
-            if ($this->_hasFailedQuery == false && $commitOnNoErrors) {
+        if ($this->trans_count == 0) { return; }
+        $this->trans_count--;
+        if ($this->trans_count == 0) {
+            if ($this->has_failed_query == false && $commitOnNoErrors) {
                 $this->execute('COMMIT');
             } else {
                 $this->execute('ROLLBACK');
             }
-        } elseif ($this->_SAVEPOINT_ENABLED) {
-            $savepoint = array_pop($this->_savepointsStack);
-            if ($this->_hasFailedQuery || $commitOnNoErrors == false) {
+        } elseif ($this->SAVEPOINT_ENABLED) {
+            $savepoint = array_pop($this->savepoints_stack);
+            if ($this->has_failed_query || $commitOnNoErrors == false) {
                 $this->execute("ROLLBACK TO SAVEPOINT `{$savepoint}`");
             }
         }
     }
 
-    function metaColumns($tableName, $schema = null)
+    function metaColumns($table_name, $schema = null)
     {
         static $typeMap = array(
             'bit'           => 'i',
@@ -298,29 +298,29 @@ class QDBO_Mysql extends QDBO_Abstract
             'set'           => 'c',
         );
 
-        $tableName = $this->qtable($tableName, $schema);
-        $rs = $this->execute(sprintf('SHOW FULL COLUMNS FROM %s', $tableName));
+        $table_name = $this->qtable($table_name, $schema);
+        $rs = $this->execute(sprintf('SHOW FULL COLUMNS FROM %s', $table_name));
         if (!$rs) { return false; }
         /* @var $rs QDBO_Result_Abstract */
         $retarr = array();
-        $rs->fetchMode = self::FETCH_MODE_ARRAY;
+        $rs->fetchMode = self::fetch_mode_array;
         while (($row = $rs->fetchRow())) {
             $field = array();
             $field['name'] = $row['Field'];
             $type = strtolower($row['Type']);
 
             $field['scale'] = null;
-            $queryArray = false;
-            if (preg_match('/^(.+)\((\d+),(\d+)/', $type, $queryArray)) {
-                $field['type'] = $queryArray[1];
-                $field['length'] = is_numeric($queryArray[2]) ? $queryArray[2] : -1;
-                $field['scale'] = is_numeric($queryArray[3]) ? $queryArray[3] : -1;
-            } elseif (preg_match('/^(.+)\((\d+)/', $type, $queryArray)) {
-                $field['type'] = $queryArray[1];
-                $field['length'] = is_numeric($queryArray[2]) ? $queryArray[2] : -1;
-            } elseif (preg_match('/^(enum)\((.*)\)$/i', $type, $queryArray)) {
-                $field['type'] = $queryArray[1];
-                $arr = explode(",",$queryArray[2]);
+            $query_arr = false;
+            if (preg_match('/^(.+)\((\d+),(\d+)/', $type, $query_arr)) {
+                $field['type'] = $query_arr[1];
+                $field['length'] = is_numeric($query_arr[2]) ? $query_arr[2] : -1;
+                $field['scale'] = is_numeric($query_arr[3]) ? $query_arr[3] : -1;
+            } elseif (preg_match('/^(.+)\((\d+)/', $type, $query_arr)) {
+                $field['type'] = $query_arr[1];
+                $field['length'] = is_numeric($query_arr[2]) ? $query_arr[2] : -1;
+            } elseif (preg_match('/^(enum)\((.*)\)$/i', $type, $query_arr)) {
+                $field['type'] = $query_arr[1];
+                $arr = explode(",",$query_arr[2]);
                 $field['enums'] = $arr;
                 $zlen = max(array_map("strlen",$arr)) - 2; // PHP >= 4.0.6
                 $field['length'] = ($zlen > 0) ? $zlen : 1;
@@ -369,8 +369,8 @@ class QDBO_Mysql extends QDBO_Abstract
 		$rs = $this->execute($sql);
 		/* @var $rs QDBO_Result_Abstract */
 		$tables = array();
-		while (($tableName = $rs->fetchOne())) {
-		   $tables[] = $tableName;
+		while (($table_name = $rs->fetchOne())) {
+		   $tables[] = $table_name;
 		}
 		return $tables;
     }
