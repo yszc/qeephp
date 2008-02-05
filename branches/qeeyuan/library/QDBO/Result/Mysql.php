@@ -24,16 +24,16 @@ class QDBO_Result_Mysql extends QDBO_Result_Abstract
 {
     function free()
     {
-        if ($this->_handle) { mysql_free_result($this->_handle); }
-        $this->_handle = null;
+        if ($this->handle) { mysql_free_result($this->handle); }
+        $this->handle = null;
     }
 
     function fetchRow()
     {
-        if ($this->fetchMode == QDBO_Abstract::fetch_mode_assoc) {
-            return mysql_fetch_assoc($this->_handle);
+        if ($this->fetch_mode == QDBO_Abstract::fetch_mode_assoc) {
+            return mysql_fetch_assoc($this->handle);
         } else {
-            return mysql_fetch_array($this->_handle);
+            return mysql_fetch_array($this->handle);
         }
     }
 }
