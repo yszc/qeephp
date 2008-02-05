@@ -250,9 +250,6 @@ abstract class Q
             $filename .= '.php';
         }
         
-        QDebug::dump($filename, '$filename');
-        QDebug::dump($dirs, '$dirs');
-
         self::loadFile($filename, true, $dirs);
     }
     // }}}
@@ -279,9 +276,6 @@ abstract class Q
         static $loaded = array();
 
         $id = $filename . implode(':', (array)$dirs);
-        
-        QDebug::dump($id, '$id');
-        QDebug::dump($loaded, '$loaded');
         
         if ($once && isset($loaded[$id])) { return null; }
         if (preg_match('/[^a-z0-9\-_.]/i', $filename)) {
