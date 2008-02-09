@@ -11,7 +11,7 @@
 /**
  * 定义 QeePHP 核心服务类 Q
  *
- * @package Core
+ * @package core
  * @version $Id$
  */
 

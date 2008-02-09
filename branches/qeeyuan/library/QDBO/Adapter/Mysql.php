@@ -20,14 +20,14 @@
  *
  * @package DB
  */
-class QDBO_Adapter_Mysql extends QDBO_Abstract
+class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
 {
     protected $BIND_ENABLED = false;
 
     function __construct($dsn, $id)
     {
         if (!is_array($dsn)) {
-            $dsn = QDBO_Abstract::parseDSN($dsn);
+            $dsn = QDBO_Adapter_Abstract::parseDSN($dsn);
         }
         parent::__construct($dsn, $id);
         $this->schema = $dsn['database'];
