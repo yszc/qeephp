@@ -9,18 +9,18 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 QDBO_Abstract 类
+ * 定义 QDBO_Adapter_Abstract 类
  *
  * @package DB
  * @version $Id$
  */
 
 /**
- * QDBO_Abstract 是所有数据库驱动的抽象基础类
+ * QDBO_Adapter_Abstract 是所有数据库驱动的抽象基础类
  *
  * @package DB
  */
-abstract class QDBO_Abstract
+abstract class QDBO_Adapter_Abstract
 {
     /**
      * 所有 SQL 查询的日志
@@ -193,39 +193,6 @@ abstract class QDBO_Abstract
      * @var boolean
      */
     protected $RESULT_FIELD_NAME_LOWER = false;
-
-    /**
-     * 开发者必须通过该方法获得数据库访问对象实例
-     *
-     * @param mixed $dsn
-     *
-     * @return QDBO_Abstract
-     */
-    static function getInstance($dsn = null)
-    {
-        $default = is_null($dsn);
-        if ($default && Q::isRegistered('dbo_default')) {
-            return Q::registry('dbo_default');
-        }
-
-        if (is_null($dsn)) {
-            $dsn = Q::getIni('dsn');
-        }
-        $dbtype = $dsn['driver'];
-        $objid = "dbo_{$dbtype}_" .  md5(serialize($dsn));
-        if (Q::isRegistered($objid)) {
-            return Q::registry($objid);
-        }
-
-        $class_name = 'QDBO_Adapter_' . ucfirst($dbtype);
-        Q::loadClass($class_name);
-        $dbo = new $class_name($dsn, $objid);
-        Q::register($dbo, $objid);
-        if ($default) {
-            Q::register($dbo, 'dbo_default');
-        }
-        return $dbo;
-    }
 
     /**
      * 构造函数
@@ -1023,27 +990,4 @@ abstract class QDBO_Abstract
         return array($pairs, $values);
     }
 
-    /**
-     * 将字符串形式的 DSN 转换为数组
-     *
-     * @param string $dsn
-     *
-     * @return array
-     */
-    static function parseDSN($dsn)
-    {
-        $dsn = str_replace('@/', '@localhost/', $dsn);
-        $parse = parse_url($dsn);
-        if (empty($parse['scheme'])) { return false; }
-
-        $dsn = array();
-        $dsn['host']     = isset($parse['host']) ? $parse['host'] : 'localhost';
-        $dsn['port']     = isset($parse['port']) ? $parse['port'] : '';
-        $dsn['login']    = isset($parse['user']) ? $parse['user'] : '';
-        $dsn['password'] = isset($parse['pass']) ? $parse['pass'] : '';
-        $dsn['driver']   = isset($parse['scheme']) ? strtolower($parse['scheme']) : '';
-        $dsn['database'] = isset($parse['path']) ? substr($parse['path'], 1) : '';
-
-        return $dsn;
-    }
 }
