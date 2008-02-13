@@ -11,14 +11,14 @@
 /**
  * 定义 QDBO_Result_Abstract 类
  *
- * @package DB
+ * @package database
  * @version $Id$
  */
 
 /**
  * QDBO_Result_Abstract 是封装查询结果对象的抽象基础类
  *
- * @package DB
+ * @package database
  */
 abstract class QDBO_Result_Abstract
 {
@@ -125,7 +125,7 @@ abstract class QDBO_Result_Abstract
     function fetchCol($col = 0)
     {
         $mode = $this->fetch_mode;
-        $this->fetch_mode = QDBO_Abstract::fetch_mode_array;
+        $this->fetch_mode = QDBO::FETCH_MODE_ARRAY;
         $cols = array();
         while (($row = $this->fetchRow())) {
             $cols[] = $row[$col];

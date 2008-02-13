@@ -11,21 +11,21 @@
 /**
  * 定义 QDBO_Transaction 类
  *
- * @package DB
+ * @package database
  * @version $Id$
  */
 
 /**
- * QDBO_Transaction 类封装了一个事务操作
+ * QDBO_Transaction 类封装了数据库事务操作
  *
- * @package DB
+ * @package database
  */
 class QDBO_Transaction
 {
     /**
      * 数据库访问对象
      *
-     * @var QDBO_Abstract
+     * @var QDBO_Adapter_Abstract
      */
     protected $dbo;
 
@@ -39,9 +39,9 @@ class QDBO_Transaction
     /**
      * 构造函数
      *
-     * @param QDBO_Abstract $dbo
+     * @param QDBO_Adapter_Abstract $dbo
      */
-    function __construct(QDBO_Abstract $dbo)
+    function __construct(QDBO_Adapter_Abstract $dbo)
     {
         $this->dbo = $dbo;
         $this->dbo->startTrans();
@@ -61,14 +61,14 @@ class QDBO_Transaction
     /**
      * 完成事务，根据事务期间的查询是否出错决定是提交还是回滚事务
      *
-     * 如果 $commitOnNoErrors 参数为 true，当事务期间所有查询都成功完成时，则提交事务，否则回滚事务；
-     * 如果 $commitOnNoErrors 参数为 false，则强制回滚事务。
+     * 如果 $commit_on_no_errors 参数为 true，当事务期间所有查询都成功完成时，则提交事务，否则回滚事务；
+     * 如果 $commit_on_no_errors 参数为 false，则强制回滚事务。
      *
-     * @param $commitOnNoErrors
+     * @param $commit_on_no_errors
      */
-    function commit($commitOnNoErrors = true)
+    function commit($commit_on_no_errors = true)
     {
-        $this->dbo->completeTrans($commitOnNoErrors);
+        $this->dbo->completeTrans($commit_on_no_errors);
         $this->inTran = false;
     }
 

@@ -11,14 +11,14 @@
 /**
  * 定义 QDBO_Adapter_Abstract 类
  *
- * @package DB
+ * @package database
  * @version $Id$
  */
 
 /**
  * QDBO_Adapter_Abstract 是所有数据库驱动的抽象基础类
  *
- * @package DB
+ * @package database
  */
 abstract class QDBO_Adapter_Abstract
 {
@@ -35,20 +35,6 @@ abstract class QDBO_Adapter_Abstract
      * @var int
      */
     public $query_count = 0;
-
-    /**
-     * 参数占位符类型
-     */
-    const param_qm          = '?'; // 问号作为参数占位符
-    const param_cl_named    = ':'; // 冒号开始的命名参数
-    const param_dl_sequence = '$'; // $符号开始的序列
-    const param_at_named    = '@'; // @开始的命名参数
-
-    /**
-     * 可用的查询结果集返回形式
-     */
-    const fetch_mode_array  = 1; // 返回的每一个记录就是一个索引数组
-    const fetch_mode_assoc  = 2; // 返回的每一个记录就是一个以字段名作为键名的数组
 
     /**
      * 数据库连接信息
@@ -76,7 +62,7 @@ abstract class QDBO_Adapter_Abstract
      *
      * @var const
      */
-    protected $fetch_mode = self::fetch_mode_assoc;
+    protected $fetch_mode = QDBO::FETCH_MODE_ASSOC;
 
     /**
      * 数据库连接句柄
@@ -150,7 +136,7 @@ abstract class QDBO_Adapter_Abstract
      *
      * @var string
      */
-    protected $PARAM_STYLE  = self::param_qm;
+    protected $PARAM_STYLE  = QDBO::PARAM_QM;
 
     /**
      * 指示数据库是否有自增字段功能
@@ -274,7 +260,7 @@ abstract class QDBO_Adapter_Abstract
      */
     function isConnected()
     {
-    	return !is_null($this->conn);
+    	return is_resource($this->conn);
     }
 
     /**
@@ -367,9 +353,9 @@ abstract class QDBO_Adapter_Abstract
 
         $callback = array($this, 'qstr');
         switch ($param_style) {
-        case self::param_qm:
-        case self::param_dl_sequence:
-            if ($param_style == self::param_qm) {
+        case QDBO::PARAM_QM:
+        case QDBO::PARAM_DL_SEQUENCE:
+            if ($param_style == QDBO::PARAM_QM) {
                 $parts = explode('?', $sql);
             } else {
                 $parts = preg_split('/\$[0-9]+/', $sql);
@@ -391,9 +377,9 @@ abstract class QDBO_Adapter_Abstract
             }
             return $str;
 
-        case self::param_cl_named:
-        case self::param_at_named:
-            $split = ($param_style == self::param_cl_named) ? ':' : '@';
+        case QDBO::PARAM_CL_NAMED:
+        case QDBO::PARAM_AT_NAMED:
+            $split = ($param_style == QDBO::PARAM_CL_NAMED) ? ':' : '@';
             $parts = preg_split('/(' . $split . '[a-z0-9_\-]+)/i', $sql, -1, PREG_SPLIT_DELIM_CAPTURE);
             $max = count($parts);
             if (count($params) * 2 + 1 != $max) {
@@ -789,12 +775,12 @@ abstract class QDBO_Adapter_Abstract
     /**
      * 完成事务，根据事务期间的查询是否出错决定是提交还是回滚事务
      *
-     * 如果 $commitOnNoErrors 参数为 true，当事务期间所有查询都成功完成时，则提交事务，否则回滚事务；
-     * 如果 $commitOnNoErrors 参数为 false，则强制回滚事务。
+     * 如果 $commit_on_no_errors 参数为 true，当事务期间所有查询都成功完成时，则提交事务，否则回滚事务；
+     * 如果 $commit_on_no_errors 参数为 false，则强制回滚事务。
      *
-     * @param $commitOnNoErrors
+     * @param $commit_on_no_errors
      */
-    abstract function completeTrans($commitOnNoErrors = true);
+    abstract function completeTrans($commit_on_no_errors = true);
 
     /**
      * 指示在调用 completeTrans() 时回滚事务
@@ -942,10 +928,10 @@ abstract class QDBO_Adapter_Abstract
         foreach (array_keys($inputarr) as $offset => $key) {
             if (!isset($fields[strtolower($key)])) { continue; }
             switch($this->PARAM_STYLE) {
-            case self::param_qm:
+            case QDBO::PARAM_QM:
                 $holders[] = '?';
                 break;
-            case self::param_dl_sequence:
+            case QDBO::PARAM_DL_SEQUENCE:
                 $holders[] = '$' . ($offset + 1);
                 break;
             default:
@@ -976,10 +962,10 @@ abstract class QDBO_Adapter_Abstract
             if (!isset($fields[strtolower($key)])) { continue; }
             $qkey = $this->qfield($key);
             switch($this->PARAM_STYLE) {
-            case self::param_qm:
+            case QDBO::PARAM_QM:
                 $pairs[] = "{$qkey}={$this->PARAM_STYLE}"; 
                 break;
-            case self::param_dl_sequence:
+            case QDBO::PARAM_DL_SEQUENCE:
                 $pairs[] = "{$qkey}=\$" . ($offset + 1);
                 break;
             default:

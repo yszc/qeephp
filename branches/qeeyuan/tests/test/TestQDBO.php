@@ -3,16 +3,17 @@
 require_once 'PHPUnit/Framework.php';
 require_once dirname(__FILE__) . '/../init.php';
 
-class Test_QDBO extends PHPUnit_Framework_TestCase
+class TestQDBO extends PHPUnit_Framework_TestCase
 {
     /**
-     * @var QDBO_Abstract
+     * @var QDBO_Adapter_Abstract
      */
     protected $dbo;
 
     protected function setUp()
     {
-        $this->dbo = QDBO_Abstract::getInstance();
+        $this->dbo = QDBO::getConn();
+        $this->dbo->connect();
     }
     
     function testGetDSN()
@@ -37,17 +38,6 @@ class Test_QDBO extends PHPUnit_Framework_TestCase
     {
         $prefix = $this->dbo->getTablePrefix();
         $this->assertEquals(Q::getIni('dsn/prefix'), $prefix);
-    }
-
-    function testConnect()
-    {
-        $this->dbo->connect();
-        $this->assertTrue(!is_null($this->dbo->handle()));
-    }
-
-    function testIsConnected()
-    {
-        $this->assertTrue($this->dbo->isConnected());
     }
 
     function testQstr()
@@ -85,19 +75,19 @@ class Test_QDBO extends PHPUnit_Framework_TestCase
     function testQinto()
     {
         switch($this->dbo->paramStyle()) {
-        case QDBO_Abstract::param_qm:
+        case QDBO::PARAM_QM:
             $sql = "SELECT * FROM testtable WHERE level_ix > ? AND int_x = ?";
             $args = array(1, 2);
             break;
-        case QDBO_Abstract::param_cl_named:
+        case QDBO::PARAM_CL_NAMED:
             $sql = "SELECT * FROM testtable WHERE level_ix > :level_ix AND int_x = :int_x";
             $args = array('level_ix' => 1, 'int_x' => 2);
             break;
-        case QDBO_Abstract::param_dl_sequence:
+        case QDBO::PARAM_DL_SEQUENCE:
             $sql = "SELECT * FROM testtable WHERE level_ix > $1 AND int_x = $2";
             $args = array(1, 2);
             break;
-        case QDBO_Abstract::param_at_named:
+        case QDBO::PARAM_AT_NAMED:
             $sql = "SELECT * FROM testtable WHERE level_ix > @level_ix AND int_x = @int_x";
             $args = array('level_ix' => 1, 'int_x' => 2);
             break;
@@ -110,10 +100,10 @@ class Test_QDBO extends PHPUnit_Framework_TestCase
     function testQinto2()
     {
         $checks = array(
-            array("SELECT * FROM testtable WHERE level_ix > ? AND int_x = ?", array(1, 2), QDBO_Abstract::param_qm),
-            array("SELECT * FROM testtable WHERE level_ix > :level_ix AND int_x = :int_x", array('level_ix' => 1, 'int_x' => 2), QDBO_Abstract::param_cl_named),
-            array("SELECT * FROM testtable WHERE level_ix > $1 AND int_x = $2", array(1, 2), QDBO_Abstract::param_dl_sequence),
-            array("SELECT * FROM testtable WHERE level_ix > @level_ix AND int_x = @int_x", array('level_ix' => 1, 'int_x' => 2), QDBO_Abstract::param_at_named),
+            array("SELECT * FROM testtable WHERE level_ix > ? AND int_x = ?", array(1, 2), QDBO::PARAM_QM),
+            array("SELECT * FROM testtable WHERE level_ix > :level_ix AND int_x = :int_x", array('level_ix' => 1, 'int_x' => 2), QDBO::PARAM_CL_NAMED),
+            array("SELECT * FROM testtable WHERE level_ix > $1 AND int_x = $2", array(1, 2), QDBO::PARAM_DL_SEQUENCE),
+            array("SELECT * FROM testtable WHERE level_ix > @level_ix AND int_x = @int_x", array('level_ix' => 1, 'int_x' => 2), QDBO::PARAM_AT_NAMED),
         );
 
         $expected = 'SELECT * FROM testtable WHERE level_ix > 1 AND int_x = 2';

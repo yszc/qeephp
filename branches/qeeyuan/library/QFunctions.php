@@ -131,7 +131,7 @@ function dump_trace()
         if ($i == 0) { continue; }
         $file = $debug[$i];
         if ($file['file'] == '') { continue; }
-        if (substr($file['file'], 0, strlen(QEE_DIR)) != QEE_DIR) {
+        if (substr($file['file'], 0, strlen(Q_DIR)) != Q_DIR) {
             $line = "#<strong>{$index} {$file['file']}({$file['line']}): </strong>";
         } else {
             $line = "#{$index} {$file['file']}({$file['line']}): ";

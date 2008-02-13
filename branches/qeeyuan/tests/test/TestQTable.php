@@ -11,9 +11,9 @@ class TestQTable extends PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        $dbo = QDBO_Abstract::getInstance();
+        $dbo = QDBO::getConn();
         $params = array(
-            'tableName'  => 'posts',
+            'table_name' => 'posts',
             'pk'         => 'post_id',
             'dbo'        => $dbo
         );

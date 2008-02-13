@@ -1,4 +1,19 @@
 <?php
+/////////////////////////////////////////////////////////////////////////////
+// QeePHP Framework
+//
+// Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
+//
+// 许可协议，请查看源代码中附带的 LICENSE.TXT 文件，
+// 或者访问 http://www.qeephp.org/ 获得详细信息。
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * 定义 QValidate 类
+ *
+ * @package core
+ * @version $Id$
+ */
 
 /**
  * QValidate 提供数据验证服务
@@ -12,7 +27,7 @@ class QValidate
      *
      * @var array
      */
-    protected $_validators = array();
+    protected $validators = array();
 
     /**
      * 检查一项数据
@@ -33,7 +48,7 @@ class QValidate
         } else {
             $obj = new QValidate_Validator($id, $data);
         }
-        $this->_validators[$id] = $obj;
+        $this->validators[$id] = $obj;
         return $obj;
     }
 

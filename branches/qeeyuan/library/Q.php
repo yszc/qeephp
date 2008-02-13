@@ -15,24 +15,19 @@
  * @version $Id$
  */
 
-if (defined('QEE_VERSION')) { return; }
+if (defined('Q_VERSION')) { return; }
 
 // {{{ constants
 // 定义 QeePHP 版本号常量和 QeePHP 所在路径
-define('QEE_VERSION', '2.0');
-define('QEE_DIR', dirname(__FILE__));
+define('Q_VERSION', '2.0');
+define('Q_DIR', dirname(__FILE__));
 
 // DIRECTORY_SEPARATOR 的简写
 define('DS', DIRECTORY_SEPARATOR);
-
-// 定义可用的运行模式
-define('QEEPHP_MODE_DEBUG',     'debug');
-define('QEEPHP_MODE_DEPLOY',    'deploy');
-define('QEEPHP_MODE_TEST',      'test');
 // }}}
 
 // {{{ includes
-require QEE_DIR . DS . 'QException.php';
+require Q_DIR . DS . 'QException.php';
 // }}}
 
 /**
@@ -570,7 +565,7 @@ abstract class Q
             throw new QException(__('File "%s" not found.', $filename));
         }
 
-        self::loadFile(QEE_DIR . DS . '_vendor' . DS . 'spyc.php', true);
+        self::loadFile(Q_DIR . DS . '_vendor' . DS . 'spyc.php', true);
         $yaml = Spyc::YAMLLoad($filename);
 
         if (is_null($callback)) {
@@ -599,7 +594,7 @@ function __()
     $args = func_get_args();
     $msg = array_shift($args);
     $language = strtolower(Q::getIni('error_msg_language'));
-    $messages = Q::loadFile('LC_MESSAGES.php', false, QEE_DIR . '/_lang/' . $language, false);
+    $messages = Q::loadFile('LC_MESSAGES.php', false, Q_DIR . '/_lang/' . $language, false);
     if (isset($messages[$msg])) {
         $msg = $messages[$msg];
     }
