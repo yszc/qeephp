@@ -11,14 +11,14 @@
 /**
  * 定义 QDBO_Mysql 类
  *
- * @package DB
+ * @package database
  * @version $Id$
  */
 
 /**
  * QDBO_Mysql 提供了对 mysql 数据库的支持
  *
- * @package DB
+ * @package database
  */
 class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
 {
@@ -35,7 +35,7 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
 
     function connect($pconnect = false, $forcenew = false)
     {
-        if ($this->conn) { return; }
+        if (is_resource($this->conn)) { return; }
 
         $this->last_err = null;
         $this->last_err_code = null;
@@ -54,7 +54,7 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
             $this->conn = mysql_connect($host, $this->dsn['login'], $this->dsn['password'], $forcenew);
         }
 
-        if (!$this->conn) {
+        if (!is_resource($this->conn)) {
             throw new QDBO_Exception('CONNECT DATABASE', mysql_error(), mysql_errno());
         }
 
@@ -80,7 +80,7 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
 
     function close()
     {
-        if ($this->conn) { mysql_close($this->conn); }
+        if (is_resource($this->conn)) { mysql_close($this->conn); }
         parent::close();
     }
 
@@ -129,7 +129,7 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
         return $table_name != '' ? $this->qtable($table_name, $schema) . '.' . $fieldName : $fieldName;
     }
 
-    function nextID($seqname = 'qdbo_global_seq', $startValue = 1)
+    function nextID($seqname = 'qdbo_global_seq', $start_value = 1)
     {
         $nextSql = sprintf('UPDATE %s SET id = LAST_INSERT_ID(id + 1)', $seqname);
 
@@ -149,7 +149,7 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
         if (!$successed) {
             // 没有更新任何记录或者新创建序列表，都需要插入初始的记录
             if ($this->getOne(sprintf('SELECT COUNT(*) FROM %s', $seqname)) == 0) {
-                $sql = sprintf('INSERT INTO %s VALUES (%s)', $seqname, $startValue);
+                $sql = sprintf('INSERT INTO %s VALUES (%s)', $seqname, $start_value);
                 $this->execute($sql);
             }
             $this->execute($nextSql);
@@ -159,10 +159,10 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
         return $this->insert_id;
     }
 
-    function createSeq($seqname = 'qdbo_global_seq', $startValue = 1)
+    function createSeq($seqname = 'qdbo_global_seq', $start_value = 1)
     {
         $this->execute(sprintf('CREATE TABLE %s (id INT NOT NULL)', $seqname));
-        $sql = sprintf('INSERT INTO %s VALUES (%s)', $seqname, $startValue);
+        $sql = sprintf('INSERT INTO %s VALUES (%s)', $seqname, $start_value);
         $this->execute($sql);
     }
 
@@ -237,19 +237,19 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
         $this->trans_count++;
     }
 
-    function completeTrans($commitOnNoErrors = true)
+    function completeTrans($commit_on_no_errors = true)
     {
         if ($this->trans_count == 0) { return; }
         $this->trans_count--;
         if ($this->trans_count == 0) {
-            if ($this->has_failed_query == false && $commitOnNoErrors) {
+            if ($this->has_failed_query == false && $commit_on_no_errors) {
                 $this->execute('COMMIT');
             } else {
                 $this->execute('ROLLBACK');
             }
         } elseif ($this->SAVEPOINT_ENABLED) {
             $savepoint = array_pop($this->savepoints_stack);
-            if ($this->has_failed_query || $commitOnNoErrors == false) {
+            if ($this->has_failed_query || $commit_on_no_errors == false) {
                 $this->execute("ROLLBACK TO SAVEPOINT `{$savepoint}`");
             }
         }
@@ -303,7 +303,7 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
         if (!$rs) { return false; }
         /* @var $rs QDBO_Result_Abstract */
         $retarr = array();
-        $rs->fetchMode = self::fetch_mode_array;
+        $rs->fetchMode = QDBO::FETCH_MODE_ARRAY;
         while (($row = $rs->fetchRow())) {
             $field = array();
             $field['name'] = $row['Field'];

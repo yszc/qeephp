@@ -50,7 +50,7 @@ class QWebControls
     function __construct()
     {
         $this->add_ext_dir(Q::getIni('webcontrols_ext_dir'));
-        $this->add_ext_dir(QEE_DIR . '/_webcontrols');
+        $this->add_ext_dir(Q_DIR . '/_webcontrols');
         if (defined('EXPRESS_MODE')) {
             $this->load('standard');
         }

@@ -1,4 +1,19 @@
 <?php
+/////////////////////////////////////////////////////////////////////////////
+// QeePHP Framework
+//
+// Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
+//
+// 许可协议，请查看源代码中附带的 LICENSE.TXT 文件，
+// 或者访问 http://www.qeephp.org/ 获得详细信息。
+/////////////////////////////////////////////////////////////////////////////
+
+/**
+ * 定义 QValidate_Validator 类
+ *
+ * @package core
+ * @version $Id$
+ */
 
 /**
  * QValidate_Validator 为验证特定数据提供了多种方法
@@ -19,21 +34,21 @@ class QValidate_Validator
      *
      * @var mixed
      */
-    protected $_value;
+    protected $value;
 
     /**
      * 验证结果
      *
      * @var boolean
      */
-    protected $_result;
+    protected $result;
 
     /**
      * 所有没有验证通过的检查
      *
      * @var array
      */
-    protected $_failed;
+    protected $failed;
 
     /**
      * 构造函数
@@ -44,9 +59,9 @@ class QValidate_Validator
     function __construct($id, $value)
     {
         $this->id = $id;
-        $this->_value = $value;
-        $this->_result = null;
-        $this->_failed = array();
+        $this->value = $value;
+        $this->result = null;
+        $this->failed = array();
     }
 
     /**
@@ -56,7 +71,7 @@ class QValidate_Validator
      */
     function isPassed()
     {
-        return (bool)$this->_result;
+        return (bool)$this->result;
     }
 
     /**
@@ -66,9 +81,9 @@ class QValidate_Validator
      *
      * @return array
      */
-    function isFailed($onlyFirstMsg = false)
+    function isFailed($only_first_msg = false)
     {
-        return $onlyFirstMsg ? reset($this->_failed) : $this->_failed;
+        return $only_first_msg ? reset($this->failed) : $this->failed;
     }
 
     /**
@@ -78,7 +93,7 @@ class QValidate_Validator
      */
     function getData()
     {
-        return $this->_value;
+        return $this->value;
     }
 
     /**
@@ -90,12 +105,12 @@ class QValidate_Validator
      */
     protected function setResult($result, $check, $msg)
     {
-        if (is_null($this->_result)) {
-            $this->_result = true;
+        if (is_null($this->result)) {
+            $this->result = true;
         }
-        $this->_result = $this->_result && (boolean)$result;
+        $this->result = $this->result && (boolean)$result;
         if (!$result) {
-            $this->_failed[$check] = $msg;
+            $this->failed[$check] = $msg;
         }
     }
 
@@ -109,7 +124,7 @@ class QValidate_Validator
      */
     function equal($test, $msg)
     {
-        $this->setResult($this->_value == $test, __FUNCTION__, $msg);
+        $this->setResult($this->value == $test, __FUNCTION__, $msg);
         return $this;
     }
 
@@ -123,7 +138,7 @@ class QValidate_Validator
      */
     function same($test, $msg)
     {
-        $this->setResult($this->_value === $test, __FUNCTION__, $msg);
+        $this->setResult($this->value === $test, __FUNCTION__, $msg);
         return $this;
     }
 
@@ -137,7 +152,7 @@ class QValidate_Validator
      */
     function minLength($len, $msg)
     {
-        $this->setResult(strlen($this->_value) >= $len, __FUNCTION__, $msg);
+        $this->setResult(strlen($this->value) >= $len, __FUNCTION__, $msg);
         return $this;
     }
 
@@ -151,7 +166,7 @@ class QValidate_Validator
      */
     function maxLength($len, $msg)
     {
-        $this->setResult(strlen($this->_value) <= $len, __FUNCTION__, $msg);
+        $this->setResult(strlen($this->value) <= $len, __FUNCTION__, $msg);
         return $this;
     }
 
@@ -165,7 +180,7 @@ class QValidate_Validator
      */
     function min($min, $msg)
     {
-        $this->setResult($this->_value >= $min, __FUNCTION__, $msg);
+        $this->setResult($this->value >= $min, __FUNCTION__, $msg);
         return $this;
     }
 
@@ -179,7 +194,7 @@ class QValidate_Validator
      */
     function max($max, $msg)
     {
-        $this->setResult($this->_value <= $max, __FUNCTION__, $msg);
+        $this->setResult($this->value <= $max, __FUNCTION__, $msg);
         return $this;
     }
 
@@ -196,9 +211,9 @@ class QValidate_Validator
     function between($min, $max, $inclusive = true, $msg)
     {
         if ($inclusive) {
-            $this->setResult($this->_value >= $min && $this->_value <= $max, __FUNCTION__, $msg);
+            $this->setResult($this->value >= $min && $this->value <= $max, __FUNCTION__, $msg);
         } else {
-            $this->setResult($this->_value > $min && $this->_value < $max, __FUNCTION__, $msg);
+            $this->setResult($this->value > $min && $this->value < $max, __FUNCTION__, $msg);
         }
         return $this;
     }
@@ -213,7 +228,7 @@ class QValidate_Validator
      */
     function greaterThan($test, $msg)
     {
-        $this->setResult($this->_value > $test, __FUNCTION__, $msg);
+        $this->setResult($this->value > $test, __FUNCTION__, $msg);
         return $this;
     }
 
@@ -227,7 +242,7 @@ class QValidate_Validator
      */
     function lessThan($test, $msg)
     {
-        $this->setResult($this->_value < $test, __FUNCTION__, $msg);
+        $this->setResult($this->value < $test, __FUNCTION__, $msg);
         return $this;
     }
 
@@ -240,7 +255,7 @@ class QValidate_Validator
      */
     function notNull($msg)
     {
-        $this->setResult(!is_null($this->_value), __FUNCTION__, $msg);
+        $this->setResult(!is_null($this->value), __FUNCTION__, $msg);
         return $this;
     }
 
@@ -253,7 +268,7 @@ class QValidate_Validator
      */
     function notEmpty($msg)
     {
-        $this->setResult(!empty($this->_value), __FUNCTION__, $msg);
+        $this->setResult(!empty($this->value), __FUNCTION__, $msg);
         return $this;
     }
 
@@ -266,7 +281,7 @@ class QValidate_Validator
      */
     function isAlphaNumber($msg)
     {
-        $this->setResult(ctype_alnum($this->_value), __FUNCTION__, $msg);
+        $this->setResult(ctype_alnum($this->value), __FUNCTION__, $msg);
         return $this;
     }
 
@@ -279,7 +294,7 @@ class QValidate_Validator
      */
     function isAlpha($msg)
     {
-        $this->setResult(ctype_alpha($this->_value), __FUNCTION__, $msg);
+        $this->setResult(ctype_alpha($this->value), __FUNCTION__, $msg);
         return $this;
     }
 
@@ -292,7 +307,7 @@ class QValidate_Validator
      */
     function isControlChar($msg)
     {
-        $this->setResult(ctype_cntrl($this->_value), __FUNCTION__, $msg);
+        $this->setResult(ctype_cntrl($this->value), __FUNCTION__, $msg);
         return $this;
     }
 
@@ -305,7 +320,7 @@ class QValidate_Validator
      */
     function isNumerical($msg)
     {
-        $this->setResult(ctype_digit($this->_value), __FUNCTION__, $msg);
+        $this->setResult(ctype_digit($this->value), __FUNCTION__, $msg);
         return $this;
     }
 
@@ -318,7 +333,7 @@ class QValidate_Validator
      */
     function isGraph($msg)
     {
-        $this->setResult(ctype_graph($this->_value), __FUNCTION__, $msg);
+        $this->setResult(ctype_graph($this->value), __FUNCTION__, $msg);
         return $this;
     }
 
@@ -331,7 +346,7 @@ class QValidate_Validator
      */
     function isLower($msg)
     {
-        $this->setResult(ctype_lower($this->_value), __FUNCTION__, $msg);
+        $this->setResult(ctype_lower($this->value), __FUNCTION__, $msg);
         return $this;
     }
 
@@ -344,7 +359,7 @@ class QValidate_Validator
      */
     function isPrintable($msg)
     {
-        $this->setResult(ctype_lower($this->_value), __FUNCTION__, $msg);
+        $this->setResult(ctype_lower($this->value), __FUNCTION__, $msg);
         return $this;
     }
 
@@ -357,7 +372,7 @@ class QValidate_Validator
      */
     function isPunctuation($msg)
     {
-        $this->setResult(ctype_punct($this->_value), __FUNCTION__, $msg);
+        $this->setResult(ctype_punct($this->value), __FUNCTION__, $msg);
         return $this;
     }
 
@@ -370,7 +385,7 @@ class QValidate_Validator
      */
     function isWhitespace($msg)
     {
-        $this->setResult(ctype_space($this->_value), __FUNCTION__, $msg);
+        $this->setResult(ctype_space($this->value), __FUNCTION__, $msg);
         return $this;
     }
 
@@ -383,7 +398,7 @@ class QValidate_Validator
      */
     function isUpper($msg)
     {
-        $this->setResult(ctype_upper($this->_value), __FUNCTION__, $msg);
+        $this->setResult(ctype_upper($this->value), __FUNCTION__, $msg);
         return $this;
     }
 
@@ -396,7 +411,7 @@ class QValidate_Validator
      */
     function isHex($msg)
     {
-        $this->setResult(ctype_xdigit($this->_value), __FUNCTION__, $msg);
+        $this->setResult(ctype_xdigit($this->value), __FUNCTION__, $msg);
         return $this;
     }
 
@@ -409,7 +424,7 @@ class QValidate_Validator
      */
     function isAscii($msg)
     {
-        $this->setResult(preg_match('/[^\x20-\x7f]/', $this->_value) == 0, __FUNCTION__, $msg);
+        $this->setResult(preg_match('/[^\x20-\x7f]/', $this->value) == 0, __FUNCTION__, $msg);
         return $this;
     }
 
@@ -423,7 +438,7 @@ class QValidate_Validator
     function isEmail($msg)
     {
         $reg = '/^[a-z0-9]+([._\-\+]*[a-z0-9]+)*@([a-z0-9]+[-a-z0-9]*[a-z0-9]+\.)+[a-z0-9]+$/i';
-        $this->setResult(preg_match($reg, $this->_value), __FUNCTION__, $msg);
+        $this->setResult(preg_match($reg, $this->value), __FUNCTION__, $msg);
         return $this;
     }
 
@@ -436,19 +451,19 @@ class QValidate_Validator
      */
     function isDate($msg)
     {
-        if (strpos($this->_value, '-') !== false) {
+        if (strpos($this->value, '-') !== false) {
             $p = '-';
-        } elseif (strpos($this->_value, '/') !== false) {
+        } elseif (strpos($this->value, '/') !== false) {
             $p = '\/';
         } else {
             $this->setResult(false, __FUNCTION__, $msg);
             return $this;
         }
 
-        if (preg_match('/^\d{4}' . $p . '\d{2}' . $p . '\d{2}$/', $this->_value)) {
-            $year = substr($this->_value, 0, 4);
-            $month = substr($this->_value, 5, 2);
-            $day = substr($this->_value, 8, 2);
+        if (preg_match('/^\d{4}' . $p . '\d{2}' . $p . '\d{2}$/', $this->value)) {
+            $year = substr($this->value, 0, 4);
+            $month = substr($this->value, 5, 2);
+            $day = substr($this->value, 8, 2);
             $this->setResult(checkdate($month, $day, $year), __FUNCTION__, $msg);
         } else {
             $this->setResult(false, __FUNCTION__, $msg);
@@ -465,13 +480,13 @@ class QValidate_Validator
      */
     function isTime($msg)
     {
-        $parts = explode(':', $this->_value);
+        $parts = explode(':', $this->value);
         $count = count($parts);
         do {
             if ($count != 2 || $count != 3) { break; }
             if ($count == 2) { $parts[2] = '00'; }
             $test = @strtotime($parts[0] . ':' . $parts[1] . ':' . $parts[2]);
-            if ($test === -1 || $test === false || date('H:i:s') != $this->_value) {
+            if ($test === -1 || $test === false || date('H:i:s') != $this->value) {
                 break;
             }
             $this->setResult(true, __FUNCTION__, $msg);
@@ -491,7 +506,7 @@ class QValidate_Validator
      */
     function isIpv4($msg)
     {
-        $test = @ip2long($this->_value);
+        $test = @ip2long($this->value);
         $this->setResult($test !== -1 && $test !== false, __FUNCTION__, $msg);
         return $this;
     }
@@ -505,7 +520,7 @@ class QValidate_Validator
      */
     function isOctal($msg)
     {
-        $this->setResult(preg_match('/0[0-7]+/', $this->_value), __FUNCTION__, $msg);
+        $this->setResult(preg_match('/0[0-7]+/', $this->value), __FUNCTION__, $msg);
         return $this;
     }
 
@@ -518,7 +533,7 @@ class QValidate_Validator
      */
     function isBinary($msg)
     {
-        $this->setResult(preg_match('/[01]+/', $this->_value), __FUNCTION__, $msg);
+        $this->setResult(preg_match('/[01]+/', $this->value), __FUNCTION__, $msg);
         return $this;
     }
 
@@ -531,7 +546,7 @@ class QValidate_Validator
      */
     function isDomain($msg)
     {
-        $this->setResult(preg_match('/[a-z0-9\.]+/i', $this->_value), __FUNCTION__, $msg);
+        $this->setResult(preg_match('/[a-z0-9\.]+/i', $this->value), __FUNCTION__, $msg);
         return $this;
     }
 }

@@ -11,14 +11,14 @@
 /**
  * 定义 QDispatcher 类
  *
- * @package core
+ * @package mvc
  * @version $Id$
  */
 
 /**
  * QDispatcher 分析 HTTP 请求，并转发到合适的 QController_Abstract 继承类实例处理
  *
- * @package core
+ * @package mvc
  */
 class QDispatcher
 {
@@ -88,8 +88,8 @@ class QDispatcher
      */
     function executeAction($controller_name, $action_name)
     {
-        Q::setIni('q/currentcontroller_name', $controller_name);
-        Q::setIni('q/currentaction_name', $action_name);
+        Q::setIni('mvc/current_controller_name', $controller_name);
+        Q::setIni('mvc/current_action_name', $action_name);
     	
         // 检查是否有权限访问
         if (!$this->checkAuthorized($controller_name, $action_name)) {

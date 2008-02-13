@@ -23,30 +23,30 @@ require dirname(__FILE__) . DIRECTORY_SEPARATOR . 'Q.php';
 /**
  * 初始化 QeePHP 框架
  */
-define('QEEPHP_EXPRESS', true);
+define('Q_EXPRESS', true);
 
-if (!defined('RUN_MODE')) {
-	define('RUN_MODE', QEEPHP_MODE_DEBUG);
+if (!defined('Q_RUN_MODE')) {
+	define('Q_RUN_MODE', 'debug');
 }
 
-switch (RUN_MODE) {
-case QEEPHP_MODE_DEBUG:
-    require QEE_DIR . DS . 'QDebug.php';
-	Q::setIni(Q::loadFile('QEEPHP_MODE_DEBUG_CONFIG.php', false, QEE_DIR . DS . '_config'));
+switch (Q_RUN_MODE) {
+case 'debug':
+    require Q_DIR . DS . 'QDebug.php';
+	Q::setIni(Q::loadFile('QEEPHP_DEBUG_MODE_CONFIG.php', false, Q_DIR . DS . '_config'));
 	break;
-case QEEPHP_MODE_DEPLOY:
-    Q::setIni(Q::loadFile('QEEPHP_MODE_DEPLOY_CONFIG.php', false, QEE_DIR . DS . '_config'));
+case 'deploy':
+    Q::setIni(Q::loadFile('QEEPHP_DEPLOY_MODE_CONFIG.php', false, Q_DIR . DS . '_config'));
     break;
-case QEEPHP_MODE_TEST:
-	require QEE_DIR . DS . 'QDebug.php';
-    Q::setIni(Q::loadFile('QEEPHP_MODE_TEST_CONFIG.php', false, QEE_DIR . DS . '_config'));
+case 'test':
+	require Q_DIR . DS . 'QDebug.php';
+    Q::setIni(Q::loadFile('QEEPHP_TEST_MODE_CONFIG.php', false, Q_DIR . DS . '_config'));
 }
 
 error_reporting(E_ALL | E_STRICT);
 set_exception_handler(array('QExpress', 'exceptionHandler'));
 
 // 允许 QeePHP 自动载入需要的类
-Q::import(QEE_DIR);
+Q::import(Q_DIR);
 
 if (function_exists('spl_autoload_register')) {
     spl_autoload_register(array('Q', 'loadClass'));
@@ -75,11 +75,11 @@ class QExpress
         self::init();
 
         // 载入调度器并转发请求到控制器
-        $dispatcherClass = Q::getIni('dispatcher');
-        Q::loadClass($dispatcherClass);
-        $dispatcher = new $dispatcherClass($_GET);
+        $dispatcher_class = Q::getIni('dispatcher');
+        Q::loadClass($dispatcher_class);
+        $dispatcher = new $dispatcher_class($_GET);
         Q::reg($dispatcher, 'current_dispatcher');
-        Q::reg($dispatcher, $dispatcherClass);
+        Q::reg($dispatcher, $dispatcher_class);
         return $dispatcher->dispatching();
     }
 
@@ -88,11 +88,11 @@ class QExpress
      */
     static function init()
     {
-        static $firstTime = true;
+        static $first_time = true;
 
         // 避免重复调用 Q::getInit()
-        if (!$firstTime) { return; }
-        $firstTime = false;
+        if (!$first_time) { return; }
+        $first_time = false;
 
         date_default_timezone_set(Q::getIni('default_timezone'));
 
@@ -106,9 +106,9 @@ class QExpress
         /**
          * 如果没有指定缓存目录，则使用默认的缓存目录
          */
-        $cacheDir = Q::getIni('internal_cache_dir');
-        if (empty($cacheDir)) {
-            Q::setIni('internal_cache_dir', QEE_DIR . DS . '_cache');
+        $cache_dir = Q::getIni('internal_cache_dir');
+        if (empty($cache_dir)) {
+            Q::setIni('internal_cache_dir', Q_DIR . DS . '_cache');
         }
 
         // 过滤 magic_quotes

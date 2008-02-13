@@ -2,18 +2,16 @@
 /////////////////////////////////////////////////////////////////////////////
 // QeePHP Framework
 //
-// Copyright (c) 2005 - 2007 QeePHP.org (www.qee.org)
+// Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
 //
-// 许可协议，请查看源代码中附带的 LICENSE.txt 文件，
+// 许可协议，请查看源代码中附带的 LICENSE.TXT 文件，
 // 或者访问 http://www.qeephp.org/ 获得详细信息。
 /////////////////////////////////////////////////////////////////////////////
 
 /**
  * 定义 QController_Abstract 类
  *
- * @copyright Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
- * @author 起源科技 (www.qeeyuan.com)
- * @package core
+ * @package mvc
  * @version $Id$
  */
 
@@ -21,11 +19,7 @@
  * QController_Abstract 实现了一个其它控制器的超类，
  * 为开发者自己的控制器提供了一些方便的成员变量和方法
  *
- * 开发者不一定需要从这个类继承来构造自己的控制器。
- * 但从这个类派生自己的控制器可以获得一些便利性。
- *
- * @package core
- * @author 起源科技 (www.qeeyuan.com)
+ * @package mvc
  */
 abstract class QController_Abstract
 {
@@ -34,59 +28,60 @@ abstract class QController_Abstract
      *
      * @var array|string
      */
-    protected $_components = '';
+    protected $components = '';
 
     /**
      * 当前控制的名字，用于 $this->url() 方法
      *
      * @var string
      */
-    private $_controllerName = null;
+    private $controller_name = null;
 
     /**
      * 当前调用的动作名
      *
      * @var string
      */
-    private $_actionName = null;
+    private $action_name = null;
 
     /**
      * 当前使用的调度器的名字
      *
      * @var QDispatcher
      */
-    private $_dispatcher = null;
+    private $dispatcher = null;
 
     /**
      * 构造函数
      */
     function __construct()
     {
-        $this->_components = array_flip(normalize($this->_components));
+        $this->components = array_flip(Q::normalize($this->components));
     }
 
     /**
      * 执行指定的动作
      *
-     * @param string $actionName
+     * @param string $action_name
      * 
      * @return mixed
      */
-    function execute($actionName = null)
+    function execute($action_name = null)
     {
-        $this->_controllerName = Q::getIni('q/current__controller_name');
-        if (!empty($actionName)) {
-            Q::setIni('q/current_action_name', $actionName);
+        $this->controller_name = Q::getIni('mvc/current_controller_name');
+        if (!empty($action_name)) {
+            Q::setIni('mvc/current_action_name', $action_name);
         }
-        $this->_actionName = Q::getIni('q/current_action_name');
-        $actionMethod = 'action' . ucfirst(strtolower($this->_actionName));
-        if (method_exists($this, $actionMethod)) {
-            $this->_beforeExecute($this->_actionName);
-            $ret = $this->{$actionMethod}();
-            $this->_afterExecute($this->_actionName);
+        $this->action_name = Q::getIni('mvc/current_action_name');
+        $action_method = 'action' . ucfirst(strtolower($this->action_name));
+        if (method_exists($this, $action_method)) {
+            $this->beforeExecute($this->action_name);
+            $ret = $this->{$action_method}();
+            $this->afterExecute($this->action_name);
             return $ret;
         } else {
-            throw new QController_Exception('Controller method "%s::%s()" is missing.', $this->_controllerName, $this->_actionName);
+            throw new QController_Exception('Controller method "%s::%s()" is missing.', 
+                      $this->controller_name, $this->action_name);
         }
     }
 
@@ -105,7 +100,7 @@ abstract class QController_Abstract
             throw new QException(__('Property "%s" not defined.', $varname));
         }
 
-        Q::loadClass($className);
+        Q::loadClass($className, null, 'Controller_');
         $this->{$varname} = new $className($this);
         return $this->{$varname};
     }
@@ -117,10 +112,10 @@ abstract class QController_Abstract
      */
     function getDispatcher()
     {
-        if (empty($this->_dispatcher)) {
-            $this->_dispatcher = Q::registry('current_dispatcher');
+        if (empty($this->dispatcher)) {
+            $this->dispatcher = Q::registry('current_dispatcher');
         }
-        return $this->_dispatcher;
+        return $this->dispatcher;
     }
 
     /**
@@ -130,10 +125,10 @@ abstract class QController_Abstract
      */
     function getControllerName()
     {
-        if (empty($this->_controllerName)) {
-            $this->_controllerName = Q::getIni('q/current_controller_name');
+        if (empty($this->controller_name)) {
+            $this->controller_name = Q::getIni('mvc/current_controller_name');
         }
-        return $this->_controllerName;
+        return $this->controller_name;
     }
 
     /**
@@ -143,21 +138,38 @@ abstract class QController_Abstract
      */
     function getActionName()
     {
-        if (empty($this->_actionName)) {
-            $this->_actionName = Q::getIni('q/current_action_name');
+        if (empty($this->action_name)) {
+            $this->action_name = Q::getIni('mvc/current_action_name');
         }
-        return $this->_actionName;
+        return $this->action_name;
     }
 
-    function _renderCallback(array & $viewdata, $engine, $viewname)
+    /**
+     * 渲染视图输出前调用
+     *
+     * @param array $viewdata
+     * @param QView_Adapter_Abstract $engine
+     * @param string $viewname
+     */
+    function renderCallback(array & $viewdata, QView_Adapter_Abstract $engine, $viewname)
     {
     }
 
-    function _beforeExecute($actionName)
+    /**
+     * 执行控制器动作之前调用
+     *
+     * @param string $action_name
+     */
+    protected function beforeExecute($action_name)
     {
     }
 
-    function _afterExecute($actionName)
+    /**
+     * 执行控制器动作之后调用
+     *
+     * @param string $action_name
+     */
+    protected function afterExecute($action_name)
     {
     }
 
@@ -174,7 +186,8 @@ abstract class QController_Abstract
         $className = Q::getIni('view_engine');
         Q::loadClass('view_engine');
         $engine = new $className($viewname, $viewdata);
-        $engine->addCallback(array($this, '_renderCallback'));
+        /* @var $engine QView_Adapter_Abstract */
+        $engine->addCallback(array($this, 'renderCallback'));
         return $engine;
     }
     

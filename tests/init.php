@@ -8,13 +8,10 @@ $dsn = array(
     'driver'    => 'mysql',
     'host'      => 'localhost',
     'login'     => 'test',
+    'password'  => '',
     'database'  => 'test',
     'prefix'    => 'rx_',
 );
 Q::setIni('dsn', $dsn);
 
 Q::import(dirname(__FILE__));
-
-echo str_repeat('=', 60);
-echo "\n\n";
-
