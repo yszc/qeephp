@@ -115,7 +115,7 @@ return array(
     /**
      * QWebControls 扩展控件的保存目录
      */
-    'webcontrols_ext_dir'       => array(QEE_DIR . '/_webcontrols'),
+    'webcontrols_ext_dir'       => array(Q_DIR . '/_webcontrols'),
 
     // }}}
 
