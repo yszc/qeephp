@@ -49,7 +49,7 @@ class TestQTable extends PHPUnit_Framework_TestCase
         $id = $this->table->create($row);
         $this->assertFalse(empty($id));
 
-        $find = $this->table->findBySQL("SELECT * FROM {$this->table->qtableName} WHERE post_id = {$id}");
+        $find = $this->table->findBySQL("SELECT * FROM {$this->table->qtable_name} WHERE post_id = {$id}");
         $this->assertType('array', $find);
         $find = reset($find);
         $this->assertEquals($row['title'], $find['title']);
@@ -78,11 +78,11 @@ class TestQTable extends PHPUnit_Framework_TestCase
         $id = $this->table->create($row);
         $this->assertFalse(empty($id));
 
-        $sql = "SELECT * FROM {$this->table->qtableName} WHERE post_id = {$id}";
+        $sql = "SELECT * FROM {$this->table->qtable_name} WHERE post_id = {$id}";
         $find = $this->table->findBySQL($sql);
         $find = reset($find);
 
-        sleep(2);
+        sleep(1);
 
         $find['title'] = 'Title -' . mt_rand();
         $affected_rows = $this->table->update($find);
@@ -96,7 +96,7 @@ class TestQTable extends PHPUnit_Framework_TestCase
 
     function testUpdateWhere1()
     {
-        $rowset = $this->table->findBySQL("SELECT COUNT(*) AS row_count FROM {$this->table->qtableName}");
+        $rowset = $this->table->findBySQL("SELECT COUNT(*) AS row_count FROM {$this->table->qtable_name}");
         $row = reset($rowset);
         $count = $row['row_count'];
 
@@ -108,7 +108,7 @@ class TestQTable extends PHPUnit_Framework_TestCase
 
     function testUpdateWhere2()
     {
-        $rowset = $this->table->findBySQL("SELECT COUNT(*) AS row_count FROM {$this->table->qtableName}");
+        $rowset = $this->table->findBySQL("SELECT COUNT(*) AS row_count FROM {$this->table->qtable_name}");
         $row = reset($rowset);
         $count = $row['row_count'];
 
@@ -126,11 +126,11 @@ class TestQTable extends PHPUnit_Framework_TestCase
         );
         $id = $this->table->create($row);
 
-        $sql = "SELECT * FROM {$this->table->qtableName} WHERE post_id = {$id}";
+        $sql = "SELECT * FROM {$this->table->qtable_name} WHERE post_id = {$id}";
         $exists = $this->table->findBySQL($sql);
         $exists = reset($exists);
 
-        sleep(2);
+        sleep(1);
         $this->table->incrWhere('hint', 1, "`post_id` = {$id}");
 
         $row = $this->table->findBySQL($sql);
@@ -149,11 +149,11 @@ class TestQTable extends PHPUnit_Framework_TestCase
         );
         $id = $this->table->create($row);
 
-        $sql = "SELECT * FROM {$this->table->qtableName} WHERE post_id = {$id}";
+        $sql = "SELECT * FROM {$this->table->qtable_name} WHERE post_id = {$id}";
         $exists = $this->table->findBySQL($sql);
         $exists = reset($exists);
 
-        sleep(2);
+        sleep(1);
         $this->table->decrWhere('hint', 2, "`post_id` = {$id}");
 
         $row = $this->table->findBySQL($sql);
@@ -165,13 +165,13 @@ class TestQTable extends PHPUnit_Framework_TestCase
 
     function testRemove()
     {
-        $sql = "SELECT post_id FROM {$this->table->qtableName} ORDER BY post_id ASC";
+        $sql = "SELECT post_id FROM {$this->table->qtable_name} ORDER BY post_id ASC";
         $row = $this->table->findBySQL($sql);
         $row = reset($row);
         $id = $row['post_id'];
 
         $this->table->remove($id);
-        $sql = "SELECT post_id FROM {$this->table->qtableName} WHERE post_id = {$id}";
+        $sql = "SELECT post_id FROM {$this->table->qtable_name} WHERE post_id = {$id}";
         $row = $this->table->findBySQL($sql);
         $this->assertTrue(empty($row));
     }

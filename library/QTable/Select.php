@@ -10,112 +10,112 @@ class QTable_Select
      *
      * @var QTable_Base
      */
-    protected $_table;
+    protected $table;
 
     /**
      * SELECT 子句后要查询的内容
      *
      * @var string
      */
-    protected $_select = '*';
+    protected $select = '*';
     
     /**
      * 查询条件
      *
      * @var array
      */
-    protected $_where = array();
+    protected $where = array();
     
     /**
      * 查询的排序
      *
      * @var string
      */
-    protected $_order = null;
+    protected $order = null;
     
     /**
      * 限定结果集大小
      *
      * @var mixed
      */
-    protected $_limit = 1;
+    protected $limit = 1;
 
     /**
      * 分页查询时，页码的基数
      *
      * @var int
      */
-    protected $_pageBase = 1;
+    protected $page_base = 1;
     
     /**
      * 添加 GROUP BY 子句
      *
      * @var string
      */
-    protected $_groupBy = null;
+    protected $group_by = null;
     
     /**
      * 添加 HAVING 子句
      *
      * @var string
      */
-    protected $_having = array();
+    protected $having = array();
     
     /**
      * 使用 FOR UPDATE 模式
      *
      * @var boolean
      */
-    protected $_forUpdate = false;
+    protected $for_update = false;
     
     /**
      * 使用 DISTINCT 模式
      *
      * @var boolean
      */
-    protected $_distinct = false;
+    protected $distinct = false;
     
     /**
      * 统计记录数
      *
      * @var string
      */
-    protected $_count = null;
+    protected $count = null;
     
     /**
      * 统计平均值
      *
      * @var string
      */
-    protected $_avg = null;
+    protected $avg = null;
     
     /**
      * 统计最大值
      *
      * @var string
      */
-    protected $_max = null;
+    protected $max = null;
     
     /**
      * 统计最小值
      *
      * @var string
      */
-    protected $_min = null;
+    protected $min = null;
     
     /**
      * 统计合计
      *
      * @var string
      */
-    protected $_sum = null;
+    protected $sum = null;
 
     /**
      * 查询结果
      *
      * @var QDBO_Result_Abstract
      */
-    protected $_handle = null;
+    protected $handle = null;
 
     /**
      * 构造函数
@@ -126,7 +126,7 @@ class QTable_Select
      */
     function __construct(QTable_Base $table, $where = null, array $args = null)
     {
-        $this->_table = $table;
+        $this->table = $table;
         if (!is_null($where)) {
             $this->where($where, $args);
         }
@@ -141,7 +141,7 @@ class QTable_Select
      */
     function select($expr = '*')
     {
-        $this->_select = $expr;
+        $this->select = $expr;
         return $this;
     }
 
@@ -155,7 +155,7 @@ class QTable_Select
      */
     function where($where, array $args = null)
     {
-        $this->_where[] = $this->_table->parseWhere($where, $args);
+        $this->where[] = $this->table->parseWhere($where, $args);
         return $this;
     }
 
@@ -168,7 +168,7 @@ class QTable_Select
      */
     function order($expr)
     {
-        $this->_order = $expr;
+        $this->order = $expr;
         return $this;
     }
 
@@ -179,7 +179,7 @@ class QTable_Select
      */
     function all()
     {
-        $this->_limit = null;
+        $this->limit = null;
         return $this;
     }
 
@@ -193,7 +193,7 @@ class QTable_Select
      */
     function limit($count, $offset = 0)
     {
-        $this->_limit = array($count, $offset);
+        $this->limit = array($count, $offset);
         return $this;
     }
 
@@ -208,9 +208,9 @@ class QTable_Select
      */
     function limitPage($page, $page_size = 20, $base = 1)
     {
-        $this->_pageBase = $base;
+        $this->page_base = $base;
         $page -= $base;
-        $this->_limit = array($page_size, $page * $page_size);
+        $this->limit = array($page_size, $page * $page_size);
         return $this;
     }
 
@@ -221,7 +221,7 @@ class QTable_Select
      */
     function getPageInfo()
     {
-        if (is_null($this->_result)) { return array(); }
+        if (is_null($this->result)) { return array(); }
         // 统计记录总数
 
         // 返回分页信息
@@ -237,7 +237,7 @@ class QTable_Select
      */
     function groupBy($expr)
     {
-        $this->_groupBy = $expr;
+        $this->group_by = $expr;
     }
 
     /**
@@ -250,7 +250,7 @@ class QTable_Select
      */
     function having($where, array $args = null)
     {
-        $this->_having[] = $this->_table->parseWhere($where, $args);
+        $this->having[] = $this->table->parseWhere($where, $args);
     }
     
     /**
@@ -262,7 +262,7 @@ class QTable_Select
      */
     function forUpdate($flag = true)
     {
-        $this->_forUpdate = (bool)$flag;
+        $this->for_update = (bool)$flag;
         return $this;
     }
 
@@ -275,7 +275,7 @@ class QTable_Select
      */
     function distinct($flag = true)
     {
-        $this->_distinct = (bool)$flag;
+        $this->distinct = (bool)$flag;
         return $this;
     }
 
@@ -289,7 +289,7 @@ class QTable_Select
      */
     function count($expr = '*', $alias = 'row_count')
     {
-        $this->_count = array($expr, $alias);
+        $this->count = array($expr, $alias);
         return $this;
     }
 
@@ -303,7 +303,7 @@ class QTable_Select
      */
     function avg($expr, $alias = 'avg_value')
     {
-        $this->_avg = array($expr, $alias);
+        $this->avg = array($expr, $alias);
         return $this;
     }
 
@@ -317,7 +317,7 @@ class QTable_Select
      */
     function max($expr, $alias = 'max_value')
     {
-        $this->_max = array($expr, $alias);
+        $this->max = array($expr, $alias);
         return $this;
     }
 
@@ -331,7 +331,7 @@ class QTable_Select
      */
     function min($expr, $alias = 'min_value')
     {
-        $this->_min = array($expr, $alias);
+        $this->min = array($expr, $alias);
         return $this;
     }
 
@@ -345,7 +345,7 @@ class QTable_Select
      */
     function sum($expr, $alias = 'sum_value')
     {
-        $this->_sum = array($expr, $alias);
+        $this->sum = array($expr, $alias);
         return $this;
     }
 
@@ -357,21 +357,23 @@ class QTable_Select
     function query()
     {
         $sql = $this->toString();
-        if (!is_array($this->_limit)) {
-            if (is_null($this->_limit)) {
-                $handle = $this->_table->getDBO()->execute($sql);
+        if (!is_array($this->limit)) {
+            if (is_null($this->limit)) {
+                $handle = $this->table->getDBO()->execute($sql);
             } else {
-                $handle = $this->_table->getDBO()->selectLimit($sql, intval($this->_limit));
+                $handle = $this->table->getDBO()->selectLimit($sql, intval($this->limit));
             }
         } else {
-            list($count, $offset) = $this->_limit;
-            $handle = $this->_table->getDBO()->selectLimit($sql, $count, $offset);
+            list($count, $offset) = $this->limit;
+            $handle = $this->table->getDBO()->selectLimit($sql, $count, $offset);
         }
+        
+        /* @var $handle QDBO_Result_Abstract */
 
-        if ($this->_limit == 1) {
-            return is_null($this->count) ? $handle->fetchRow() : $handle->fetch_one();
+        if ($this->limit == 1) {
+            return is_null($this->count) ? $handle->fetchRow() : $handle->fetchOne();
         } else {
-            return is_null($this->count) ? $handle->fetchAll() : $handle->fetch_col();
+            return is_null($this->count) ? $handle->fetchAll() : $handle->fetchCol();
         }
     }
 
@@ -383,36 +385,36 @@ class QTable_Select
     function toString()
     {
         $sql = 'SELECT ';
-        if ($this->_distinct) {
+        if ($this->distinct) {
             $sql .= 'DISTINCT ';
         }
 
-        $sql .= $this->_select;
-        if ($this->_count) {
-            list($expr, $alias) = $this->_count;
+        $sql .= $this->select;
+        if ($this->count) {
+            list($expr, $alias) = $this->count;
             $sql .= ", COUNT({$expr}) AS {$alias}";
         }
-        if ($this->_avg) {
-            list($expr, $alias) = $this->_avg;
+        if ($this->avg) {
+            list($expr, $alias) = $this->avg;
             $sql .= ", AVG({$expr}) AS {$alias} ";
         }
-        if ($this->_max) {
-            list($expr, $alias) = $this->_max;
+        if ($this->max) {
+            list($expr, $alias) = $this->max;
             $sql .= ", MAX({$expr}) AS {$alias} ";
         }
-        if ($this->_min) {
-            list($expr, $alias) = $this->_min;
+        if ($this->min) {
+            list($expr, $alias) = $this->min;
             $sql .= ", MIN({$expr}) AS {$alias} ";
         }
-        if ($this->_sum) {
-            list($expr, $alias) = $this->_sum;
+        if ($this->sum) {
+            list($expr, $alias) = $this->sum;
             $sql .= ", SUM({$expr}) AS {$alias} ";
         }
 
-        $sql .= " FROM {$this->_table->qtableName} ";
+        $sql .= " FROM {$this->table->qtable_name} ";
 
         $c = array();
-        foreach ($this->_where as $where) {
+        foreach ($this->where as $where) {
             if (is_array($where)) {
                 $c[] = '(' . $where[0] . ')';
             } else {
@@ -424,12 +426,12 @@ class QTable_Select
             $sql .= "WHERE {$c} ";
         }
 
-        if ($this->_groupBy) {
-            $sql .= "GROUP BY {$this->_groupBy} ";
+        if ($this->group_by) {
+            $sql .= "GROUP BY {$this->group_by} ";
         }
 
         $c = array();
-        foreach ($this->_having as $where) {
+        foreach ($this->having as $where) {
             if (is_array($where)) {
                 $c[] = '(' . $where[0] . ')';
             } else {
@@ -441,11 +443,11 @@ class QTable_Select
             $sql .= "HAVING {$c} ";
         }
 
-        if ($this->_order) {
-            $sql .= "ORDER BY {$this->_order} ";
+        if ($this->order) {
+            $sql .= "ORDER BY {$this->order} ";
         }
 
-        if ($this->_forUpdate) {
+        if ($this->for_update) {
             $sql .= "FOR UPDATE";
         }
 
