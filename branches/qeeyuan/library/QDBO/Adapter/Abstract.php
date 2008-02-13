@@ -709,7 +709,7 @@ abstract class QDBO_Adapter_Abstract
      */
     function dbTimestamp($timestamp)
     {
-        return date($this->_TIMESTAMP_FORMAT, $timestamp);
+        return date($this->TIMESTAMP_FORMAT, $timestamp);
     }
 
     /**
