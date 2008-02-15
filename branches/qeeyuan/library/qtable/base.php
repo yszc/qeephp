@@ -28,7 +28,7 @@ class QTable_Base
     const HAS_ONE       = 'has_one';
     const HAS_MANY      = 'has_many';
     const BELONGS_TO    = 'belongs_to';
-    const MANY_TO_MAMNY  = 'many_to_many';
+    const MANY_TO_MAMNY = 'many_to_many';
 
     /**
      * 数据表的 schema

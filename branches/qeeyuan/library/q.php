@@ -213,6 +213,7 @@ abstract class Q
             return;
         }
 
+        $class_name = strtolower($class_name);
         $filename = str_replace('_', DS, $class_name);
         if (!is_null($suffix)) {
             $suffix = trim($suffix, '\\/');
@@ -245,7 +246,7 @@ abstract class Q
             $filename .= '.php';
         }
         
-        self::loadFile($filename, true, $dirs);
+        self::loadFile($filename, false, $dirs);
     }
     // }}}
 
@@ -288,7 +289,7 @@ abstract class Q
             if (self::isReadable($path)) {
                 if ($once) { 
                     $loaded[$id] = true;
-                    return include_once $path; 
+                    return include_once $path;
                 } else {
                 	return include $path;
                 }
