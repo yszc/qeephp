@@ -27,7 +27,7 @@ define('DS', DIRECTORY_SEPARATOR);
 // }}}
 
 // {{{ includes
-require Q_DIR . DS . 'QException.php';
+require Q_DIR . DS . 'qexception.php';
 // }}}
 
 /**

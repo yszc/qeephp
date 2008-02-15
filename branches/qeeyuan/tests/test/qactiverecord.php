@@ -16,7 +16,6 @@ class Test_QActiveRecord extends PHPUnit_Framework_TestCase
     {
         $select = Fixture_QActiveRecord_Post::find_where("post_id > 0");
         $this->assertType('QActiveRecord_Select', $select);
-        dump(get_included_files());
     }
 
     function test_find2()
