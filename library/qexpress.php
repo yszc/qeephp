@@ -16,7 +16,7 @@
  */
 
 // {{{ includes
-require dirname(__FILE__) . DIRECTORY_SEPARATOR . 'Q.php';
+require dirname(__FILE__) . DIRECTORY_SEPARATOR . 'q.php';
 // }}}
 
 // {{{ init
@@ -30,16 +30,17 @@ if (!defined('Q_RUN_MODE')) {
 }
 
 switch (Q_RUN_MODE) {
-case 'debug':
-    require Q_DIR . DS . 'QDebug.php';
-	Q::setIni(Q::loadFile('QEEPHP_DEBUG_MODE_CONFIG.php', false, Q_DIR . DS . '_config'));
-	break;
 case 'deploy':
-    Q::setIni(Q::loadFile('QEEPHP_DEPLOY_MODE_CONFIG.php', false, Q_DIR . DS . '_config'));
+    Q::setIni(Q::loadFile('deploy_mode_config.php', false, Q_DIR . DS . '_config'));
     break;
 case 'test':
-	require Q_DIR . DS . 'QDebug.php';
-    Q::setIni(Q::loadFile('QEEPHP_TEST_MODE_CONFIG.php', false, Q_DIR . DS . '_config'));
+	require Q_DIR . DS . 'qdebug.php';
+    Q::setIni(Q::loadFile('test_mode_config.php', false, Q_DIR . DS . '_config'));
+    break;
+case 'debug':
+default:
+    require Q_DIR . DS . 'qdebug.php';
+    Q::setIni(Q::loadFile('debug_mode_config.php', false, Q_DIR . DS . '_config'));
 }
 
 error_reporting(E_ALL | E_STRICT);
@@ -51,9 +52,9 @@ Q::import(Q_DIR);
 if (function_exists('spl_autoload_register')) {
     spl_autoload_register(array('Q', 'loadClass'));
 } elseif (!function_exists('__autoload')) {
-    function __autoload($className)
+    function __autoload($class_name)
     {
-        Q::loadClass($className);
+        Q::loadClass($class_name);
     }
 }
 // }}}
