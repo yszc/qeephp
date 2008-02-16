@@ -1,8 +1,8 @@
-table_class
-    关联到哪一个表数据入口
-
 table_name
     关联到哪一个数据表
+
+table_class
+    关联到哪一个表数据入口
     table_class 和 table_name 两个属性只需要一个。如果指定了 table_class，则忽略 table_name。
     当没有指定 table_class 时，将为 table_name 指定的数据表创建一个匿名的表数据入口对象
 
@@ -32,12 +32,11 @@ mid_assoc_key （仅用于 many to many 关联）
     mid_assoc_key 的默认值是中间表中与 assoc_key 同名的字段
 
 mid_table_name （仅用于 many to many 关联）
-
-
+    指示中间表的名称（不含前缀）
 
 mid_table_class （仅用于 many to many 关联）
-
-
+    指示用哪一个表数据入口对象封装对中间表的操作
+    mid_table_name 和 mid_table_class 两个属性只需要一个。如果指定了 mid_table_class，则忽略 mid_table_name
 
 on_find
     指示是否读取关联的记录
