@@ -12,7 +12,7 @@ $dsn = array(
     'login'     => 'test',
     'password'  => '',
     'database'  => 'test',
-    'prefix'    => 'rx_',
+    'prefix'    => 'q_',
 );
 Q::setIni('dsn', $dsn);
 
