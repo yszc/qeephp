@@ -34,9 +34,10 @@ class TestQTable extends PHPUnit_Framework_TestCase
 
     function testFind2()
     {
-        $select = $this->table->find('[post_id] = :post_id AND created > :created', array('post_id' => 1, 'created' => 0));
+    	$conditions = '[post_id] = :post_id AND created > :created';
+        $select = $this->table->find($conditions, array('post_id' => 1, 'created' => 0));
         $actual = trim($select->toString());
-        $expected = 'SELECT * FROM `rx_posts` WHERE (`post_id` = 1 AND created > 0)';
+        $expected = 'SELECT * FROM `q_posts` WHERE (`post_id` = 1 AND created > 0)';
         $this->assertEquals($expected, $actual);
     }
 
@@ -231,7 +232,7 @@ class TestQTable extends PHPUnit_Framework_TestCase
     {
         $where = '[posts.user_id] = :user_id AND [level.level_ix] > :level_ix';
         $args = array('user_id' => 2, 'level_ix' => 55);
-        $expected = '`rx_posts`.`user_id` = 2 AND `level`.`level_ix` > 55';
+        $expected = '`q_posts`.`user_id` = 2 AND `level`.`level_ix` > 55';
         $actual = $this->table->parseWhere($where, $args);
         $this->assertEquals($expected, $actual);
     }
@@ -276,7 +277,7 @@ class TestQTable extends PHPUnit_Framework_TestCase
     function testParseWhereArray4()
     {
         $where = array('posts.user_id' => 1, 'OR', '(' , 'level.level_ix' => 3, 'schema.mytable.credits' => 5, ')');
-        $expected = '`rx_posts`.`user_id` = 1 OR ( `level`.`level_ix` = 3 AND `schema`.`mytable`.`credits` = 5 )';
+        $expected = '`q_posts`.`user_id` = 1 OR ( `level`.`level_ix` = 3 AND `schema`.`mytable`.`credits` = 5 )';
         $actual = $this->table->parseWhere($where);
         $this->assertEquals($expected, $actual);
     }

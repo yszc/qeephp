@@ -100,10 +100,26 @@ class TestQDBO extends PHPUnit_Framework_TestCase
     function testQinto2()
     {
         $checks = array(
-            array("SELECT * FROM testtable WHERE level_ix > ? AND int_x = ?", array(1, 2), QDBO::PARAM_QM),
-            array("SELECT * FROM testtable WHERE level_ix > :level_ix AND int_x = :int_x", array('level_ix' => 1, 'int_x' => 2), QDBO::PARAM_CL_NAMED),
-            array("SELECT * FROM testtable WHERE level_ix > $1 AND int_x = $2", array(1, 2), QDBO::PARAM_DL_SEQUENCE),
-            array("SELECT * FROM testtable WHERE level_ix > @level_ix AND int_x = @int_x", array('level_ix' => 1, 'int_x' => 2), QDBO::PARAM_AT_NAMED),
+            array(
+                "SELECT * FROM testtable WHERE level_ix > ? AND int_x = ?", 
+                array(1, 2), 
+                QDBO::PARAM_QM
+            ),
+            array(
+                "SELECT * FROM testtable WHERE level_ix > :level_ix AND int_x = :int_x", 
+                array('level_ix' => 1, 'int_x' => 2), 
+                QDBO::PARAM_CL_NAMED
+            ),
+            array(
+                "SELECT * FROM testtable WHERE level_ix > $1 AND int_x = $2", 
+                array(1, 2), 
+                QDBO::PARAM_DL_SEQUENCE
+            ),
+            array(
+                "SELECT * FROM testtable WHERE level_ix > @level_ix AND int_x = @int_x", 
+                array('level_ix' => 1, 'int_x' => 2), 
+                QDBO::PARAM_AT_NAMED
+            ),
         );
 
         $expected = 'SELECT * FROM testtable WHERE level_ix > 1 AND int_x = 2';
@@ -232,7 +248,7 @@ class TestQDBO extends PHPUnit_Framework_TestCase
     function testAffectedRows()
     {
         $idList = implode(',', $this->insertIntoPosts(10));
-        $sql = "DELETE FROM rx_posts WHERE post_id IN ({$idList})";
+        $sql = "DELETE FROM q_posts WHERE post_id IN ({$idList})";
         $this->dbo->execute($sql);
         $affectedRows = $this->dbo->affectedRows();
         $this->assertEquals(10, $affectedRows, '10 == $affectedRows');
@@ -244,7 +260,7 @@ class TestQDBO extends PHPUnit_Framework_TestCase
         case 'mysql':
         case 'mysqli':
         case 'pdomysql':
-            $sql = "INSERT INTO rx_posts (title, body, created, updated) VALUES (?, ?, ?, ?)";
+            $sql = "INSERT INTO q_posts (title, body, created, updated) VALUES (?, ?, ?, ?)";
             $args = array('title', 'body', time(), time());
             break;
         case 'pgsql':
@@ -263,33 +279,37 @@ class TestQDBO extends PHPUnit_Framework_TestCase
 
     function testSelectLimit()
     {
-        $this->dbo->execute('DELETE FROM rx_posts');
+        $this->dbo->execute('DELETE FROM q_posts');
         $idList = $this->insertIntoPosts(10);
-        $sql = "SELECT post_id FROM rx_posts ORDER BY post_id ASC";
+        $sql = "SELECT post_id FROM q_posts ORDER BY post_id ASC";
 
         $length = 10;
         $offset = 0;
         $rowset = $this->dbo->selectLimit($sql, $length, $offset)->fetchAll();
-        $this->assertEquals($length, count($rowset), "\$rowset = \$this->dbo->select_limit('{$sql}', {$length}, {$offset});");
+        $msg = "\$rowset = \$this->dbo->select_limit('{$sql}', {$length}, {$offset});";
+        $this->assertEquals($length, count($rowset), $msg);
         for ($i = $offset; $i < $offset + $length; $i++) {
-            $this->assertEquals($idList[$i], $rowset[$i - $offset]['post_id'], "\$length = {$length}, \$offset = {$offset}");
+        	$msg = "\$length = {$length}, \$offset = {$offset}";
+            $this->assertEquals($idList[$i], $rowset[$i - $offset]['post_id'], $msg);
         }
 
         $length = 3; 
         $offset = 5;
         $rowset = $this->dbo->selectLimit($sql, $length, $offset)->fetchAll();
-        $this->assertEquals($length, count($rowset), "\$rowset = \$this->dbo->select_limit('{$sql}', {$length}, {$offset});");
+        $msg = "\$rowset = \$this->dbo->select_limit('{$sql}', {$length}, {$offset});";
+        $this->assertEquals($length, count($rowset), $msg);
         for ($i = $offset; $i < $offset + $length; $i++) {
-            $this->assertEquals($idList[$i], $rowset[$i - $offset]['post_id'], "\$length = {$length}, \$offset = {$offset}");
+        	$msg = "\$length = {$length}, \$offset = {$offset}";
+            $this->assertEquals($idList[$i], $rowset[$i - $offset]['post_id'], $msg);
         }
     }
 
     function testGetAll()
     {
-        $this->dbo->execute('DELETE FROM rx_posts');
+        $this->dbo->execute('DELETE FROM q_posts');
         $idList = $this->insertIntoPosts(10);
 
-        $sql = "SELECT post_id FROM rx_posts ORDER BY post_id ASC";
+        $sql = "SELECT post_id FROM q_posts ORDER BY post_id ASC";
         $rowset = $this->dbo->getAll($sql);
         for ($i = 0; $i < 10; $i++) {
             $this->assertEquals($idList[$i], $rowset[$i]['post_id']);
@@ -298,10 +318,10 @@ class TestQDBO extends PHPUnit_Framework_TestCase
 
     function testGetCol()
     {
-        $this->dbo->execute('DELETE FROM rx_posts');
+        $this->dbo->execute('DELETE FROM q_posts');
         $idList = $this->insertIntoPosts(10);
 
-        $sql = "SELECT post_id FROM rx_posts ORDER BY post_id ASC";
+        $sql = "SELECT post_id FROM q_posts ORDER BY post_id ASC";
         $rowset = $this->dbo->getCol($sql);
         for ($i = 0; $i < 10; $i++) {
             $this->assertEquals($idList[$i], $rowset[$i]);
@@ -310,7 +330,7 @@ class TestQDBO extends PHPUnit_Framework_TestCase
 
     function testBeginTrans()
     {
-        $sql = 'SELECT COUNT(*) FROM rx_posts';
+        $sql = 'SELECT COUNT(*) FROM q_posts';
         $count = $this->dbo->getOne($sql);
         $tran = $this->dbo->beginTrans();
         $this->assertType('QDBO_Transaction', $tran);
@@ -322,7 +342,7 @@ class TestQDBO extends PHPUnit_Framework_TestCase
 
     function testBeginTrans2()
     {
-        $sql = 'SELECT COUNT(*) FROM rx_posts';
+        $sql = 'SELECT COUNT(*) FROM q_posts';
         $count = $this->dbo->getOne($sql);
         $tran = $this->dbo->beginTrans();
         $this->assertType('QDBO_Transaction', $tran);
@@ -337,7 +357,7 @@ class TestQDBO extends PHPUnit_Framework_TestCase
 
     function testBeginTrans3()
     {
-        $sql = 'SELECT COUNT(*) FROM rx_posts';
+        $sql = 'SELECT COUNT(*) FROM q_posts';
         $count = $this->dbo->getOne($sql);
         $tran = $this->dbo->beginTrans();
         $this->assertType('QDBO_Transaction', $tran);
@@ -352,7 +372,7 @@ class TestQDBO extends PHPUnit_Framework_TestCase
 
     function testBeginTrans4()
     {
-        $sql = 'SELECT COUNT(*) FROM rx_posts';
+        $sql = 'SELECT COUNT(*) FROM q_posts';
         $count = $this->dbo->getOne($sql);
         $tran = $this->dbo->beginTrans();
         $this->assertType('QDBO_Transaction', $tran);
@@ -375,9 +395,9 @@ class TestQDBO extends PHPUnit_Framework_TestCase
             'created' => time(),
             'updated' => time(),
         );
-        $sql = $this->dbo->getInsertSQL($row, 'rx_posts');
+        $sql = $this->dbo->getInsertSQL($row, 'q_posts');
         $this->dbo->execute($sql, $row);
-        $sql = 'SELECT * FROM rx_posts WHERE post_id = ' . $this->dbo->insertID();
+        $sql = 'SELECT * FROM q_posts WHERE post_id = ' . $this->dbo->insertID();
         $exists = $this->dbo->getRow($sql);
         $this->assertEquals($row['title'], $exists['title']);
     }
@@ -386,10 +406,10 @@ class TestQDBO extends PHPUnit_Framework_TestCase
     {
         $idList = $this->insertIntoPosts(1);
         $id = reset($idList);
-        $sql = "SELECT * FROM rx_posts WHERE post_id = {$id}";
+        $sql = "SELECT * FROM q_posts WHERE post_id = {$id}";
         $row = $this->dbo->getRow($sql);
         $row['title'] = 'Title +' . mt_rand();
-        $updateSQL = $this->dbo->getUpdateSQL($row, 'post_id', 'rx_posts');
+        $updateSQL = $this->dbo->getUpdateSQL($row, 'post_id', 'q_posts');
         $this->dbo->execute($updateSQL, $row);
 
         $exists = $this->dbo->getRow($sql);
@@ -400,7 +420,7 @@ class TestQDBO extends PHPUnit_Framework_TestCase
     private function insertIntoPosts($nums)
     {
         $time = time();
-        $sql = "INSERT INTO rx_posts (title, body, created, updated) VALUES ('title', 'body', {$time}, {$time})";
+        $sql = "INSERT INTO q_posts (title, body, created, updated) VALUES ('title', 'body', {$time}, {$time})";
         $idList = array();
         for ($i = 0; $i < $nums; $i++) {
             $this->dbo->execute($sql);

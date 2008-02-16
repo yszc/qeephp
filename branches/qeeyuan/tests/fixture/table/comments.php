@@ -2,16 +2,14 @@
 
 class Table_Comments extends QTable_Base
 {
-    public $tableName = 'comments';
-    public $primaryKey = 'comment_id';
+    public $table_name = 'comments';
+    public $pk = 'comment_id';
 
-    protected $belongsTo = array(
+    protected $belongs_to = array(
         array(
-            'tableClass' => 'Table_Posts',
-            'mappingName' => 'post',
-            'foreignKey' => 'post_id',
+            'table_class'   => 'Table_Contents',
+            'mapping_name'  => 'content',
+            'foreign_key'   => 'content_id',
         ),
     );
-
 }
-
