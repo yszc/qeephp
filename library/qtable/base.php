@@ -101,13 +101,6 @@ class QTable_Base
     protected $many_to_many;
 
     /**
-     * 保存该表数据入口的所有关联
-     *
-     * @var array
-     */
-    protected $links = array();
-
-    /**
      * 创建记录时，要自动填入当前时间的字段
      *
      * 只要数据表具有下列字段之一，则调用 create() 方法创建记录时，
@@ -143,6 +136,13 @@ class QTable_Base
      * @var boolean
      */
     protected $is_init = false;
+
+    /**
+     * 保存该表数据入口的所有关联
+     *
+     * @var array
+     */
+    protected $links = array();
 
     /**
      * 当前数据表的元数据
@@ -191,24 +191,16 @@ class QTable_Base
         }
         if ($connect_now) {
             $this->connect();
-            $this->relinks();
         }
+        $this->relinks();
     }
     
-    /**
-     * 清除表数据入口对象实例的所有关联
-     */
-    function clearLinks()
-    {
-    	$this->links = null;
-    }
-
     /**
      * 根据类定义的 $has_one、$has_many、$belongs_to 和 $many_to_many 成员变量重建所有关联
      */
     function relinks()
     {
-        $this->clearLinks();
+        $this->removeAllLinks();
         if (is_array($this->has_one)) {
             $this->createLink($this->has_one, self::HAS_ONE);
         }
@@ -219,38 +211,122 @@ class QTable_Base
             $this->createLink($this->has_many, self::HAS_MANY);
         }
         if (is_array($this->many_to_many)) {
-            $this->createLink($this->many_to_many, self::MANY_TO_MAMNY);
+            $this->createLink($this->many_to_many, self::MANY_TO_MANY);
         }
     }
 
     /**
-     * 建立关联，并且返回新建立的关联对象
+     * 建立关联
      *
      * @param array $line_define
      * @param const $type
-     *
-     * @return QTable_Link_Abstract
      */
     function createLink(array $link_define, $type)
     {
         if (!is_array(reset($link_define))) {
-            $link_define = $link_define;
+            $link_define = array($link_define);
         }
-        $return = array();
-        foreach ($link_define as $def) {
-            if (!is_array($def)) {
-            	// LC_MSG: $link_define typemismatch, expected array, actual is %s
-                throw new QTable_Exception(__('$link_define typemismatch, expected array, actual is %s', gettype($def)));
-            }
-            $link = QTable_Link_Abstract::createLink($def, $type, $this);
+        foreach ($link_define as $define) {
+            $link = QTable_Link_Abstract::createLink($define, $type, $this);
             $this->links[$link->name] = $link;
-            $return[] = $link;
         }
-        if (count($return) == 1) {
-            return $return[0];
-        } else {
-            return $return;
+    }
+
+    /**
+     * 检查指定名称的单个关联是否存在
+     *
+     * @param string $link_name
+     *
+     * @return boolean
+     */
+    function existsLink($link_name)
+    {
+        return isset($this->links[$link_name]);
+    }
+
+    /**
+     * 返回指定名称的关联，如果关联不存在则抛出异常
+     *
+     * @param string $link_name
+     *
+     * @return QTable_Link_Abstract
+     */
+    function getLink($link_name)
+    {
+        if (isset($this->links[$link_name])) {
+            return $this->links[$link_name];
         }
+
+        // LC_MSG: Specified link "%s" not found.
+        throw new QTable_Exception(__('Specified link "%s" not found.', $link_name));
+    }
+
+    /**
+     * 允许指定名称的关联，如果关联不存在则抛出异常
+     *
+     * @param array|string $link_names
+     */
+    function enableLinks($link_names)
+    {
+        if (!is_array($link_names)) {
+            $link_names = Q::normalize($link_names);
+        }
+        foreach ($link_names as $name) {
+            if (isset($this->links[$name])) {
+                $this->links[$name]->enable();
+            } else {
+                // LC_MSG: Specified link "%s" not found.
+                throw new QTable_Exception(__('Specified link "%s" not found.', $name));
+            }
+        }
+    }
+
+    /**
+     * 禁用指定名称的关联，如果关联不存在则抛出异常
+     *
+     * @param array|string $link_names
+     */
+    function disableLinks($link_names)
+    {
+        if (!is_array($link_names)) {
+            $link_names = Q::normalize($link_names);
+        }
+        foreach ($link_names as $name) {
+            if (isset($this->links[$name])) {
+                $this->links[$name]->disable();
+            } else {
+                // LC_MSG: Specified link "%s" not found.
+                throw new QTable_Exception(__('Specified link "%s" not found.', $name));
+            }
+        }
+    }
+
+    /**
+     * 清除指定名称的关联，如果关联不存在则抛出异常
+     *
+     * @param array|string $link_names
+     */
+    function removeLinks($link_names)
+    {
+        if (!is_array($link_names)) {
+            $link_names = Q::normalize($link_names);
+        }
+        foreach ($link_names as $name) {
+            if (isset($this->links[$name])) {
+                unset($this->links[$name]);
+            } else {
+                // LC_MSG: Specified link "%s" not found.
+                throw new QTable_Exception(__('Specified link "%s" not found.', $name));
+            }
+        }
+    }
+
+    /**
+     * 清除表数据入口对象实例的所有关联
+     */
+    function removeAllLinks()
+    {
+    	$this->links = null;
     }
 
     /**
