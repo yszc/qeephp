@@ -61,7 +61,7 @@ class QTable_Base
     /**
      * 主键字段名
      *
-     * @var sring
+     * @var string|array
      */
     public $pk;
 
@@ -131,13 +131,6 @@ class QTable_Base
     protected $dbo;
 
     /**
-     * 指示表数据入口对象是否已经初始化
-     *
-     * @var boolean
-     */
-    protected $is_init = false;
-
-    /**
      * 保存该表数据入口的所有关联
      *
      * @var array
@@ -145,10 +138,23 @@ class QTable_Base
     protected $links = array();
 
     /**
+     * 指示是否使用了复合主键
+     *
+     * @var boolean
+     */
+    protected $is_cpk;
+
+    /**
+     * 指示主键字段的总数
+     *
+     * @var int
+     */
+    protected $pk_count;
+
+    /**
      * 当前数据表的元数据
      *
-     * 元数据是一个二维数组，每一个元素的键名就是全大写的字段名，
-     * 而键值则是该字段的数据表定义。
+     * 元数据是一个二维数组，每个元素的键名就是全小写的字段名，而键值则是该字段的数据表定义。
      *
      * @var array
      */
@@ -194,7 +200,7 @@ class QTable_Base
         }
         $this->relinks();
     }
-    
+
     /**
      * 根据类定义的 $has_one、$has_many、$belongs_to 和 $many_to_many 成员变量重建所有关联
      */
@@ -202,31 +208,31 @@ class QTable_Base
     {
         $this->removeAllLinks();
         if (is_array($this->has_one)) {
-            $this->createLink($this->has_one, self::HAS_ONE);
+            $this->createLinks($this->has_one, self::HAS_ONE);
         }
         if (is_array($this->belongs_to)) {
-            $this->createLink($this->belongs_to, self::BELONGS_TO);
+            $this->createLinks($this->belongs_to, self::BELONGS_TO);
         }
         if (is_array($this->has_many)) {
-            $this->createLink($this->has_many, self::HAS_MANY);
+            $this->createLinks($this->has_many, self::HAS_MANY);
         }
         if (is_array($this->many_to_many)) {
-            $this->createLink($this->many_to_many, self::MANY_TO_MANY);
+            $this->createLinks($this->many_to_many, self::MANY_TO_MANY);
         }
     }
 
     /**
      * 建立关联
      *
-     * @param array $line_define
+     * @param array $lines_define
      * @param const $type
      */
-    function createLink(array $link_define, $type)
+    function createLinks(array $links_define, $type)
     {
-        if (!is_array(reset($link_define))) {
-            $link_define = array($link_define);
+        if (!is_array(reset($links_define))) {
+            $links_define = array($links_define);
         }
-        foreach ($link_define as $define) {
+        foreach ($links_define as $define) {
             $link = QTable_Link_Abstract::createLink($define, $type, $this);
             $this->links[$link->name] = $link;
         }
@@ -264,14 +270,14 @@ class QTable_Base
     /**
      * 允许指定名称的关联，如果关联不存在则抛出异常
      *
-     * @param array|string $link_names
+     * @param array|string $links_name
      */
-    function enableLinks($link_names)
+    function enableLinks($links_name)
     {
-        if (!is_array($link_names)) {
-            $link_names = Q::normalize($link_names);
+        if (!is_array($links_name)) {
+            $links_name = Q::normalize($links_name);
         }
-        foreach ($link_names as $name) {
+        foreach ($links_name as $name) {
             if (isset($this->links[$name])) {
                 $this->links[$name]->enable();
             } else {
@@ -284,14 +290,14 @@ class QTable_Base
     /**
      * 禁用指定名称的关联，如果关联不存在则抛出异常
      *
-     * @param array|string $link_names
+     * @param array|string $links_name
      */
-    function disableLinks($link_names)
+    function disableLinks($links_name)
     {
-        if (!is_array($link_names)) {
-            $link_names = Q::normalize($link_names);
+        if (!is_array($links_name)) {
+            $links_name = Q::normalize($links_name);
         }
-        foreach ($link_names as $name) {
+        foreach ($links_name as $name) {
             if (isset($this->links[$name])) {
                 $this->links[$name]->disable();
             } else {
@@ -304,14 +310,14 @@ class QTable_Base
     /**
      * 清除指定名称的关联，如果关联不存在则抛出异常
      *
-     * @param array|string $link_names
+     * @param array|string $links_name
      */
-    function removeLinks($link_names)
+    function removeLinks($links_name)
     {
-        if (!is_array($link_names)) {
-            $link_names = Q::normalize($link_names);
+        if (!is_array($links_name)) {
+            $links_name = Q::normalize($links_name);
         }
-        foreach ($link_names as $name) {
+        foreach ($links_name as $name) {
             if (isset($this->links[$name])) {
                 unset($this->links[$name]);
             } else {
@@ -332,13 +338,14 @@ class QTable_Base
     /**
      * 创建一个查询对象
      *
-     * @param array|string $where
-     * @param array $args
+     * @param string|array $where
      *
      * @return QTable_Select
      */
-    function find($where = null, array $args = null)
+    function find($where = null)
     {
+    	$args = func_get_args();
+    	array_shift($args);
         return new QTable_Select($this, $where, $args);
     }
 
@@ -350,8 +357,10 @@ class QTable_Base
      *
      * @return array
      */
-    function findBySQL($sql, array $args = null)
+    function findBySQL($sql)
     {
+    	$args = func_get_args();
+    	array_shift($args);
         return $this->dbo->getAll($sql, $args);
     }
 
@@ -365,18 +374,28 @@ class QTable_Base
     function create(array $row)
     {
         $this->fillFieldsWithCurrentTime($row, $this->created_time_fields);
-        if (empty($row[$this->pk]) || $row[$this->pk] == 0) {
-            unset($row[$this->pk]);
+        $pkvc = 0;
+        foreach ($this->pk as $pk) {
+            if ($row[$pk] === null || $row[$pk] === '' || $row[$pk] === 0) {
+                unset($row[$pk]);
+            } else {
+            	$pkvc++;
+            }
         }
-        $mpk = strtolower($this->pk);
-        if (!isset($row[$this->pk]) && !self::$tables_meta[$this->cache_id][$mpk]['auto_incr']) {
-            // 如果主键字段不是自增字段，并且 $row 没有包含主键字段值时，则获取一个新的主键字段值
-            $row[$this->pk] = $this->nextID();
+        if ($pkvc == 0 && $this->pk_count == 1) {
+        	/**
+        	 * 如果没有指定任何主键值，并且仅有一个主键时，判断该主键是否是自增
+        	 * 如果不是自增主键，则通过序列获取一个新的主键值
+        	 */
+        	$pk = $this->pk[0];
+	        if (!self::$tables_meta[$this->cache_id][strtolower($pk)]['auto_incr']) {
+	            $row[$pk] = $this->nextID();
+	            $insert_id = $row[$pk];
+	        }
         }
         $sql = $this->dbo->getInsertSQL($row, $this->full_table_name, $this->schema);
         $this->dbo->execute($sql, $row);
-        $insertID = !empty($row[$this->pk]) ? $row[$this->pk] : $this->dbo->insertID();
-        return $insertID;
+        return isset($insert_id) ? $insert_id : $this->dbo->insertID();
     }
 
     /**
@@ -429,16 +448,21 @@ class QTable_Base
      *
      * @param array $pairs
      * @param array|string $where
-     * @param array $args
      *
      * @return int
      */
-    function updateWhere(array $pairs, $where, array $args = null)
+    function updateWhere(array $pairs, $where)
     {
+    	$args = func_get_args();
+        array_shift($args);
+        array_shift($args);
+
+        /**
+         * 如果查询条件中包含关联表字段，则需要根据不同类型的关联进行 SQL 语句的构造
+         */
+
+
         $where = $this->parseWhere($where, $args);
-        if (is_array($where)) {
-            $where = reset($where);
-        }
 
         $args = $this->dbo->getPlaceholderPairs($pairs);
         $sql = "UPDATE {$this->qtable_name} SET " . implode(',', $args[0]);
@@ -659,6 +683,16 @@ class QTable_Base
     }
 
     /**
+     * 确认是否是复合主键
+     *
+     * @return boolean
+     */
+    function isCompositePK()
+    {
+    	return $this->is_cpk;
+    }
+
+    /**
      * 返回该表数据入口对象使用的数据访问对象
      *
      * @return QDBO_Adapter_Abstract
@@ -676,16 +710,16 @@ class QTable_Base
     function setDBO($dbo)
     {
         $this->dbo = $dbo;
-        if ($this->schema == '' && $dbo->getSchema() != '') {
+
+        if (empty($this->schema) && $dbo->getSchema() != '') {
             $this->schema = $dbo->getSchema();
         }
-        if ($this->full_table_name == '' && $dbo->getTablePrefix() != '') {
+        if (empty($this->full_table_name) && $dbo->getTablePrefix() != '') {
             $this->full_table_name = $dbo->getTablePrefix() . $this->table_name;
-        } else {
+        } elseif (empty($this->full_table_name)) {
             $this->full_table_name = $this->table_name;
         }
         $this->qtable_name = $this->dbo->qtable($this->full_table_name);
-        $this->qpk = $this->dbo->qfield($this->pk, $this->full_table_name, $this->schema);
     }
 
     /**
@@ -713,31 +747,21 @@ class QTable_Base
      */
     function connect()
     {
-        if ($this->is_init) { return; }
-
         if (is_null($this->dbo)) {
             $dbo = QDBO::getConn();
             $this->setDBO($dbo);
         }
-
         if (!$this->dbo->isConnected()) {
             $this->dbo->connect();
         }
         $this->cache_id = $this->dbo->getID() . '/' . $this->qtable_name;
         $this->prepareMETA();
 
-        // 如果没有指定主键，则自动设置主键字段
-        if ($this->pk == '') {
-            foreach (self::$tables_meta[$this->cache_id] as $field) {
-                if ($field['pk']) {
-                    $this->pk = $field['name'];
-                    break;
-                }
-            }
-            if ($this->pk == '') {
-                throw new QTable_Exception(__('Not found primary key in table "%s"', $this->qtable_name));
-            }
-        }
+        // 处理主键字段
+        $this->pk = Q::normalize($this->pk);
+        $this->pk_count = count($this->pk);
+        $this->is_cpk = $this->pk_count > 1;
+        $this->qpk = $this->dbo->qfields($this->pk, $this->full_table_name);
 
         // 过滤 created_time_fields 和 updated_time_fields
         foreach ($this->created_time_fields as $offset => $field) {
@@ -745,19 +769,24 @@ class QTable_Base
                 unset($this->created_time_fields[$offset]);
             }
         }
-
         foreach ($this->updated_time_fields as $offset => $field) {
             if (!isset(self::$tables_meta[$this->cache_id][strtolower($field)])) {
                 unset($this->updated_time_fields[$offset]);
             }
         }
-        
-        $this->is_init = true;
     }
 
-    function qfields($fields)
+    /**
+     * 转义字段
+     *
+     * @param string|array $fields
+     * @param boolean $return_array
+     *
+     * @return string|array
+     */
+    function qfields($fields, $return_array = false)
     {
-        return $this->dbo->qfields($fields, $this->full_table_name, $this->schema);
+        return $this->dbo->qfields($fields, $this->full_table_name, $this->schema, $return_array);
     }
 
     /**
@@ -790,7 +819,7 @@ class QTable_Base
             return $this->parseWhereString($where, $args);
         }
     }
-    
+
     /**
      * 按照模式2对查询条件进行分析
      *
@@ -838,7 +867,7 @@ class QTable_Base
 
         return implode(' ', $parts);
     }
-    
+
     /**
      * 按照模式1对查询条件进行分析
      *
@@ -942,7 +971,7 @@ class QTable_Base
         if (!empty($where)) { $sql .= " WHERE {$where}"; }
         return $this->updateBySQL($sql);
     }
-    
+
     /**
      * 准备当前数据表的元数据
      *
@@ -950,7 +979,6 @@ class QTable_Base
      */
     private function prepareMETA()
     {
-        if (isset(self::$tables_meta[$this->cache_id])) { return; }
         $cached = Q::getIni('db_meta_cached');
 
         if ($cached) {
@@ -959,17 +987,26 @@ class QTable_Base
             $backend = Q::getIni('db_meta_cache_backend');
             $meta = Q::getCache($this->cache_id, $policy, $backend);
             if (is_array($meta)) {
-                self::$tables_meta[$this->cache_id] = $meta;
+            	$this->meta = $meta;
                 return;
             }
         }
 
         // 从数据库获得 meta
         $meta = $this->dbo->metaColumns($this->full_table_name, $this->schema);
-        self::$tables_meta[$this->cache_id] = $meta;
         if ($cached) {
             // 缓存数据
             Q::setCache($this->cache_id, $meta, $policy, $backend);
         }
+    }
+
+    /**
+     * 准备主键
+     */
+    private function preparePK()
+    {
+        $this->pk = Q::normalize($this->pk);
+        $this->is_cpk = count($this->pk) > 1;
+        $this->qpk = $this->dbo->qfields($this->pk, $this->full_table_name);
     }
 }

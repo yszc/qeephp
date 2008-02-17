@@ -25,3 +25,61 @@ created_time_fields
 updated_time_fields
     更新记录时，要填充当前时间的字段
 
+
+-----------------
+
+CRUD 操作对复合主键的支持：
+
+create
+必须提供每一个主键的值
+
+-----------------
+
+CRUD 对关联表条件的支持：
+
+find: orders belongs_to members
+    SELECT orders.* FROM orders
+
+    LEFT JOIN members
+    ON members.member_id = orders.user_id
+
+    WHERE orders.created < 1191196800
+        AND members.username = 'tira'
+
+
+find: orders belongs_to members AND orders has_many order_items
+    SELECT orders.* FROM orders
+
+    LEFT JOIN members
+    ON members.member_id = orders.user_id
+
+    LEFT JOIN order_items
+    ON order_items.order_id = orders.order_id
+
+    WHERE orders.created < 1191196800
+        AND members.username = 'tira'
+        AND order_items.product_id = 22508
+
+find: products many_to_many tags
+    SELECT products.* FROM products
+
+    LEFT JOIN products_has_tags
+    ON products_has_tags.product_id = products.product_id
+    LEFT JOIN tags
+    ON products_has_tags.tag_id = tags.tag_id
+
+    WHERE products.product_id = 13111
+        AND tags.tagname = '连衣裙'
+
+
+update: products many_to_many tags
+    UPDATE products, products_has_tags, tags
+
+    SET vip_price = 123
+
+    WHERE
+        products.product_id = 13111
+        AND tags.tagname = '连衣裙'
+        AND products_has_tags.product_id = products.product_id
+        AND products_has_tags.tag_id = tags.tag_id
+
