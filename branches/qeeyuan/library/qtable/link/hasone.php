@@ -1,17 +1,28 @@
 <?php
+/////////////////////////////////////////////////////////////////////////////
+// QeePHP Framework
+//
+// Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
+//
+// 许可协议，请查看源代码中附带的 LICENSE.TXT 文件，
+// 或者访问 http://www.qeephp.org/ 获得详细信息。
+/////////////////////////////////////////////////////////////////////////////
 
 /**
- * QTable_Link_Has_One 封装 has one 关系
+ * 定义 QTable_Link_HasOne 类
  *
- * @package core
- * @author 起源科技 (www.qeeyuan.com)
- * @version 1.1
+ * @package database
+ * @version $Id$
  */
-class QTable_Link_Has_One extends QTable_Link_Abstract
-{
-    public $one_to_one = true;
 
-    function get_find_sql(array $fkvs)
+/**
+ * QTable_Link_HasOne 类封装了一个 has one 关联
+ *
+ * @package database
+ */
+class QTable_Link_HasOne extends QTable_Link_Abstract
+{
+    function getFindSql(array $fkvs)
     {
         /**
          * SELECT post_id AS ref__link__key, * FROM comments WHERE comments.post_id IN (1)
@@ -22,13 +33,13 @@ class QTable_Link_Has_One extends QTable_Link_Abstract
         return parent::get_find_sql_base($sql, $this->fk, $fkvs);
     }
 
-    function save_assoc_row(array $row, $fkv)
+    function saveAssocRow(array $row, $fkv)
     {
         $row[$this->fk] = $fkv;
         return $this->assoc_table->save($row);
     }
 
-    function delete_by_fkvs(array $fkvs)
+    function deleteByFkvs(array $fkvs)
     {
         /**
          * DELETE FROM comments WHERE post_id IN (1)

@@ -221,7 +221,7 @@ class TestQTable extends PHPUnit_Framework_TestCase
 
     function testParseWhereString4()
     {
-        $where = '[user_id] = ? AND [level_ix] > ?';
+        $where = '%user_id% = ? AND %level_ix% > ?';
         $args = array(1, 3);
         $expected = '`user_id` = 1 AND `level_ix` > 3';
         $actual = $this->table->parseWhere($where, $args);
@@ -230,7 +230,7 @@ class TestQTable extends PHPUnit_Framework_TestCase
 
     function testParseWhereString5()
     {
-        $where = '[posts.user_id] = :user_id AND [level.level_ix] > :level_ix';
+        $where = '%posts.user_id% = :user_id AND %level.level_ix% > :level_ix';
         $args = array('user_id' => 2, 'level_ix' => 55);
         $expected = '`q_posts`.`user_id` = 2 AND `level`.`level_ix` > 55';
         $actual = $this->table->parseWhere($where, $args);
@@ -240,7 +240,7 @@ class TestQTable extends PHPUnit_Framework_TestCase
 
     function testParseWhereString6()
     {
-        $where = '[user_id] IN (:users_id) AND [schema.level.level_ix] > :level_ix';
+        $where = '%user_id% IN (:users_id) AND %schema.level.level_ix% > :level_ix';
         $args = array('users_id' => array(1, 2, 3), 'level_ix' => 55);
         $expected = '`user_id` IN (1,2,3) AND `schema`.`level`.`level_ix` > 55';
         $actual = $this->table->parseWhere($where, $args);
