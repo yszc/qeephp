@@ -73,13 +73,23 @@ find: products many_to_many tags
 
 
 update: products many_to_many tags
-    UPDATE products, products_has_tags, tags
+    UPDATE products
+    SET vip_price = 123
+    WHERE products.product_id = 13111
+
+    要转变为：
+
+    UPDATE products
+        [[
+        , products_has_tags, tags
+        ]]
 
     SET vip_price = 123
 
     WHERE
         products.product_id = 13111
+        [[
         AND tags.tagname = '连衣裙'
         AND products_has_tags.product_id = products.product_id
         AND products_has_tags.tag_id = tags.tag_id
-
+        ]]

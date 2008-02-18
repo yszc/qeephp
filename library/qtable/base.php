@@ -453,24 +453,27 @@ class QTable_Base
      */
     function updateWhere(array $pairs, $where)
     {
-    	$args = func_get_args();
-        array_shift($args);
-        array_shift($args);
-
         /**
+         * 处理更新条件
+         *
+         *
          * 如果查询条件中包含关联表字段，则需要根据不同类型的关联进行 SQL 语句的构造
          */
+        $args = func_get_args();
+        array_shift($args);
+        array_shift($args);
+    	list($tables, $where) = $this->parseWhereForUpdate($where, $args);
+    	list($fields, $values) = $this->dbo->getPlaceholderPairs($pairs);
 
-
-        $where = $this->parseWhere($where, $args);
-
-        $args = $this->dbo->getPlaceholderPairs($pairs);
-        $sql = "UPDATE {$this->qtable_name} SET " . implode(',', $args[0]);
-        if (!empty($where)) {
-            $sql .= " WHERE {$where}";
-        }
-
-        $this->dbo->execute($sql, $args[1]);
+    	$sql = "UPDATE {$this->qtable_name}";
+    	if (!empty($tables)) {
+    		$sql .= ", {$tables}";
+    	}
+    	$sql .= ' SET ' . implode(',', $fields);
+    	if (!empty($where)) {
+    		$sql .= " WHERE {$where}";
+    	}
+    	$this->dbo->execute($sql, $values);
         return $this->dbo->affectedRows();
     }
 
@@ -836,6 +839,9 @@ class QTable_Base
          * where(array('(', 'user_id' => $user_id, 'OR', 'level_ix' => $level_ix, ')'))
          * where(array('user_id' => array($id1, $id2, $id3)))
          */
+    	// 查询条件中用到的关联表
+
+
 
         $parts = array();
         $callback = array($this->dbo, 'qstr');
@@ -887,11 +893,38 @@ class QTable_Base
          * where('user_id IN (:users_id)', array('users_id' => array(1, 2, 3)))
          */
 
-        // 首先从查询条件中提取出可以识别的字段名
-        if (strpos($where, '[') !== false) {
-            // 提取字段名
-            $where = preg_replace_callback('/\[([a-z0-9_\-\.]+)\]/i', array($this, 'parseWhereQfield'), $where);
-        }
+    	/**
+    	 * 从查询条件中，需要分析出字段名，以及涉及到的关联表
+    	 *
+    	 */
+    	$matches = array();
+        preg_match_all('/%[a-z][a-z0-9_\.]*%/i', $where, $matches, PREG_OFFSET_CAPTURE);
+        $matches = reset($matches);
+
+    	$out = '';
+		$offset = 0;
+		$used_links = array();
+		foreach ($matches as $m) {
+		    $len = strlen($m[0]);
+		    $field = substr($m[0], 1, $len - 2);
+		    $arr = explode('.', $field);
+		    if (count($arr) == 2) {
+	    	    $table = $arr[0];
+	    	    if (isset($this->links[$table])) {
+	    	        // 找到一个关联表字段
+	    	        $used_links[] = $this->links[$table];
+	    	    } else {
+	    	        $field = $this->dbo->qfield($arr[1], $this->full_table_name, $this->schema);
+	    	    }
+		    } else {
+                $field = $this->dbo->qfield($arr[0], $this->full_table_name, $this->schema);
+		    }
+
+		    $out .= substr($where, $offset, $m[1] - $offset) . $field;
+		    $offset = $m[1] + $len;
+		}
+		$out .= substr($where, $offset);
+		$where = $out;
 
         // 分析查询条件中的参数占位符
         if (strpos($where, '?') !== false) {
