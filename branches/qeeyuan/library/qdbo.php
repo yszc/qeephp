@@ -35,7 +35,7 @@ class QDBO
      */
     const FETCH_MODE_ARRAY  = 1; // 返回的每一个记录就是一个索引数组
     const FETCH_MODE_ASSOC  = 2; // 返回的每一个记录就是一个以字段名作为键名的数组
-	
+
     /**
      * 开发者必须通过该方法获得数据库访问对象实例
      *
@@ -91,5 +91,5 @@ class QDBO
         $dsn['database'] = isset($parse['path']) ? substr($parse['path'], 1) : '';
 
         return $dsn;
-    }    
+    }
 }
