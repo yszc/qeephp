@@ -1,7 +1,6 @@
---- test: qdbo, qtable
+-- test: qdbo, qtable
 
-DROP TABLE IF EXISTS `q_posts`;
-CREATE TABLE IF NOT EXISTS `q_posts` (
+CREATE TABLE `q_posts` (
   `post_id` int(11) NOT NULL auto_increment,
   `title` varchar(300) NOT NULL,
   `body` text NOT NULL,
@@ -12,4 +11,4 @@ CREATE TABLE IF NOT EXISTS `q_posts` (
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 
---- test: qtablelink
+-- test: qtablelink

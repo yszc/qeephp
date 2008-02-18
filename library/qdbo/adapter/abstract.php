@@ -383,7 +383,7 @@ abstract class QDBO_Adapter_Abstract
             $parts = preg_split('/(' . $split . '[a-z0-9_\-]+)/i', $sql, -1, PREG_SPLIT_DELIM_CAPTURE);
             $max = count($parts);
             if (count($params) * 2 + 1 != $max) {
-                throw new QDBO_Exception(__('Invalid parameters for "%s"', $sql));
+                throw new QDBO_Exception(__('Invalid parameters for "%s"', $sql), '', 0);
             }
             $str = $parts[0];
 
@@ -400,7 +400,7 @@ abstract class QDBO_Adapter_Abstract
                 }
             }
             return $str;
-            
+
         default:
             return $sql;
         }
@@ -963,7 +963,7 @@ abstract class QDBO_Adapter_Abstract
             $qkey = $this->qfield($key);
             switch($this->PARAM_STYLE) {
             case QDBO::PARAM_QM:
-                $pairs[] = "{$qkey}={$this->PARAM_STYLE}"; 
+                $pairs[] = "{$qkey}={$this->PARAM_STYLE}";
                 break;
             case QDBO::PARAM_DL_SEQUENCE:
                 $pairs[] = "{$qkey}=\$" . ($offset + 1);

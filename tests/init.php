@@ -1,7 +1,5 @@
 <?php
 
-phpinfo();
-
 date_default_timezone_set('Asia/ShangHai');
 
 require dirname(__FILE__) . '/../library/qexpress.php';

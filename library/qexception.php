@@ -30,7 +30,7 @@ class QException extends Exception
 	 */
     function __construct($message, $code = 0)
     {
-        parent::__construct($message, $code);
+        parent::__construct($message, intval($code));
     }
 
     /**
@@ -44,7 +44,7 @@ class QException extends Exception
         if ($ex->getMessage() != '') {
             $out .= " with message '" . $ex->getMessage() . "'";
         }
-        
+
         $out .= ' in ' . $ex->getFile() . ':' . $ex->getLine() . "\n\n";
         $out .= $ex->getTraceAsString();
 

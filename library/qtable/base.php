@@ -28,7 +28,7 @@ class QTable_Base
     const HAS_ONE       = 'has_one';
     const HAS_MANY      = 'has_many';
     const BELONGS_TO    = 'belongs_to';
-    const MANY_TO_MAMNY = 'many_to_many';
+    const MANY_TO_MANY = 'many_to_many';
 
     /**
      * 数据表的 schema
@@ -376,6 +376,7 @@ class QTable_Base
         $this->fillFieldsWithCurrentTime($row, $this->created_time_fields);
         $pkvc = 0;
         foreach ($this->pk as $pk) {
+        	if (!isset($row[$pk])) { continue; }
             if ($row[$pk] === null || $row[$pk] === '' || $row[$pk] === 0) {
                 unset($row[$pk]);
             } else {
@@ -454,7 +455,7 @@ class QTable_Base
     function updateWhere(array $pairs, $where)
     {
         /**
-         * 处理更新条件
+         * TODO: 处理更新条件
          *
          *
          * 如果查询条件中包含关联表字段，则需要根据不同类型的关联进行 SQL 语句的构造
@@ -462,12 +463,15 @@ class QTable_Base
         $args = func_get_args();
         array_shift($args);
         array_shift($args);
-    	list($tables, $where) = $this->parseWhereForUpdate($where, $args);
+    	list($where, $links) = $this->parseWhereForUpdate($where, $args);
     	list($fields, $values) = $this->dbo->getPlaceholderPairs($pairs);
 
     	$sql = "UPDATE {$this->qtable_name}";
-    	if (!empty($tables)) {
-    		$sql .= ", {$tables}";
+    	if (!empty($links)) {
+    		foreach ($links as $link) {
+    			/* @var $link QTable_Link_Abstract */
+                $sql .= ", {$link}";
+    		}
     	}
     	$sql .= ' SET ' . implode(',', $fields);
     	if (!empty($where)) {
@@ -912,7 +916,10 @@ class QTable_Base
 	    	    $table = $arr[0];
 	    	    if (isset($this->links[$table])) {
 	    	        // 找到一个关联表字段
-	    	        $used_links[] = $this->links[$table];
+	    	        $link = $this->links[$table];
+	    	        /* @var $link QTable_Link_Abstract */
+	    	        $used_links[] = $link;
+                    // TODO: 处理查询中的关联表
 	    	    } else {
 	    	        $field = $this->dbo->qfield($arr[1], $this->full_table_name, $this->schema);
 	    	    }
@@ -937,7 +944,7 @@ class QTable_Base
             return $this->dbo->qinto($where, $args, QDBO::PARAM_CL_NAMED);
         }
 
-        return $where;
+        return array($where, $used_links);
     }
 
     /**
