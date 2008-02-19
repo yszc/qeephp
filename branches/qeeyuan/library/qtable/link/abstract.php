@@ -99,6 +99,27 @@ abstract class QTable_Link_Abstract
     public $mid_assoc_key;
 
     /**
+     * 指示查询 many to many 关联时，中间表的哪些字段要包含在查询结果中
+     *
+     * null     - 不查询中间表的字段
+     *  *       - 查询中间表的所有字段
+     * 字段列表 - 以逗号分隔的字段名或者包含字段名的数组
+     *
+     * mid_on_find_fields 的默认值是 null。
+     *
+     * @var string|array
+     */
+    public $mid_on_find_fields = null;
+
+    /**
+     * 指示查询 many to many 关联，中间表的字段包含在查询结果中时要加上什么前缀
+     * 默认的 mid_on_find_prefix 是 'mid_'
+     *
+     * @var string
+     */
+    public $mid_on_find_prefix = 'mid_';
+
+    /**
      * 指示是否读取关联的记录
      *
      * all  - 读取所有关联记录
@@ -111,7 +132,6 @@ abstract class QTable_Link_Abstract
      * @var string|int|array
      */
     public $on_find = 'all';
-
 
     /**
      * 指示按照什么排序规则查询关联的记录
@@ -227,6 +247,8 @@ abstract class QTable_Link_Abstract
             'mid_assoc_key',
             'mid_table_name',
             'mid_table_class',
+            'mid_on_find_fields',
+            'mid_on_find_prefix',
             'on_find',
             'on_find_order',
             'on_find_fields',
@@ -326,6 +348,7 @@ abstract class QTable_Link_Abstract
          *
          * mid_table_obj、mid_table_class、mid_table_name 三者只需要指定一个，三者的优先级从上到下。
          * 如果 mid_table_name 有效，则可以通过 mid_table_???? 等一系列参数指示构造关联表数据入口时的选项。
+         *
          */
         if ($this->type == QTable_Base::MANY_TO_MANY) {
             if (!empty($p['mid_table_obj'])) {
@@ -373,8 +396,11 @@ abstract class QTable_Link_Abstract
             $this->assoc_key     = isset($p['assoc_key'])     ? $p['assoc_key']     : $this->assoc_table->pk;
             $this->mid_main_key  = isset($p['mid_main_key'])  ? $p['mid_main_key']  : $this->main_table->pk;
             $this->mid_assoc_key = isset($p['mid_assoc_key']) ? $p['mid_assoc_key'] : $this->assoc_table->pk;
+            $this->mid_on_find_fields = isset($p['mid_on_find_fields']) ? $p['mid_on_find_fields'] : null;
+            $this->mid_on_find_prefix = isset($p['mid_on_find_prefix']) ? $p['mid_on_find_prefix'] : 'mid_';
             $this->on_delete     = isset($p['on_delete'])     ? $p['on_delete']     : 'skip';
             $this->on_save       = isset($p['on_save'])       ? $p['on_save']       : 'skip';
+
             break;
         }
 
