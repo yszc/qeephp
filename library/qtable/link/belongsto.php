@@ -15,12 +15,5 @@ class QTable_Link_Belongs_To extends QTable_Link_Abstract
         return parent::get_find_sql_base($sql, $this->main_table->pk, $fkvs);
     }
 
-    function init()
-    {
-        parent::init();
-        if (is_null($this->fk)) {
-            $this->fk = $this->assoc_table->pk;
-        }
-    }
 }
 

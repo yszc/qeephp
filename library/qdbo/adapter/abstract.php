@@ -260,7 +260,7 @@ abstract class QDBO_Adapter_Abstract
      */
     function isConnected()
     {
-    	return is_resource($this->conn);
+        return is_resource($this->conn);
     }
 
     /**
@@ -857,7 +857,7 @@ abstract class QDBO_Adapter_Abstract
      *
      * @return string
      */
-    function getInsertSQL(array & $row, $table, $schema = null)
+    function getInsertSQL(array $row, $table, $schema = null)
     {
         list($holders, $values) = $this->getPlaceholder($row);
         $holders = implode(',', $holders);
@@ -876,7 +876,7 @@ abstract class QDBO_Adapter_Abstract
      *
      * @return string
      */
-    function getUpdateSQL(array & $row, $pk, $table, $schema = null)
+    function getUpdateSQL(array $row, $pk, $table, $schema = null)
     {
         $pkv = $row[$pk];
         unset($row[$pk]);
@@ -886,6 +886,25 @@ abstract class QDBO_Adapter_Abstract
         $table = $this->qtable($table, $schema);
         $pk = $this->qfield($pk);
         $sql = "UPDATE {$table} SET {$pairs} WHERE {$pk} = " . $this->qstr($pkv);
+        return $sql;
+    }
+
+    /**
+     * 根据包含记录内容的数组返回一条有效的 SQL REPLACE 语句
+     *
+     * @param array $row
+     * @param string $table
+     * @param string $schema
+     *
+     * @return string
+     */
+    function getReplaceSQL(array $row, $table, $schema = null)
+    {
+        list($holders, $values) = $this->getPlaceholder($row);
+        $holders = implode(',', $holders);
+        $fields = $this->qfields(array_keys($values));
+        $table = $this->qtable($table, $schema);
+        $sql = "REPLACE INTO {$table} ({$fields}) VALUES ({$holders})";
         return $sql;
     }
 

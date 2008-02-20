@@ -50,12 +50,5 @@ class QTable_Link_HasOne extends QTable_Link_Abstract
         $this->assoc_dbo->execute($sql);
     }
 
-    protected function init()
-    {
-        parent::init();
-        if (empty($this->fk)) {
-            $this->fk = $this->main_table->pk;
-        }
-    }
 }
 
