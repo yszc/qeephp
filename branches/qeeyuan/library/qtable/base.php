@@ -332,7 +332,7 @@ class QTable_Base
      */
     function removeAllLinks()
     {
-    	$this->links = null;
+        $this->links = null;
     }
 
     /**
@@ -344,8 +344,8 @@ class QTable_Base
      */
     function find($where = null)
     {
-    	$args = func_get_args();
-    	array_shift($args);
+        $args = func_get_args();
+        array_shift($args);
         return new QTable_Select($this, $where, $args);
     }
 
@@ -359,8 +359,8 @@ class QTable_Base
      */
     function findBySQL($sql)
     {
-    	$args = func_get_args();
-    	array_shift($args);
+        $args = func_get_args();
+        array_shift($args);
         return $this->dbo->getAll($sql, $args);
     }
 
@@ -373,30 +373,61 @@ class QTable_Base
      */
     function create(array $row)
     {
+        // TODO: create() 实现对关联的处理
         $this->fillFieldsWithCurrentTime($row, $this->created_time_fields);
-        $pkvc = 0;
-        foreach ($this->pk as $pk) {
-        	if (!isset($row[$pk])) { continue; }
-            if ($row[$pk] === null || $row[$pk] === '' || $row[$pk] === 0) {
-                unset($row[$pk]);
-            } else {
-            	$pkvc++;
+
+        $fill_pk = false;
+        if ($this->is_cpk) {
+            // 处理复合主键
+            $pkvc = 0;
+            foreach ($this->pk as $pk) {
+                if (!isset($row[$pk])) { continue; }
+                if ($row[$pk] === '' || $row[$pk] === 0) {
+                    unset($row[$pk]);
+                } else {
+                    $pkvc++;
+                }
             }
+            if ($pkvc == 0 && $this->pk_count == 1) {
+                /**
+                 * 如果没有指定任何主键值，并且仅有一个主键时，判断该主键是否是自增
+                 * 如果不是自增主键，则通过序列获取一个新的主键值
+                 */
+                $fill_pk = true;
+                $pk = $this->pk[0];
+            }
+        } else {
+            // 单一主键
+            if (isset($row[$this->pk]) && ($row[$this->pk] === '' || $row[$this->pk] === 0)) {
+                unset($row[$this->pk]);
+            }
+            $fill_pk = true;
+            $pk = $this->pk;
         }
-        if ($pkvc == 0 && $this->pk_count == 1) {
-        	/**
-        	 * 如果没有指定任何主键值，并且仅有一个主键时，判断该主键是否是自增
-        	 * 如果不是自增主键，则通过序列获取一个新的主键值
-        	 */
-        	$pk = $this->pk[0];
-	        if (!self::$tables_meta[$this->cache_id][strtolower($pk)]['auto_incr']) {
-	            $row[$pk] = $this->nextID();
-	            $insert_id = $row[$pk];
-	        }
+        // 如果没有设置主键字段，并且主键
+        if ($fill_pk && !self::$tables_meta[$this->cache_id][strtolower($pk)]['auto_incr']) {
+            $row[$pk] = $this->nextID();
+            $insert_id = $row[$pk];
         }
+
+        // 创建 INSERT 语句并执行
         $sql = $this->dbo->getInsertSQL($row, $this->full_table_name, $this->schema);
         $this->dbo->execute($sql, $row);
-        return isset($insert_id) ? $insert_id : $this->dbo->insertID();
+
+        if (isset($insert_id)) {
+            return $insert_id;
+        } elseif (!$this->is_cpk) {
+            return $this->dbo->insertID();
+        } else {
+            // 对于复合主键记录，尝试返回所有可能的主键字段值
+            $return = array();
+            foreach ($this->pk as $pk) {
+                if (isset($row[$pk])) {
+                    $return[$pk] = $row[$pk];
+                }
+            }
+            return $return;
+        }
     }
 
     /**
@@ -424,6 +455,7 @@ class QTable_Base
      */
     function update(array $row)
     {
+        // TODO: update() 实现对关联的处理
         $this->fillFieldsWithCurrentTime($row, $this->updated_time_fields);
         $sql = $this->dbo->getUpdateSQL($row, $this->pk, $this->full_table_name, $this->schema);
         $this->dbo->execute($sql, $row);
@@ -447,37 +479,23 @@ class QTable_Base
     /**
      * 更新所有符合条件的记录，返回被更新记录的总数
      *
-     * @param array $pairs
+     * @param array $pairs 要更新字段的值
      * @param array|string $where
      *
      * @return int
      */
     function updateWhere(array $pairs, $where)
     {
-        /**
-         * TODO: 处理更新条件
-         *
-         *
-         * 如果查询条件中包含关联表字段，则需要根据不同类型的关联进行 SQL 语句的构造
-         */
         $args = func_get_args();
         array_shift($args);
         array_shift($args);
-    	list($where, $links) = $this->parseWhereForUpdate($where, $args);
-    	list($fields, $values) = $this->dbo->getPlaceholderPairs($pairs);
-
-    	$sql = "UPDATE {$this->qtable_name}";
-    	if (!empty($links)) {
-    		foreach ($links as $link) {
-    			/* @var $link QTable_Link_Abstract */
-                $sql .= ", {$link}";
-    		}
-    	}
-    	$sql .= ' SET ' . implode(',', $fields);
-    	if (!empty($where)) {
-    		$sql .= " WHERE {$where}";
-    	}
-    	$this->dbo->execute($sql, $values);
+        $where = $this->parseWhere($where, $args);
+        list($holders, $values) = $this->dbo->getPlaceholderPairs($pairs);
+        $sql = "UPDATE {$this->qtable_name} SET " . implode(',', $holders);
+        if (!empty($where)) {
+            $sql .= " WHERE {$where}";
+        }
+        $this->dbo->execute($sql, $values);
         return $this->dbo->affectedRows();
     }
 
@@ -500,46 +518,21 @@ class QTable_Base
     }
 
     /**
-     * 获得用于更新 updated 字段的 sql 语句
-     *
-     * @return string
-     */
-    function getUpdatedTimeSQL()
-    {
-        $sql = '';
-        $time = time();
-        $db_time = $this->dbo->dbTimestamp($time);
-        foreach ($this->updated_time_fields as $field) {
-            $field = strtolower($field);
-            $sql .= self::$tables_meta[$this->cache_id][$field]['name'];
-            $sql .= ' = ';
-            switch (self::$tables_meta[$this->cache_id][$field]['ptype']) {
-            case 'd':
-            case 't':
-                $sql .= $db_time;
-                break;
-            default:
-                $sql .= $time;
-            }
-            $sql .= ', ';
-        }
-
-        return substr($sql, 0, -2);
-    }
-
-    /**
      * 增加所有符合条件记录的指定字段值，返回被更新记录的总数
      *
      * @param string $field
      * @param int $step
      * @param array|string $where
-     * @param array $args
      *
      * @return mixed
      */
-    function incrWhere($field, $step = 1, $where, array $args = null)
+    function incrWhere($field, $step = 1, $where)
     {
-        return $this->_incrDecrWhereBase($field, $step, true, $where, $args);
+        $args = func_get_args();
+        array_shift($args);
+        array_shift($args);
+        array_shift($args);
+        return $this->incrOrDecrWhere($field, $step, true, $where, $args);
     }
 
     /**
@@ -548,23 +541,31 @@ class QTable_Base
      * @param string $field
      * @param int $step
      * @param array|string $where
-     * @param array $args
      *
      * @return mixed
      */
-    function decrWhere($field, $step = 1, $where, array $args = null)
+    function decrWhere($field, $step = 1, $where)
     {
-        return $this->_incrDecrWhereBase($field, $step, false, $where, $args);
+        $args = func_get_args();
+        array_shift($args);
+        array_shift($args);
+        array_shift($args);
+        return $this->incrOrDecrWhere($field, $step, false, $where, $args);
     }
 
     /**
-     * 根据是否包含主键字段值，创建或更新一条记录
-     *
+     * 根据是否包含主键字段值，创建或更新一条记录，返回记录的主键值
      *
      * @return mixed
      */
     function save(array $row)
     {
+        if ($this->is_cpk) {
+            // 对于复合主键的数据表，save() 方法无法判断是创建还是更新，所以抛出一个异常
+            // LC_MSG: QTable_Base::save() with composite primary key not implemented.
+            throw new QTable_Exception(__('QTable_Base::save() with composite primary key not implemented.'));
+        }
+
         if (isset($row[$this->pk])) {
             return $this->update($row);
         } else {
@@ -573,7 +574,7 @@ class QTable_Base
     }
 
     /**
-     * 根据是否包含主键字段值，创建或更新一组记录，返回包含主键值的数组
+     * 保存一个记录集
      *
      * @param array $rowset
      *
@@ -589,7 +590,7 @@ class QTable_Base
     }
 
     /**
-     * 替换一条现有记录或插入新记录，返回记录的主键值
+     * 用 SQL 的 REPLACE 操作替换一条现有记录或插入新记录，返回被影响的记录数
      *
      * @param array $row
      *
@@ -598,13 +599,13 @@ class QTable_Base
     function replace(array $row)
     {
         $this->fillFieldsWithCurrentTime($row, $this->created_time_fields);
-        $sql = $this->dbo->getReplaceSQL($row, $this->qtable_name);
+        $sql = $this->dbo->getReplaceSQL($row, $this->full_table_name, $this->schema);
         $this->dbo->execute($sql, $row);
-        return empty($row[$this->pk]) ? $this->dbo->insertID() : $row[$this->pk];
+        return $this->dbo->affectedRows();
     }
 
     /**
-     * 替换一组现有记录或插入新记录，返回包含记录主键值的数组
+     * 替换一组现有记录或插入新记录，返回被影响的记录总数
      *
      * @param array $rowset
      *
@@ -612,11 +613,11 @@ class QTable_Base
      */
     function replaceRowset(array $rowset)
     {
-        $return = array();
+        $update_count = 0;
         foreach (array_keys($rowset) as $offset) {
-            $return[] = $this->replace($rowset[$offset]);
+            $update_count += (int)$this->replace($rowset[$offset], true);
         }
-        return $return;
+        return $update_count;
     }
 
     /**
@@ -628,6 +629,7 @@ class QTable_Base
      */
     function remove($pkv)
     {
+        // TODO: remove() 实现对复合主键的处理
         $pkv = $this->dbo->qstr($pkv);
         $sql = "DELETE FROM {$this->qtable_name} WHERE {$this->qpk} = {$pkv}";
         $this->dbo->execute($sql);
@@ -642,7 +644,7 @@ class QTable_Base
      *
      * @return ini
      */
-    function removeWhere($where, array $args = null)
+    function removeWhere($where)
     {
         $where = $this->parseWhere($where, $args);
         if (is_array($where)) {
@@ -675,7 +677,6 @@ class QTable_Base
      */
     function columns()
     {
-        $this->connect();
         return self::$tables_meta[$this->cache_id];
     }
 
@@ -696,7 +697,7 @@ class QTable_Base
      */
     function isCompositePK()
     {
-    	return $this->is_cpk;
+        return $this->is_cpk;
     }
 
     /**
@@ -765,10 +766,13 @@ class QTable_Base
         $this->prepareMETA();
 
         // 处理主键字段
-        $this->pk = Q::normalize($this->pk);
-        $this->pk_count = count($this->pk);
+        $pk = Q::normalize($this->pk);
+        $this->pk_count = count($pk);
         $this->is_cpk = $this->pk_count > 1;
-        $this->qpk = $this->dbo->qfields($this->pk, $this->full_table_name);
+        $this->pk = ($this->is_cpk) ? $pk : reset($pk);
+        $this->qpk = ($this->is_cpk) ?
+                     $this->dbo->qfields($this->pk, $this->full_table_name, null, true) :
+                     $this->dbo->qfield($this->pk, $this->full_table_name);
 
         // 过滤 created_time_fields 和 updated_time_fields
         foreach ($this->created_time_fields as $offset => $field) {
@@ -843,7 +847,7 @@ class QTable_Base
          * where(array('(', 'user_id' => $user_id, 'OR', 'level_ix' => $level_ix, ')'))
          * where(array('user_id' => array($id1, $id2, $id3)))
          */
-    	// 查询条件中用到的关联表
+        // 查询条件中用到的关联表
 
 
 
@@ -897,41 +901,41 @@ class QTable_Base
          * where('user_id IN (:users_id)', array('users_id' => array(1, 2, 3)))
          */
 
-    	/**
-    	 * 从查询条件中，需要分析出字段名，以及涉及到的关联表
-    	 *
-    	 */
-    	$matches = array();
+        /**
+         * 从查询条件中，需要分析出字段名，以及涉及到的关联表
+         *
+         */
+        $matches = array();
         preg_match_all('/%[a-z][a-z0-9_\.]*%/i', $where, $matches, PREG_OFFSET_CAPTURE);
         $matches = reset($matches);
 
-    	$out = '';
-		$offset = 0;
-		$used_links = array();
-		foreach ($matches as $m) {
-		    $len = strlen($m[0]);
-		    $field = substr($m[0], 1, $len - 2);
-		    $arr = explode('.', $field);
-		    if (count($arr) == 2) {
-	    	    $table = $arr[0];
-	    	    if (isset($this->links[$table])) {
-	    	        // 找到一个关联表字段
-	    	        $link = $this->links[$table];
-	    	        /* @var $link QTable_Link_Abstract */
-	    	        $used_links[] = $link;
+        $out = '';
+        $offset = 0;
+        $used_links = array();
+        foreach ($matches as $m) {
+            $len = strlen($m[0]);
+            $field = substr($m[0], 1, $len - 2);
+            $arr = explode('.', $field);
+            if (count($arr) == 2) {
+                $table = $arr[0];
+                if (isset($this->links[$table])) {
+                    // 找到一个关联表字段
+                    $link = $this->links[$table];
+                    /* @var $link QTable_Link_Abstract */
+                    $used_links[] = $link;
                     // TODO: 处理查询中的关联表
-	    	    } else {
-	    	        $field = $this->dbo->qfield($arr[1], $this->full_table_name, $this->schema);
-	    	    }
-		    } else {
+                } else {
+                    $field = $this->dbo->qfield($arr[1], $this->full_table_name, $this->schema);
+                }
+            } else {
                 $field = $this->dbo->qfield($arr[0], $this->full_table_name, $this->schema);
-		    }
+            }
 
-		    $out .= substr($where, $offset, $m[1] - $offset) . $field;
-		    $offset = $m[1] + $len;
-		}
-		$out .= substr($where, $offset);
-		$where = $out;
+            $out .= substr($where, $offset, $m[1] - $offset) . $field;
+            $offset = $m[1] + $len;
+        }
+        $out .= substr($where, $offset);
+        $where = $out;
 
         // 分析查询条件中的参数占位符
         if (strpos($where, '?') !== false) {
@@ -1000,7 +1004,36 @@ class QTable_Base
         }
     }
 
-    protected function _incrDecrWhereBase($field, $step, $is_incr, $where, arary $args = null)
+
+    /**
+     * 获得用于更新 updated 字段的 sql 语句
+     *
+     * @return string
+     */
+    protected function getUpdatedTimeSQL()
+    {
+        $sql = '';
+        $time = time();
+        $db_time = $this->dbo->dbTimestamp($time);
+        foreach ($this->updated_time_fields as $field) {
+            $field = strtolower($field);
+            $sql .= self::$tables_meta[$this->cache_id][$field]['name'];
+            $sql .= ' = ';
+            switch (self::$tables_meta[$this->cache_id][$field]['ptype']) {
+            case 'd':
+            case 't':
+                $sql .= $db_time;
+                break;
+            default:
+                $sql .= $time;
+            }
+            $sql .= ', ';
+        }
+
+        return substr($sql, 0, -2);
+    }
+
+    protected function incrOrDecrWhere($field, $step, $is_incr, $where, arary $args = null)
     {
         $where = $this->parseWhere($where, $args);
         if (is_array($where)) { $where = reset($where); }
@@ -1027,7 +1060,7 @@ class QTable_Base
             $backend = Q::getIni('db_meta_cache_backend');
             $meta = Q::getCache($this->cache_id, $policy, $backend);
             if (is_array($meta)) {
-            	$this->meta = $meta;
+                $this->meta = $meta;
                 return;
             }
         }

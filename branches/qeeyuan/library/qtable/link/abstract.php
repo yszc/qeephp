@@ -296,9 +296,25 @@ abstract class QTable_Link_Abstract
     }
 
     /**
+     * 允许使用该关联
+     */
+    function enable()
+    {
+        $this->enabled = true;
+    }
+
+    /**
+     * 禁用该关联
+     */
+    function disable()
+    {
+        $this->enabled = false;
+    }
+
+    /**
      * 初始化关联对象
      */
-    protected function init()
+    function init()
     {
         if ($this->is_init) { return; }
 
