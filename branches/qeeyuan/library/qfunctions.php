@@ -90,32 +90,6 @@ function t2js($content)
 }
 
 /**
- * 输出变量的内容，通常用于调试
- *
- * @package core
- *
- * @param mixed $vars 要输出的变量
- * @param string $label
- * @param boolean $return
- */
-function dump($vars, $label = '', $return = false)
-{
-    if (ini_get('html_errors')) {
-        $content = "<pre>\n";
-        if ($label != '') {
-            $content .= "<strong>{$label} :</strong>\n";
-        }
-        $content .= htmlspecialchars(print_r($vars, true));
-        $content .= "\n</pre>\n";
-    } else {
-        $content = $label . " :\n" . print_r($vars, true);
-    }
-    if ($return) { return $content; }
-    echo $content;
-    return null;
-}
-
-/**
  * 显示应用程序执行路径，通常用于调试
  *
  * @package core
