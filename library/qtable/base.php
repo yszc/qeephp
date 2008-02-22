@@ -458,6 +458,7 @@ class QTable_Base
         // TODO: update() 实现对关联的处理
         $this->fillFieldsWithCurrentTime($row, $this->updated_time_fields);
         $sql = $this->dbo->getUpdateSQL($row, $this->pk, $this->full_table_name, $this->schema);
+        unset($row[$this->pk]);
         $this->dbo->execute($sql, $row);
         return $this->dbo->affectedRows();
     }
@@ -903,7 +904,7 @@ class QTable_Base
          *
          */
         $matches = array();
-        preg_match_all('/%[a-z][a-z0-9_\.]*%/i', $where, $matches, PREG_OFFSET_CAPTURE);
+        preg_match_all('/\[[a-z][a-z0-9_\.]*\]/i', $where, $matches, PREG_OFFSET_CAPTURE);
         $matches = reset($matches);
 
         $out = '';
@@ -1030,7 +1031,7 @@ class QTable_Base
         return substr($sql, 0, -2);
     }
 
-    protected function incrOrDecrWhere($field, $step, $is_incr, $where, arary $args = null)
+    protected function incrOrDecrWhere($field, $step, $is_incr, $where, array $args = null)
     {
         $where = $this->parseWhere($where, $args);
         if (is_array($where)) { $where = reset($where); }
@@ -1056,14 +1057,15 @@ class QTable_Base
             $policy = array('encoding_filename' => true, 'serialize' => true);
             $backend = Q::getIni('db_meta_cache_backend');
             $meta = Q::getCache($this->cache_id, $policy, $backend);
-            if (is_array($meta)) {
-                $this->meta = $meta;
+            if (is_array($meta) && !empty($meta)) {
+                self::$tables_meta[$this->cache_id] = $meta;
                 return;
             }
         }
 
         // 从数据库获得 meta
         $meta = $this->dbo->metaColumns($this->full_table_name, $this->schema);
+        self::$tables_meta[$this->cache_id] = $meta;
         if ($cached) {
             // 缓存数据
             Q::setCache($this->cache_id, $meta, $policy, $backend);
