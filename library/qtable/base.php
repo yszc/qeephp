@@ -66,13 +66,6 @@ class QTable_Base
     public $pk;
 
     /**
-     * 主键字段的完全限定名（包含 full table name 和 schema）
-     *
-     * @var string
-     */
-    public $qpk;
-
-    /**
      * 定义 HAS ONE 关联
      *
      * @var array
@@ -490,7 +483,7 @@ class QTable_Base
         $args = func_get_args();
         array_shift($args);
         array_shift($args);
-        $where = $this->parseWhere($where, $args);
+        list($where, ) = $this->parseWhere($where, $args);
         list($holders, $values) = $this->dbo->getPlaceholderPairs($pairs);
         $sql = "UPDATE {$this->qtable_name} SET " . implode(',', $holders);
         if (!empty($where)) {
@@ -648,7 +641,7 @@ class QTable_Base
     {
         $args = func_get_args();
         array_shift($args);
-        $where = $this->parseWhere($where, $args);
+        list($where, ) = $this->parseWhere($where, $args);
         $sql = "DELETE FROM {$this->qtable_name}";
         if (!empty($where)) {
             $sql .= " WHERE {$where}";
@@ -741,9 +734,9 @@ class QTable_Base
          * 当第一次访问对象的 cache_id 属性时，将连接数据库
          * 通过这个技巧，可以避免无谓的判断和函数调用
          */
-        if ($varname == 'cache_id') {
+        if ($varname == 'cache_id' || $varname == 'qpk') {
             $this->connect();
-            return $this->cache_id;
+            return $this->{$varname};
         }
         throw new QTable_Exception(__('Undefined property "%s"', $varname));
     }
@@ -768,6 +761,7 @@ class QTable_Base
         $this->pk_count = count($pk);
         $this->is_cpk = $this->pk_count > 1;
         $this->pk = ($this->is_cpk) ? $pk : reset($pk);
+
         $this->qpk = ($this->is_cpk) ?
                      $this->dbo->qfields($this->pk, $this->full_table_name, null, true) :
                      $this->dbo->qfield($this->pk, $this->full_table_name);
@@ -819,6 +813,7 @@ class QTable_Base
      */
     function parseWhere($where, array $args = null)
     {
+        if (empty($where)) { return array(null, null); }
         if (is_null($args)) {
             $args = array();
         }
@@ -914,19 +909,31 @@ class QTable_Base
             $len = strlen($m[0]);
             $field = substr($m[0], 1, $len - 2);
             $arr = explode('.', $field);
-            if (count($arr) == 2) {
+            switch(count($arr)) {
+            case 3:
+                $schema = $arr[0];
+                $table = $arr[1];
+                $field = $arr[2];
+                break;
+            case 2:
+                $schema = $this->schema;
                 $table = $arr[0];
-                if (isset($this->links[$table])) {
-                    // 找到一个关联表字段
-                    $link = $this->links[$table];
-                    /* @var $link QTable_Link_Abstract */
-                    $used_links[] = $link;
-                    // TODO: 处理查询中的关联表
-                } else {
-                    $field = $this->dbo->qfield($arr[1], $this->full_table_name, $this->schema);
-                }
+                $field = $arr[1];
+                break;
+            default:
+                $schema = $this->schema;
+                $table = $this->full_table_name;
+                $field = $arr[0];
+            }
+
+            if (isset($this->links[$table])) {
+                // 找到一个关联表字段
+                $link = $this->links[$table];
+                /* @var $link QTable_Link_Abstract */
+                $used_links[] = $link;
+                // TODO: 处理查询中的关联表
             } else {
-                $field = $this->dbo->qfield($arr[0], $this->full_table_name, $this->schema);
+                $field = $this->dbo->qfield($field, $table, $schema);
             }
 
             $out .= substr($where, $offset, $m[1] - $offset) . $field;
@@ -938,12 +945,11 @@ class QTable_Base
         // 分析查询条件中的参数占位符
         if (strpos($where, '?') !== false) {
             // 使用 ? 作为占位符的情况
-            return $this->dbo->qinto($where, $args, QDBO::PARAM_QM);
-        }
-
-        if (strpos($where, ':') !== false) {
+            $where = $this->dbo->qinto($where, $args, QDBO::PARAM_QM);
+        } elseif (strpos($where, ':') !== false) {
             // 使用 : 开头的命名参数占位符
-            return $this->dbo->qinto($where, $args, QDBO::PARAM_CL_NAMED);
+            $args = reset($args);
+            $where = $this->dbo->qinto($where, $args, QDBO::PARAM_CL_NAMED);
         }
 
         return array($where, $used_links);

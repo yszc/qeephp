@@ -383,14 +383,14 @@ abstract class QDBO_Adapter_Abstract
             $parts = preg_split('/(' . $split . '[a-z0-9_\-]+)/i', $sql, -1, PREG_SPLIT_DELIM_CAPTURE);
             $max = count($parts);
             if (count($params) * 2 + 1 != $max) {
-                throw new QDBO_Exception(__('Invalid parameters for "%s"', $sql), '', 0);
+                throw new QDBO_Exception($sql, __('Invalid parameters for "%s"', $sql), 0);
             }
             $str = $parts[0];
 
             for ($offset = 1; $offset < $max; $offset += 2) {
                 $arg_name = substr($parts[$offset], 1);
                 if (!isset($params[$arg_name])) {
-                    throw new QDBO_Exception(__('Invalid parameter "%s" for "%s"', $arg_name, $sql));
+                    throw new QDBO_Exception($sql, __('Invalid parameter "%s" for "%s"', $arg_name, $sql));
                 }
                 if (is_array($params[$arg_name])) {
                     $arg_value = array_map($callback, $params[$arg_name]);

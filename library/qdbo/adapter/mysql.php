@@ -376,8 +376,6 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
 
     protected function fakebind($sql, $inputarr)
     {
-        QDebug::dump($sql, '$sql');
-        QDebug::dump($inputarr, '$inputarr');
         $arr = explode('?', $sql);
         $sql = array_shift($arr);
         foreach ($inputarr as $value) {

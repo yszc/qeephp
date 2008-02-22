@@ -15,7 +15,7 @@ class TestQDBO extends PHPUnit_Framework_TestCase
         $this->dbo = QDBO::getConn();
         $this->dbo->connect();
     }
-    
+
     function testGetDSN()
     {
         $dsn = $this->dbo->getDSN();
@@ -101,23 +101,23 @@ class TestQDBO extends PHPUnit_Framework_TestCase
     {
         $checks = array(
             array(
-                "SELECT * FROM testtable WHERE level_ix > ? AND int_x = ?", 
-                array(1, 2), 
+                "SELECT * FROM testtable WHERE level_ix > ? AND int_x = ?",
+                array(1, 2),
                 QDBO::PARAM_QM
             ),
             array(
-                "SELECT * FROM testtable WHERE level_ix > :level_ix AND int_x = :int_x", 
-                array('level_ix' => 1, 'int_x' => 2), 
+                "SELECT * FROM testtable WHERE level_ix > :level_ix AND int_x = :int_x",
+                array('level_ix' => 1, 'int_x' => 2),
                 QDBO::PARAM_CL_NAMED
             ),
             array(
-                "SELECT * FROM testtable WHERE level_ix > $1 AND int_x = $2", 
-                array(1, 2), 
+                "SELECT * FROM testtable WHERE level_ix > $1 AND int_x = $2",
+                array(1, 2),
                 QDBO::PARAM_DL_SEQUENCE
             ),
             array(
-                "SELECT * FROM testtable WHERE level_ix > @level_ix AND int_x = @int_x", 
-                array('level_ix' => 1, 'int_x' => 2), 
+                "SELECT * FROM testtable WHERE level_ix > @level_ix AND int_x = @int_x",
+                array('level_ix' => 1, 'int_x' => 2),
                 QDBO::PARAM_AT_NAMED
             ),
         );
@@ -289,17 +289,17 @@ class TestQDBO extends PHPUnit_Framework_TestCase
         $msg = "\$rowset = \$this->dbo->select_limit('{$sql}', {$length}, {$offset});";
         $this->assertEquals($length, count($rowset), $msg);
         for ($i = $offset; $i < $offset + $length; $i++) {
-        	$msg = "\$length = {$length}, \$offset = {$offset}";
+            $msg = "\$length = {$length}, \$offset = {$offset}";
             $this->assertEquals($idList[$i], $rowset[$i - $offset]['post_id'], $msg);
         }
 
-        $length = 3; 
+        $length = 3;
         $offset = 5;
         $rowset = $this->dbo->selectLimit($sql, $length, $offset)->fetchAll();
         $msg = "\$rowset = \$this->dbo->select_limit('{$sql}', {$length}, {$offset});";
         $this->assertEquals($length, count($rowset), $msg);
         for ($i = $offset; $i < $offset + $length; $i++) {
-        	$msg = "\$length = {$length}, \$offset = {$offset}";
+            $msg = "\$length = {$length}, \$offset = {$offset}";
             $this->assertEquals($idList[$i], $rowset[$i - $offset]['post_id'], $msg);
         }
     }
@@ -410,6 +410,7 @@ class TestQDBO extends PHPUnit_Framework_TestCase
         $row = $this->dbo->getRow($sql);
         $row['title'] = 'Title +' . mt_rand();
         $updateSQL = $this->dbo->getUpdateSQL($row, 'post_id', 'q_posts');
+        unset($row['post_id']);
         $this->dbo->execute($updateSQL, $row);
 
         $exists = $this->dbo->getRow($sql);
