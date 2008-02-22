@@ -640,17 +640,14 @@ class QTable_Base
      * 删除所有符合条件的记录，返回被删除的记录总数
      *
      * @param mixed $where
-     * @param array $args
      *
      * @return ini
      */
     function removeWhere($where)
     {
+        $args = func_get_args();
+        array_shift($args);
         $where = $this->parseWhere($where, $args);
-        if (is_array($where)) {
-            $where = reset($where);
-        }
-
         $sql = "DELETE FROM {$this->qtable_name}";
         if (!empty($where)) {
             $sql .= " WHERE {$where}";

@@ -187,14 +187,13 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
         if ($this->LOG_QUERY) {
             $this->log[] = $sql;
         }
-
         if (is_array($inputarr)) {
             $sql = $this->fakebind($sql, $inputarr);
         }
-
         $result = mysql_query($sql, $this->conn);
+
         if (is_resource($result)) {
-        	Q::loadClass('QDBO_Result_Mysql');
+            Q::loadClass('QDBO_Result_Mysql');
             return new QDBO_Result_Mysql($result, $this->fetch_mode);
         } elseif ($result) {
             $this->last_err = null;
@@ -204,6 +203,7 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
             $this->last_err = mysql_error($this->conn);
             $this->last_err_code = mysql_errno($this->conn);
             $this->has_failed_query = true;
+            QDebug::dump($this->last_err);
             throw new QDBO_Exception($sql, $this->last_err, $this->last_err_code);
         }
     }
@@ -360,19 +360,19 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
     function metaTables($pattern = null, $schema = null)
     {
         $sql = 'SHOW TABLES';
-		if ($schema != '') {
-		    $sql .= " FROM `{$schema}`";
-		}
-		if ($pattern != '') {
-		    $sql .= ' LIKE ' . $this->qstr($pattern);
-		}
-		$rs = $this->execute($sql);
-		/* @var $rs QDBO_Result_Abstract */
-		$tables = array();
-		while (($table_name = $rs->fetchOne())) {
-		   $tables[] = $table_name;
-		}
-		return $tables;
+        if ($schema != '') {
+            $sql .= " FROM `{$schema}`";
+        }
+        if ($pattern != '') {
+            $sql .= ' LIKE ' . $this->qstr($pattern);
+        }
+        $rs = $this->execute($sql);
+        /* @var $rs QDBO_Result_Abstract */
+        $tables = array();
+        while (($table_name = $rs->fetchOne())) {
+           $tables[] = $table_name;
+        }
+        return $tables;
     }
 
     protected function fakebind($sql, & $inputarr)
