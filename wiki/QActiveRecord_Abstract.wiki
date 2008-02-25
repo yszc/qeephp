@@ -1,3 +1,5 @@
+#summary QActiveRecord_Abstract 是实现 ActiveRecord 模式的抽象基础类
+
 = QActiveRecord_Abstract =
 
 QActiveRecord_Abstract 实现了一个扩展的 ActiveRecord 模式。
