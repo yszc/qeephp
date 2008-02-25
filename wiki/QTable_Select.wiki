@@ -1,0 +1,107 @@
+= 查询对象 QTable_Select =
+
+查询对象用于从数据库查询符合条件的记录，并返回为数组或者 [QActiveRecord_Abstract] ActiveRecord 对象实例。
+
+查询对象使用方法链来构造灵活的查询表达式，例如：
+
+{{{
+$select->where(...)->all(...)->limit(...)->order(...)
+}}}
+
+== 查询对象的主要方法 ==
+
+ *  where() 指定查询条件
+ *  order() 指定排序
+ *  limit() 限定查询记录集大小
+ *  all() 不限定查询记录集
+ *  select() 指定 SELECT 的参数
+ *  group_by() 使用 SQL 的 GROUP BY 操作
+ *  having() 使用 SQL 的 HAVING 操作
+ *  for_update() 使用 SQL 的 FOR UPDATE 操作
+ *  distinct() 使用 SQL 的 DISTINCT 操作
+	
+统计：
+
+ *  count() 统计符合条件的记录数
+ *  avg() 平均值
+ *  max() 最大值
+ *  min() 最小值
+ *  sum() 合计
+	
+执行：
+
+ *  query() 执行查询，并返回结果
+
+== 对复杂查询条件的支持 ==
+
+where() 需要支持的查询条件模式包括：
+
+ *  模式1：where(字符串, [查询参数1, 查询参数2, ...])
+ *  模式2：where(数组, [查询参数1, 查询参数2, ...])
+
+
+=== where() 的两种解析模式 ===
+
+如果第一个参数是字符串，则按照基本模式1进行解析；如果第一个参数是数组，则按照模式2解析。
+
+=== 模式1的解析规则 ===
+
+==== 查询条件中字段名的解析： ====
+
+ *  如果直接书写字段名，则不会进行任何处理
+ *  如果用“`”符号包括字段名，则该字段名会被提取出来进行转义处理
+ *  对于提取出来的字段名，还会解析是否包含表名称或关联名称
+ *  如果字段名包含关联名称，则字段名会转义为“关联表的表名称.字段名”
+
+例如：
+
+{{{
+level_ix = 1 AND credits > 1000
+`name` = 'php'
+`posts.author` = 'dualface' AND `tags.name` = 'php'
+}}}
+
+==== 查询条件中参数占位符的解析： ====
+
+可以在查询条件中使用三种形式的参数占位符，分别是：
+
+ * “？”匿名参数
+ * “:”开头的命名参数
+
+例如：
+
+{{{
+level_ix = ?
+`name` = :name
+`post_id` IN (?)
+`posts.author` = :author AND `tags.name` IN (:tags_name)
+}}}
+
+''注意：不能在查询条件中混用匿名参数和命名参数''
+	
+==== 查询参数的解析： ====
+
+如果查询条件使用匿名参数，那么查询参数则按顺序处理。
+
+例如：
+
+{{{
+where('level_ix = ? AND credits > ?', $level_ix, $credits)
+}}}
+
+如果查询条件使用命名参数，则 where() 方法的第二个参数必须是数组，并且以查询参数名为键名。
+
+例如：
+
+{{{
+where(
+    `posts.author` = :author AND `tags.name` IN :tags_name[]', 
+    array(
+        'author' => 'dualface',
+        'tags_name' => array('php', 'book'),
+    )
+)
+}}}
+
+
+=== 模式2的解析规则 ===
