@@ -1,6 +1,6 @@
 = 查询对象 QTable_Select =
 
-查询对象用于从数据库查询符合条件的记录，并返回为数组或者 [QActiveRecord_Abstract] ActiveRecord 对象实例。
+查询对象用于从数据库查询符合条件的记录，并返回为数组或者 [QActiveRecord_Abstract] 对象实例。
 
 查询对象使用方法链来构造灵活的查询表达式，例如：
 
