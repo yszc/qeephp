@@ -1,0 +1,22 @@
+= 关联处理 Extension_Associations =
+
+Extension_Associations 以扩展的形式为表数据入口提供了对关联的支持。
+
+支持的四种关联分别是：
+
+ * has_one 一对一
+ * has_many 一对多
+ * belongs_to 从属
+ * many_to_many 多对多
+
+== has_one 一对一 ==
+
+
+
+== has_many 一对多 ==
+
+
+== belongs_to 从属 ==
+
+
+== many_to_many 多对多 ==
