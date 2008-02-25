@@ -1,0 +1,19 @@
+= 表数据入口 =
+
+表数据入口由下列几个部分组成：
+
+QTable_Base 表数据入口基础类
+
+实现对数据表的基本操作，包括 create、update、delete，以及一些常用的辅助方法。查询操作通过 find() 方法构造一个查询对象来完成。表数据入口基础类还存储数据表的各项元数据，提供给其他服务使用。
+
+QTable_Select 查询对象
+
+查询对象提供完善的查询功能，特别是对复杂查询条件的支持。并且可以将查询结果直接返回为需要的 QActiveRecord_Abstract QActiveRecord 对象。
+
+QTable_Associations 关联处理
+
+实现 has_one、has_many、belongs_to 和 many_to_many 关联。四种关联关系提供对关联数据的 find、create、update 和 delete 操作。并且支持外键约束。
+
+QTable_Extension 表数据入口扩展
+
+表数据入口扩展可以透明的改变表数据入口的行为，并且扩展其功能。
