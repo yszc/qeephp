@@ -1,0 +1,25 @@
+= QActiveRecord_Abstract =
+
+QActiveRecord_Abstract 实现了一个扩展的 ActiveRecord 模式。
+
+主要特征包括：
+
+ * 静态的查找（find()）和删除方法（delete()）
+ * 完整的 CRUD 操作
+ * 对象属性可以设置为 readonly、hidden 模式
+ * 支持丰富的事件 callback
+ * 通过 QTable 支持多种数据库
+ * 支持使用 TEXT 字段序列化存储值对象
+
+== 主要的静态方法 ==
+
+ * QActiveRecord_Interface::find() 返回一个查询对象，用于查询符合条件的 QActiveRecord 对象实例
+ * QActiveRecord_Interface::delete() 返回一个查询对象，用于删除符合条件的记录
+ * QActiveRecord_Interface::destroy() 实例化所有符合条件的对象，然后调用这些对象的 destroy() 方法
+
+== 主要的方法 ==
+
+ * save() 保存对象到数据库
+ * force_create() 强制创建新记录
+ * validate() 验证对象属性
+ * destroy() 销毁一个对象及其数据库记录
