@@ -31,8 +31,8 @@ $rowset = $table->find(...)
  *  forUpdate() 是否构造一个 FOR UPDATE 查询
  *  distinct() 是否构造一个 DISTINCT 查询
 
-ActiveRecord 相关：
- *  asObject() 指示将返回的记录封装为特定的对象
+[QActiveRecord_Abstract ActiveRecord] 相关：
+ *  asObject() 指示将返回的记录封装为特定的 [QActiveRecord_Abstract ActiveRecord] 对象
 
 统计功能：
  *  count() 统计符合条件的记录数
