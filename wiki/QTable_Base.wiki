@@ -1,3 +1,5 @@
+#summary QTable_Base 是表数据入口对象的基础类
+
 = 表数据入口基础类 QTable_Base =
 
 表数据入口封装对一个数据表的操作。
