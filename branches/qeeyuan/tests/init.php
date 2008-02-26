@@ -35,6 +35,7 @@ $dsn = array(
     'password'  => '',
     'database'  => 'test',
     'prefix'    => 'q_',
+    'charset'   => 'utf8',
 );
 Q::setIni('dsn', $dsn);
 Q::import(dirname(__FILE__));

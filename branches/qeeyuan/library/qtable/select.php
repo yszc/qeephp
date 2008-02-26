@@ -125,15 +125,25 @@ class QTable_Select
     protected $handle = null;
 
     /**
+     * 要查询的关联
+     *
+     * @var array
+     */
+    protected $links;
+
+    /**
      * 构造函数
      *
      * @param QTable_Base $table
      * @param array|string $where
      * @param array $args
+     * @param array $links
      */
-    function __construct(QTable_Base $table, $where = null, array $args = null)
+    function __construct(QTable_Base $table, $where = null, array $args = null, array $links = null)
     {
         $this->table = $table;
+        if (!is_array($links)) { $links = array(); }
+        $this->links = $links;
         if (!is_null($where)) {
             $this->where[] = $this->table->parseWhereInternal($where, $args);
         }
@@ -377,7 +387,8 @@ class QTable_Select
      */
     function query()
     {
-        $sql = $this->toString();
+        list($sql, $is_stat, $used_links) = $this->toStringInternal();
+
         if (!is_array($this->limit)) {
             if (is_null($this->limit)) {
                 $handle = $this->table->getDBO()->execute($sql);
@@ -391,31 +402,42 @@ class QTable_Select
 
         /* @var $handle QDBO_Result_Abstract */
 
-        if ($this->limit == 1) {
-            if (is_null($this->count)) {
-                $row = $handle->fetchRow();
-                if ($this->as_object) {
-                    Q::loadClass($this->as_object);
-                    return new $this->as_object($row);
-                } else {
-                    return $row;
+        if (!$is_stat) {
+            // 对于非统计方式，一律进行关联数据表的查询
+            $used_alias = array_keys($used_links);
+            $refs_value = null;
+            $refs = null;
+            $rowset = $handle->fetchAllRefby($used_alias, $refs_value, $refs);
+
+            // 进行关联查询，并组装数据集
+            foreach ($used_links as $mka => $link) {
+                /* @var $link QTable_Link_Abstract */
+                $sql = $link->getFindSQL($refs_value[$mka]);
+                QDebug::dump($sql, 'assoc_' . $link->name .'_sql');
+                $h = $link->assoc_table->getDBO()->execute($sql);
+                $handle->assemble($h, $refs[$mka], $link->mapping_name, $link->one_to_one, $link->assoc_key_alias);
+            }
+
+            unset($refs_value);
+            unset($refs);
+
+            if ($this->as_object) {
+                Q::loadClass($this->as_object);
+                $col = array();
+                foreach (array_keys($rowset) as $offset) {
+                    $col[] = new $this->as_object($rowset[$offset]);
                 }
+                $rowset = $col;
+            }
+
+            if ($this->limit == 1) {
+                return reset($rowset);
             } else {
-                return $handle->fetchOne();
+                return $rowset;
             }
         } else {
-            if (is_null($this->count)) {
-                $rowset = $handle->fetchAll();
-                if ($this->as_object) {
-                    Q::loadClass($this->as_object);
-                    $col = array();
-                    foreach (array_keys($rowset) as $offset) {
-                        $col[] = new $this->as_object($rowset[$offset]);
-                    }
-                    return $col;
-                } else {
-                    return $rowset;
-                }
+            if ($this->limit == 1) {
+                return $handle->fetchOne();
             } else {
                 return $handle->fetchCol();
             }
@@ -429,31 +451,63 @@ class QTable_Select
      */
     function toString()
     {
+        list($sql) = $this->toStringInternal(false);
+        return $sql;
+    }
+
+    /**
+     * 返回查询语句以及相关关联的信息
+     *
+     * @param boolean $use_links
+     *
+     * @return array
+     */
+    protected function toStringInternal($use_links = true)
+    {
         $sql = 'SELECT ';
         if ($this->distinct) {
             $sql .= 'DISTINCT ';
         }
 
         $sql .= $this->select;
+        $is_stat = false;
+
         if ($this->count) {
             list($expr, $alias) = $this->count;
+            $is_stat = true;
             $sql .= ", COUNT({$expr}) AS {$alias}";
         }
         if ($this->avg) {
             list($expr, $alias) = $this->avg;
+            $is_stat = true;
             $sql .= ", AVG({$expr}) AS {$alias} ";
         }
         if ($this->max) {
             list($expr, $alias) = $this->max;
+            $is_stat = true;
             $sql .= ", MAX({$expr}) AS {$alias} ";
         }
         if ($this->min) {
             list($expr, $alias) = $this->min;
+            $is_stat = true;
             $sql .= ", MIN({$expr}) AS {$alias} ";
         }
         if ($this->sum) {
             list($expr, $alias) = $this->sum;
+            $is_stat = true;
             $sql .= ", SUM({$expr}) AS {$alias} ";
+        }
+
+        $used_links = array();
+        if (!$is_stat && $use_links) {
+            // 如果使用了任何统计函数，则不进行关联查询
+            foreach ($this->links as $link) {
+                /* @var $link QTable_Link_Abstract */
+                if (!$link->enabled || $link->on_find == 'skip') { continue; }
+                $link->init();
+                $sql .= ', ' . $link->main_key . ' AS ' . $link->main_key_alias;
+                $used_links[$link->main_key_alias] = $link;
+            }
         }
 
         $sql .= " FROM {$this->table->qtable_name} ";
@@ -496,7 +550,7 @@ class QTable_Select
             $sql .= "FOR UPDATE";
         }
 
-        return $sql;
+        return array($sql, $is_stat, $used_links);
     }
 
 

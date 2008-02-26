@@ -86,6 +86,7 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
 
     function selectDB($database)
     {
+        if (!$this->conn) { $this->connect(); }
         if (!mysql_select_db($database, $this->conn)) {
             throw new QDBO_Exception("USE {$database}", mysql_error($this->conn), mysql_errno($this->conn));
         }
@@ -190,6 +191,7 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
         if (is_array($inputarr)) {
             $sql = $this->fakebind($sql, $inputarr);
         }
+        if (!$this->conn) { $this->connect(); }
         $result = mysql_query($sql, $this->conn);
 
         if (is_resource($result)) {

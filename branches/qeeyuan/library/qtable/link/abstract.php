@@ -72,6 +72,13 @@ abstract class QTable_Link_Abstract
     public $main_key;
 
     /**
+     * 查询时，主表的关联字段使用什么别名
+     *
+     * @var string
+     */
+    public $main_key_alias;
+
+    /**
      * 关联关系在关联表中使用哪一个字段
      *
      * 对于 has many、has one 关联，assoc_key 的默认值是关联表中与主表主键字段同名的字段
@@ -81,6 +88,13 @@ abstract class QTable_Link_Abstract
      * @var string
      */
     public $assoc_key;
+
+    /**
+     * 查询时，关联表的关联字段使用什么别名
+     *
+     * @var string
+     */
+    public $assoc_key_alias;
 
     /**
      * 指示在中间表中，用哪个字段存储对主表的 main_key 引用（仅用于 many to many 关联）
@@ -237,12 +251,14 @@ abstract class QTable_Link_Abstract
         $this->main_table = $main_table;
 
         static $init_params = array(
-            'assoc_table_obj',
-            'assoc_table_class',
-            'assoc_table_name',
+            'table_obj',
+            'table_class',
+            'table_name',
             'assoc_table_pk',
             'main_key',
+            'main_key_alias',
             'assoc_key',
+            'assoc_key_alias',
             'mid_main_key',
             'mid_assoc_key',
             'mid_table_name',
@@ -286,6 +302,10 @@ abstract class QTable_Link_Abstract
             // LC_MSG: Invalid parameter type: "%s".
             throw new QTable_Link_Exception(__('Invalid parameter type: "%s".', $type));
         }
+        if (empty($define['mapping_name'])) {
+            // LC_MSG: Expected parameter "mapping_name".
+            throw new QTable_Link_Exception(__('Expected parameter "mapping_name".'));
+        }
 
         if (empty($define['name'])) {
             $define['name'] = $define['mapping_name'];
@@ -316,35 +336,37 @@ abstract class QTable_Link_Abstract
      */
     function init()
     {
+        static $alias_index = 0;
         if ($this->is_init) { return; }
+        $alias_index++;
 
         $this->main_table->connect();
 
         $p = $this->init_params;
         /**
-         * assoc_table_obj
+         * table_obj
          * 关联的表数据入口对象实例
          *
-         * assoc_table_class
+         * table_class
          * 关联到哪一个表数据入口类
          *
-         * assoc_table_name
+         * table_name
          * 关联到哪一个数据表
          *
-         * assoc_table_pk
+         * assoc_pk
          * 关联数据表的主键
          *
-         * assoc_table_obj、assoc_table_class、assoc_table_name 三者只需要指定一个，三者的优先级从上到下。
-         * 如果 assoc_table_name 有效，则可以通过 assoc_table_???? 等一系列参数指示构造关联表数据入口时的选项。
+         * table_obj、table_class、table_name 三者只需要指定一个，三者的优先级从上到下。
+         * 如果 table_name 有效，则可以通过 assoc_table_???? 等一系列参数指示构造关联表数据入口时的选项。
          */
-        if (!empty($p['assoc_table_obj'])) {
-            $assoc_table = $p['assoc_table_obj'];
-        } elseif (!empty($p['assoc_table_class'])) {
-            $assoc_table = Q::getSingleton($p['assoc_table_class']);
-        } elseif (!empty($p['assoc_table_name'])) {
-            $params = array('table_name' => $p['assoc_table_name']);
+        if (!empty($p['table_obj'])) {
+            $assoc_table = $p['table_obj'];
+        } elseif (!empty($p['table_class'])) {
+            $assoc_table = Q::getSingleton($p['table_class']);
+        } elseif (!empty($p['table_name'])) {
+            $params = array('table_name' => $p['table_name']);
             foreach ($p as $key => $value) {
-                if (substr($key, 0, 12) == 'assoc_table_' && $key != 'assoc_table_name') {
+                if (substr($key, 0, 12) == 'assoc_table_') {
                     $params[substr($key, 12)] = $value;
                 }
             }
@@ -419,39 +441,56 @@ abstract class QTable_Link_Abstract
 
             break;
         }
+        $this->main_key_alias = isset($p['main_key_alias']) ? $p['main_key_alias'] : 'mka_' . $alias_index;
+        $this->assoc_key_alias = isset($p['assoc_key_alias']) ? $p['assoc_key_alias'] : 'aka_' . $alias_index;
 
         $this->is_init = true;
+    }
+
+    /**
+     * 获得进行关联查询的 SQL
+     *
+     * @param array $mkvs
+     *
+     * @return string
+     */
+    function getFindSQL(array $mkvs)
+    {
+        $fields = $this->assoc_table->qfields($this->on_find_fields);
+        $ak = $this->assoc_table->qfields($this->assoc_key);
+        $sql = "SELECT {$ak} AS {$this->assoc_key_alias}, {$fields} FROM {$this->assoc_table->qtable_name}";
+        return $this->getFindSqlBase($sql, $mkvs);
     }
 
     /**
      * 返回用于查询关联表数据的 SQL 语句
      *
      * @param string $sql
-     * @param array $pkvs
+     * @param array $mkvs
      *
      * @return string
      */
-    protected function getFindSqlBase($sql, array $pkvs)
+    protected function getFindSqlBase($sql, array $mkvs)
     {
-        if (!empty($pkvs)) {
-            $sql .= $this->assoc_table->qinto(" WHERE {$this->qfk} IN (?)", $pkvs);
+        if (!empty($mkvs)) {
+            $sql .= $this->assoc_table->getDBO()->qinto(" WHERE {$this->assoc_key} IN (?)", $mkvs);
         }
-        if ($this->conditions) {
-            if (is_array($this->conditions)) {
-                $conditions = Table_SqlHelper::parseConditions($this->conditions, $this->assoc_table);
-                if (is_array($conditions)) {
-                    $conditions = $conditions[0];
-                }
-            } else {
-                $conditions = $this->conditions;
-            }
-            if ($conditions) {
-                $sql .= " AND {$conditions}";
-            }
-        }
-        if ($this->sort && $this->countOnly == false) {
-            $sql .= " ORDER BY {$this->sort}";
-        }
+//        if ($this->conditions) {
+//            if (is_array($this->conditions)) {
+//                $conditions = Table_SqlHelper::parseConditions($this->conditions, $this->assoc_table);
+//                if (is_array($conditions)) {
+//                    $conditions = $conditions[0];
+//                }
+//            } else {
+//                $conditions = $this->conditions;
+//            }
+//            if ($conditions) {
+//                $sql .= " AND {$conditions}";
+//            }
+//        }
+//        if ($this->sort && $this->countOnly == false) {
+//            $sql .= " ORDER BY {$this->sort}";
+//        }
 
         return $sql;
     }

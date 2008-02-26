@@ -31,7 +31,7 @@ class Table_Authors extends QTable_Base
          */
         array(
             'table_class'   => 'Table_Contents',
-            'mapping_mame'  => 'contents',
+            'mapping_name'  => 'contents',
             'link_field'    => 'author_id',
             'count_cache'   => 'contents_count',
 
