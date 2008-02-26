@@ -22,11 +22,11 @@
  */
 class Table_Contents extends QTable_Base
 {
-	/**
-	 * 不包含全局前缀的数据表名称
-	 *
-	 * @var string
-	 */
+    /**
+     * 不包含全局前缀的数据表名称
+     *
+     * @var string
+     */
     public $table_name = 'contents';
 
     /**
@@ -46,34 +46,18 @@ class Table_Contents extends QTable_Base
          * 每个内容都有一个作者
          */
         array(
-            'table_class' => 'Table_Authors',
-            'mapping_name' => 'author',
-            'link_field' => 'author_id',
+            'table_class'   => 'Table_Authors',
+            'mapping_name'  => 'author',
+            'link_field'    => 'author_id',
             /**
              * 指示在 Table_Authors 封装的数据表中使用什么字段存储关联内容的记录总数
              */
-            'count_cache' => 'contents_count',
+            'count_cache'   => 'contents_count',
 
             /**
              * 指示在读取作者信息时，只获取作者表的哪些字段
              */
             'on_find_fields' => array('username' => 'author_username'),
-        ),
-    );
-
-    /**
-     * has one 关联
-     *
-     * @var array
-     */
-    protected $has_one = array(
-        /**
-         * 每个内容有一个拷贝
-         */
-        array(
-            'table_class'   => 'Table_Contents_Copy',
-            'mapping_name'  => 'copy',
-            'foreign_key'   => 'content_id',
         ),
     );
 
@@ -93,7 +77,7 @@ class Table_Contents extends QTable_Base
             /**
              * count_cache 指示在 contents 表中用什么字段存储关联评论的记录总数
              */
-            'count_cache' => 'comments_count',
+            'count_cache'   => 'comments_count',
         ),
 
         /**
@@ -128,5 +112,5 @@ class Table_Contents extends QTable_Base
              */
             'mid_table_class' => 'Table_Contents_Tags',
         ),
-    );
+     );
 }

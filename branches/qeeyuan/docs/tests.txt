@@ -9,7 +9,7 @@ QDBO
     pdo-sqlite
 
 QTable
-    单表 CRUD 操作
+    [OK] 单表 CRUD 操作
     多表关联的 CRUD 操作
     单表使用复合主键的 CRUD 操作
     多表关联使用复合主键的 CRUD 操作
