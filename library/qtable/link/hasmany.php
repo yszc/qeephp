@@ -7,7 +7,7 @@
  * @author 起源科技 (www.qeeyuan.com)
  * @version 1.0
  */
-class QTable_Link_Has_Many extends QTable_Link_Has_One
+class QTable_Link_HasMany extends QTable_Link_HasOne
 {
     public $one_to_one = false;
 

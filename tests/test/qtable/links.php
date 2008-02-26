@@ -20,21 +20,47 @@ require_once dirname(__FILE__) . '/../../init.php';
 
 class Test_QTable_Links extends PHPUnit_Framework_TestCase
 {
-    /**
-     * @var QTable_Base
-     */
-    protected $table;
-
-    protected function setUp()
+    function test_FindBelongsTo()
     {
-        $dbo = QDBO::getConn();
-        $params = array(
-            'table_name' => 'posts',
-            'pk'         => 'post_id',
-            'dbo'        => $dbo
+        $tableAuthors = Q::getSingleton('Table_Authors');
+        /* @var $tableAuthors Table_Authors */
+        $tableAuthors->getDBO()->startTrans();
+
+        $authors = $this->insertAuthors();
+
+        $tableContents = Q::getSingleton('Table_Contents');
+        /* @var $tableContents Table_Contents */
+
+        $tableContents->disableLinks('comments, marks, tags');
+        $content = array(
+            'title' => '测试标题',
+            'author_id' => $authors['liaoyulei'],
         );
-        $this->table = new QTable_Base($params, false);
+        $id = $tableContents->create($content);
+        $find = $tableContents->find($id)->query();
+        $tableContents->getDBO()->completeTrans(false);
+
+        $this->assertEquals($content['title'], $find['title'], "\$find['title'] == \$content['title']");
+        $this->assertTrue(!empty($find['author']), "!empty(\$find['author'])");
+        $this->assertType('array', $find['author'], "type of \$find['author'] == array");
+        $this->assertEquals($authors['liaoyulei'], $find['author']['author_id'], "\$find['author']['author_id'] == \$authors['liaoyulei']");
+        $this->assertEquals('liaoyulei', $find['author']['name'], "\$find['author']['name'] == 'liaoyulei'");
     }
 
-}
+    /**
+     * @return array
+     */
+    protected function insertAuthors()
+    {
+        $tableAuthors = Q::getSingleton('Table_Authors');
+        /* @var $tableAuthors Table_Authors */
 
+        $authors = array(
+            'liaoyulei' => $tableAuthors->create(array('name' => 'liaoyulei')),
+            'dali'      => $tableAuthors->create(array('name' => 'dali')),
+            'xiecong'   => $tableAuthors->create(array('name' => 'xiecong')),
+        );
+
+        return $authors;
+    }
+}

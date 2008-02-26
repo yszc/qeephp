@@ -1,6 +1,6 @@
 <?php
 
-class QTable_Link_Many_To_Many extends QTable_Link_Abstract
+class QTable_Link_ManyToMany extends QTable_Link_Abstract
 {
     public $one_to_one = false;
 
@@ -17,21 +17,6 @@ class QTable_Link_Many_To_Many extends QTable_Link_Abstract
      * @var string
      */
     public $assoc_fk = null;
-
-    function __construct(array $def, $type, QTable_Base $table)
-    {
-        parent::__construct($def, $type, $table);
-        if (!empty($def['mid_table'])) {
-            $this->mid_table = $def['mid_table'];
-        } else {
-            throw new QTable_Link_Exception(__('Required paramter "mid_table" not provided.'));
-        }
-        if (!empty($def['assoc_fk'])) {
-            $this->assoc_fk = $def['assoc_fk'];
-        } else {
-            throw new QTable_Link_Exception(__('Required paramter "assoc_fk" not provided.'));
-        }
-    }
 
     function get_find_sql(array $fkvs)
     {

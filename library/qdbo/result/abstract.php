@@ -162,32 +162,38 @@ abstract class QDBO_Result_Abstract
      *
      * $fields_value = array();
      * $reference = array();
-     * $rowset = $handle->fetchAllRefby('post_id', $fields_value, $reference);
+     * $rowset = $handle->fetchAllRefby(array('post_id'), $fields_value, $reference);
      * </code>
      *
      * 上述代码执行后，$rowset 包含 posts 表中的全部 4 条记录。
-     * 而 $fields_value 则是一个包含 4 条记录 post_id 字段值的一维数组 array(1, 2, 7, 15)。
-     * 最后，$reference 是如下形式的数组：
+     * 最后，$fields_value 和 $reference 是如下形式的数组：
      *
      * <code>
+     *
+     * $fields_value = array(
+     *     'post_id' => array(1, 2, 7, 15),
+     * );
+     *
      * $reference = array(
-     *      1 => & array(...),
-     *      2 => & array(...),
-     *      7 => & array(...),
-     *     15 => & array(...)
+     *     'post_id' => array(
+     *          1 => & array(...),
+     *          2 => & array(...),
+     *          7 => & array(...),
+     *         15 => & array(...)
+     *     ),
      * );
      * </code>
      *
      * $reference 用 post_id 字段值作为索引值，并且指向 $rowset 中 post_id 值相同的记录。
      * 由于是以引用方式构造的 $reference 数组，因此并不会占用双倍内存。
      *
-     * @param string $field
+     * @param array $fields
      * @param array $fields_value
      * @param array $reference
      *
      * @return array
      */
-    function fetchAllRefby($field, array & $fields_value, array & $reference)
+    function fetchAllRefby(array $fields, & $fields_value, & $reference)
     {
         $fields_value = array();
         $reference = array();
@@ -195,10 +201,13 @@ abstract class QDBO_Result_Abstract
         $data = array();
 
         while (($row = $this->fetchRow())) {
-            $fieldValue = $row[$field];
             $data[$offset] = $row;
-            $fields_value[$offset] = $fieldValue;
-            $reference[$fieldValue] =& $data[$offset];
+            foreach ($fields as $field) {
+                $fieldValue = $row[$field];
+                $fields_value[$field][$offset] = $fieldValue;
+                $reference[$field][$fieldValue] =& $data[$offset];
+                unset($data[$offset][$field]);
+            }
             $offset++;
         }
 
@@ -206,31 +215,29 @@ abstract class QDBO_Result_Abstract
     }
 
     /**
-     * 将两个数据集按照指定字段的值进行组装
+     * 将 $handle 查询获得的结果组装到 $rowset 中
      *
-     * 表数据入口使用该方法组装来自两个数据表的数据。
-     *
-     * @param QDBO_Result_Abstract $handle
-     * @param array $assoc_rowset
+     * @param QDBO_Result_Abstract $assoc_handle
+     * @param array $rowset
      * @param string $mapping_name
      * @param boolean $one_to_one
      * @param string $ref_key
      */
-    function assemble(QDBO_Result_Abstract $handle, array & $assoc_rowset, $mapping_name, $one_to_one, $ref_key)
+    function assemble(QDBO_Result_Abstract $assoc_handle, array & $rowset, $mapping_name, $one_to_one, $ref_key)
     {
         if ($one_to_one) {
             // 一对一组装数据
-            while (($row = $handle->fetchRow())) {
+            while (($row = $assoc_handle->fetchRow())) {
                 $rkv = $row[$ref_key];
                 unset($row[$ref_key]);
-                $assoc_rowset[$rkv][$mapping_name] = $row;
+                $rowset[$rkv][$mapping_name] = $row;
             }
         } else {
             // 一对多组装数据
-            while (($row = $handle->fetchRow())) {
+            while (($row = $assoc_handle->fetchRow())) {
                 $rkv = $row[$ref_key];
                 unset($row[$ref_key]);
-                $assoc_rowset[$rkv][$mapping_name][] = $row;
+                $rowset[$rkv][$mapping_name][] = $row;
             }
         }
     }

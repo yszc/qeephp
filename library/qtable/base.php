@@ -114,16 +114,6 @@ class QTable_Base
     protected $updated_time_fields = array('updated');
 
     /**
-     * 数据库访问对象
-     *
-     * 开发者不应该直接访问该成员变量，而是通过 set_dbo() 和 get_dbo() 方法
-     * 来访问表数据入口使用数据访问对象。
-     *
-     * @var QDBO_Adapter_Abstract
-     */
-    protected $dbo;
-
-    /**
      * 保存该表数据入口的所有关联
      *
      * @var array
@@ -339,7 +329,7 @@ class QTable_Base
     {
         $args = func_get_args();
         array_shift($args);
-        return new QTable_Select($this, $where, $args);
+        return new QTable_Select($this, $where, $args, $this->links);
     }
 
     /**
@@ -713,7 +703,6 @@ class QTable_Base
     function setDBO($dbo)
     {
         $this->dbo = $dbo;
-
         if (empty($this->schema) && $dbo->getSchema() != '') {
             $this->schema = $dbo->getSchema();
         }
@@ -723,6 +712,15 @@ class QTable_Base
             $this->full_table_name = $this->table_name;
         }
         $this->qtable_name = $this->dbo->qtable($this->full_table_name);
+    }
+
+    /**
+     * 设置表数据入口要使用的数据库访问对象
+     */
+    function setupDBO()
+    {
+        $dbo = QDBO::getConn();
+        $this->setDBO($dbo);
     }
 
     /**
@@ -742,6 +740,10 @@ class QTable_Base
             $this->connect();
             return $this->{$varname};
         }
+        if ($varname == 'dbo') {
+            $this->setupDBO();
+            return $this->dbo;
+        }
         throw new QTable_Exception(__('Undefined property "%s"', $varname));
     }
 
@@ -750,10 +752,6 @@ class QTable_Base
      */
     function connect()
     {
-        if (is_null($this->dbo)) {
-            $dbo = QDBO::getConn();
-            $this->setDBO($dbo);
-        }
         if (!$this->dbo->isConnected()) {
             $this->dbo->connect();
         }
@@ -824,6 +822,9 @@ class QTable_Base
         if (empty($where)) { return array(null, null); }
         if (is_null($args)) {
             $args = array();
+        }
+        if (is_int($where)) {
+            return array("{$this->qpk} = {$where}", array());
         }
         if (is_array($where)) {
             return $this->parseWhereArray($where, $args);

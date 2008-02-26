@@ -1008,5 +1008,4 @@ abstract class QDBO_Adapter_Abstract
         }
         return array($pairs, $values);
     }
-
 }
