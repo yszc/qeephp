@@ -192,45 +192,36 @@ class Test_QTable_Basic extends PHPUnit_Framework_TestCase
     function test_parseWhereString1()
     {
         $where = 'user_id = 1';
-        $expected = array();
-        $expected[] = $where;
-        $expected[] = array();
-        $this->assertEquals($expected, $this->table->parseWhere($where));
+        $this->assertEquals($where, $this->table->parseWhere($where));
     }
 
     function test_parseWhereString2()
     {
         $where = 'user_id = ?';
-        $args = array(1);
-        $expected = array('user_id = 1', array());
-        $actual = $this->table->parseWhere($where, $args);
-        $this->assertEquals($expected, $actual);
+        $actual = $this->table->parseWhere($where, 1);
+        $this->assertEquals('user_id = 1', $actual);
     }
 
     function test_parseWhereString3()
     {
         $where = 'user_id IN (?)';
-        $args = array(array(1, 2, 3));
-        $expected = array('user_id IN (1,2,3)', array());
-        $actual = $this->table->parseWhere($where, $args);
-        $this->assertEquals($expected, $actual);
+        $actual = $this->table->parseWhere($where, array(1, 2, 3));
+        $this->assertEquals('user_id IN (1,2,3)', $actual);
     }
 
     function test_parseWhereString4()
     {
         $where = '[user_id] = ? AND [level_ix] > ?';
-        $args = array(1, 3);
-        $expected = array('`test`.`q_posts`.`user_id` = 1 AND `test`.`q_posts`.`level_ix` > 3', array());
-        $actual = $this->table->parseWhere($where, $args);
+        $expected = '`test`.`q_posts`.`user_id` = 1 AND `test`.`q_posts`.`level_ix` > 3';
+        $actual = $this->table->parseWhere($where, 1, 3);
         $this->assertEquals($expected, $actual);
     }
 
     function test_parseWhereString5()
     {
         $where = '[posts.user_id] = :user_id AND [level.level_ix] > :level_ix';
-        $args = array(array('user_id' => 2, 'level_ix' => 55));
-        $expected = array('`test`.`posts`.`user_id` = 2 AND `test`.`level`.`level_ix` > 55', array());
-        $actual = $this->table->parseWhere($where, $args);
+        $expected = '`test`.`posts`.`user_id` = 2 AND `test`.`level`.`level_ix` > 55';
+        $actual = $this->table->parseWhere($where, array('user_id' => 2, 'level_ix' => 55));
         $this->assertEquals($expected, $actual);
     }
 
@@ -238,18 +229,14 @@ class Test_QTable_Basic extends PHPUnit_Framework_TestCase
     function test_parseWhereString6()
     {
         $where = '[user_id] IN (:users_id) AND [schema.level.level_ix] > :level_ix';
-        $args = array(array('users_id' => array(1, 2, 3), 'level_ix' => 55));
-        $expected = array('`test`.`q_posts`.`user_id` IN (1,2,3) AND `schema`.`level`.`level_ix` > 55', array());
-        $actual = $this->table->parseWhere($where, $args);
+        $expected = '`test`.`q_posts`.`user_id` IN (1,2,3) AND `schema`.`level`.`level_ix` > 55';
+        $actual = $this->table->parseWhere($where, array('users_id' => array(1, 2, 3), 'level_ix' => 55));
         $this->assertEquals($expected, $actual);
     }
 
     function test_parseWhereArray1()
     {
-        $where = array(
-            'user_id' => 1,
-            'level_ix' => 3,
-        );
+        $where = array('user_id' => 1, 'level_ix' => 3);
         $expected = '`user_id` = 1 AND `level_ix` = 3';
         $actual = $this->table->parseWhere($where);
         $this->assertEquals($expected, $actual);
@@ -279,4 +266,35 @@ class Test_QTable_Basic extends PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $actual);
     }
 
+    function test_parseWhereArray5()
+    {
+        $where = array('posts.user_id' => 1, 'OR', '[title] LIKE ?');
+        $expected = '`q_posts`.`user_id` = 1 OR `test`.`q_posts`.`title` LIKE \'%ABC%\'';
+        $actual = $this->table->parseWhere($where, '%ABC%');
+        $this->assertEquals($expected, $actual);
+    }
+
+    function test_parseWhereArray6()
+    {
+        $where = array('posts.user_id' => 1, 'OR', '[title] LIKE :title');
+        $expected = '`q_posts`.`user_id` = 1 OR `test`.`q_posts`.`title` LIKE \'%ABC%\'';
+        $actual = $this->table->parseWhere($where, array('title' => '%ABC%'));
+        $this->assertEquals($expected, $actual);
+    }
+
+    function test_parseWhereArray7()
+    {
+        $where = array('[user_id] = ?', 'OR', '[title] LIKE ?');
+        $expected = '`test`.`q_posts`.`user_id` = 1 OR `test`.`q_posts`.`title` LIKE \'%ABC%\'';
+        $actual = $this->table->parseWhere($where, 1, '%ABC%');
+        $this->assertEquals($expected, $actual);
+    }
+
+    function test_parseWhereArray8()
+    {
+        $where = array('[user_id] = :user_id', 'OR', '[title] LIKE :title');
+        $expected = '`test`.`q_posts`.`user_id` = 1 OR `test`.`q_posts`.`title` LIKE \'%ABC%\'';
+        $actual = $this->table->parseWhere($where, array('user_id' => 1, 'title' => '%ABC%'));
+        $this->assertEquals($expected, $actual);
+    }
 }

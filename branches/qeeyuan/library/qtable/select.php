@@ -18,21 +18,21 @@ class QTable_Select
      * @var string
      */
     protected $select = '*';
-    
+
     /**
      * 查询条件
      *
      * @var array
      */
     protected $where = array();
-    
+
     /**
      * 查询的排序
      *
      * @var string
      */
     protected $order = null;
-    
+
     /**
      * 限定结果集大小
      *
@@ -46,69 +46,76 @@ class QTable_Select
      * @var int
      */
     protected $page_base = 1;
-    
+
     /**
      * 添加 GROUP BY 子句
      *
      * @var string
      */
-    protected $group_by = null;
-    
+    protected $group = null;
+
     /**
      * 添加 HAVING 子句
      *
      * @var string
      */
     protected $having = array();
-    
+
     /**
      * 使用 FOR UPDATE 模式
      *
      * @var boolean
      */
     protected $for_update = false;
-    
+
     /**
      * 使用 DISTINCT 模式
      *
      * @var boolean
      */
     protected $distinct = false;
-    
+
     /**
      * 统计记录数
      *
      * @var string
      */
     protected $count = null;
-    
+
     /**
      * 统计平均值
      *
      * @var string
      */
     protected $avg = null;
-    
+
     /**
      * 统计最大值
      *
      * @var string
      */
     protected $max = null;
-    
+
     /**
      * 统计最小值
      *
      * @var string
      */
     protected $min = null;
-    
+
     /**
      * 统计合计
      *
      * @var string
      */
     protected $sum = null;
+
+    /**
+     * 返回的结果封装为什么对象
+     *
+     * @var string
+     */
+    protected $as_object = null;
 
     /**
      * 查询结果
@@ -128,7 +135,7 @@ class QTable_Select
     {
         $this->table = $table;
         if (!is_null($where)) {
-            $this->where($where, $args);
+            $this->where[] = $this->table->parseWhereInternal($where, $args);
         }
     }
 
@@ -149,13 +156,14 @@ class QTable_Select
      * 添加查询条件
      *
      * @param array|string $where
-     * @param array $args
      *
      * @return QTable_Select
      */
-    function where($where, array $args = null)
+    function where($where)
     {
-        $this->where[] = $this->table->parseWhere($where, $args);
+        $args = func_get_args();
+        array_shift($args);
+        $this->where[] = $this->table->parseWhereInternal($where, $args);
         return $this;
     }
 
@@ -173,7 +181,7 @@ class QTable_Select
     }
 
     /**
-     * 查询所有符合条件的记录
+     * 指示查询所有符合条件的记录
      *
      * @return QTable_Select
      */
@@ -235,9 +243,9 @@ class QTable_Select
      *
      * @return QTable_Select
      */
-    function groupBy($expr)
+    function group($expr)
     {
-        $this->group_by = $expr;
+        $this->group = $expr;
     }
 
     /**
@@ -252,7 +260,7 @@ class QTable_Select
     {
         $this->having[] = $this->table->parseWhere($where, $args);
     }
-    
+
     /**
      * 是否构造一个 FOR UPDATE 查询
      *
@@ -276,6 +284,19 @@ class QTable_Select
     function distinct($flag = true)
     {
         $this->distinct = (bool)$flag;
+        return $this;
+    }
+
+    /**
+     * 指示将返回的记录封装为特定的对象
+     *
+     * @param string $class_name
+     *
+     * @return QTable_Select
+     */
+    function asObject($class_name)
+    {
+        $this->as_object = $class_name;
         return $this;
     }
 
@@ -367,13 +388,37 @@ class QTable_Select
             list($count, $offset) = $this->limit;
             $handle = $this->table->getDBO()->selectLimit($sql, $count, $offset);
         }
-        
+
         /* @var $handle QDBO_Result_Abstract */
 
         if ($this->limit == 1) {
-            return is_null($this->count) ? $handle->fetchRow() : $handle->fetchOne();
+            if (is_null($this->count)) {
+                $row = $handle->fetchRow();
+                if ($this->as_object) {
+                    Q::loadClass($this->as_object);
+                    return new $this->as_object($row);
+                } else {
+                    return $row;
+                }
+            } else {
+                return $handle->fetchOne();
+            }
         } else {
-            return is_null($this->count) ? $handle->fetchAll() : $handle->fetchCol();
+            if (is_null($this->count)) {
+                $rowset = $handle->fetchAll();
+                if ($this->as_object) {
+                    Q::loadClass($this->as_object);
+                    $col = array();
+                    foreach (array_keys($rowset) as $offset) {
+                        $col[] = new $this->as_object($rowset[$offset]);
+                    }
+                    return $col;
+                } else {
+                    return $rowset;
+                }
+            } else {
+                return $handle->fetchCol();
+            }
         }
     }
 
@@ -426,8 +471,8 @@ class QTable_Select
             $sql .= "WHERE {$c} ";
         }
 
-        if ($this->group_by) {
-            $sql .= "GROUP BY {$this->group_by} ";
+        if ($this->group) {
+            $sql .= "GROUP BY {$this->group} ";
         }
 
         $c = array();

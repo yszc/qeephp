@@ -449,6 +449,7 @@ class QTable_Base
     function update(array $row)
     {
         // TODO: update() 实现对关联的处理
+        // TODO: update() 实现对复合主键的处理
         $this->fillFieldsWithCurrentTime($row, $this->updated_time_fields);
         $sql = $this->dbo->getUpdateSQL($row, $this->pk, $this->full_table_name, $this->schema);
         unset($row[$this->pk]);
@@ -480,10 +481,11 @@ class QTable_Base
      */
     function updateWhere(array $pairs, $where)
     {
+        // TODO: updateWhere() 实现对关联的处理
         $args = func_get_args();
         array_shift($args);
         array_shift($args);
-        list($where, ) = $this->parseWhere($where, $args);
+        list($where, ) = $this->parseWhereInternal($where, $args);
         list($holders, $values) = $this->dbo->getPlaceholderPairs($pairs);
         $sql = "UPDATE {$this->qtable_name} SET " . implode(',', $holders);
         if (!empty($where)) {
@@ -568,7 +570,7 @@ class QTable_Base
     }
 
     /**
-     * 保存一个记录集
+     * 批量保存记录集，返回所有记录的主键值
      *
      * @param array $rowset
      *
@@ -624,6 +626,7 @@ class QTable_Base
     function remove($pkv)
     {
         // TODO: remove() 实现对复合主键的处理
+        // TODO: remove() 实现对关联的处理
         $pkv = $this->dbo->qstr($pkv);
         $sql = "DELETE FROM {$this->qtable_name} WHERE {$this->qpk} = {$pkv}";
         $this->dbo->execute($sql);
@@ -639,9 +642,10 @@ class QTable_Base
      */
     function removeWhere($where)
     {
+        // TODO: removeWhere() 实现对关联的处理
         $args = func_get_args();
         array_shift($args);
-        list($where, ) = $this->parseWhere($where, $args);
+        list($where, ) = $this->parseWhereInternal($where, $args);
         $sql = "DELETE FROM {$this->qtable_name}";
         if (!empty($where)) {
             $sql .= " WHERE {$where}";
@@ -795,30 +799,34 @@ class QTable_Base
     /**
      * 分析查询条件和参数
      *
-     * 模式1：
-     * where('user_id = ?', array($user_id))
-     * where('user_id = :user_id', array('user_id' => $user_id))
-     * where('user_id in (?)', array(array($id1, $id2, $id3)))
-     *
-     * 模式2：
-     * where(array(
-     *      'user_id' => $user_id,
-     *      'level_ix' => $level_ix,
-     * ))
-     *
      * @param array|string $where
+     *
+     * @return string
+     */
+    function parseWhere($where)
+    {
+        $args = func_get_args();
+        array_shift($args);
+        list($string, ) = $this->parseWhereInternal($where, $args);
+        return $string;
+    }
+
+    /**
+     * 内部使用的 parseWhere()
+     *
+     * @param mixed $where
      * @param array $args
      *
-     * @return array|string
+     * @return array
      */
-    function parseWhere($where, array $args = null)
+    function parseWhereInternal($where, array $args = null)
     {
         if (empty($where)) { return array(null, null); }
         if (is_null($args)) {
             $args = array();
         }
         if (is_array($where)) {
-            return $this->parseWhereArray($where);
+            return $this->parseWhereArray($where, $args);
         } else {
             return $this->parseWhereString($where, $args);
         }
@@ -828,10 +836,11 @@ class QTable_Base
      * 按照模式2对查询条件进行分析
      *
      * @param array $where
+     * @param array $args
      *
      * @return array|string
      */
-    protected function parseWhereArray(array $where)
+    protected function parseWhereArray(array $where, array $args = null)
     {
         /**
          * 模式2：
@@ -842,15 +851,17 @@ class QTable_Base
          */
         // 查询条件中用到的关联表
 
-
-
         $parts = array();
         $callback = array($this->dbo, 'qstr');
         $next_op = '';
+        $args_count = 0;
 
         foreach ($where as $key => $value) {
             if (is_int($key)) {
-                $parts[] = $value;
+                // 如果是字符串条件，则用 parseWhereString() 进行分析
+                list($part, , $count) = $this->parseWhereString($value, $args, $args_count);
+                $args_count += $count;
+                $parts[] = $part;
                 if ($value == ')') {
                     $next_op = 'AND';
                 } else {
@@ -872,7 +883,7 @@ class QTable_Base
             }
         }
 
-        return implode(' ', $parts);
+        return array(implode(' ', $parts), array());
     }
 
     /**
@@ -880,10 +891,11 @@ class QTable_Base
      *
      * @param string $where
      * @param array $args
+     * @param boolean|int $ignore_args
      *
      * @return array|string
      */
-    protected function parseWhereString($where, array $args = null)
+    protected function parseWhereString($where, array $args = null, $ignore_args = false)
     {
         /**
          * 模式1：
@@ -931,7 +943,7 @@ class QTable_Base
                 $link = $this->links[$table];
                 /* @var $link QTable_Link_Abstract */
                 $used_links[] = $link;
-                // TODO: 处理查询中的关联表
+                // TODO: parseWhereString() 处理查询中的关联表
             } else {
                 $field = $this->dbo->qfield($field, $table, $schema);
             }
@@ -943,16 +955,23 @@ class QTable_Base
         $where = $out;
 
         // 分析查询条件中的参数占位符
+        $args_count = null;
         if (strpos($where, '?') !== false) {
             // 使用 ? 作为占位符的情况
-            $where = $this->dbo->qinto($where, $args, QDBO::PARAM_QM);
+            $ret = $this->dbo->qinto($where, $args, QDBO::PARAM_QM, $ignore_args);
         } elseif (strpos($where, ':') !== false) {
             // 使用 : 开头的命名参数占位符
             $args = reset($args);
-            $where = $this->dbo->qinto($where, $args, QDBO::PARAM_CL_NAMED);
+            $ret = $this->dbo->qinto($where, $args, QDBO::PARAM_CL_NAMED, $ignore_args);
+        } else {
+            $ret = $where;
         }
-
-        return array($where, $used_links);
+        if (is_array($ret)) {
+            list($where, $args_count) = $ret;
+        } else {
+            $where = $ret;
+        }
+        return array($where, $used_links, $args_count);
     }
 
     /**
@@ -1039,7 +1058,7 @@ class QTable_Base
 
     protected function incrOrDecrWhere($field, $step, $is_incr, $where, array $args = null)
     {
-        $where = $this->parseWhere($where, $args);
+        $where = $this->parseWhereInternal($where, $args);
         if (is_array($where)) { $where = reset($where); }
         $field = $this->dbo->qfield($field);
         $step = (int)$step;
