@@ -1,9 +1,9 @@
 -- phpMyAdmin SQL Dump
--- version 2.11.4
+-- version 2.11.5-rc1
 -- http://www.phpmyadmin.net
 --
 -- 主机: localhost
--- 生成日期: 2008 年 02 月 26 日 08:35
+-- 生成日期: 2008 年 02 月 26 日 19:33
 -- 服务器版本: 5.0.45
 -- PHP 版本: 5.2.4
 
@@ -22,11 +22,11 @@ SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 CREATE TABLE `q_authors` (
   `author_id` int(11) NOT NULL auto_increment,
   `name` varchar(40) NOT NULL,
-  `contents_count` int(11) NOT NULL,
-  `comments_count` int(11) NOT NULL,
+  `contents_count` int(11) NOT NULL default '0',
+  `comments_count` int(11) NOT NULL default '0',
   `created` int(11) NOT NULL,
   PRIMARY KEY  (`author_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -64,14 +64,13 @@ CREATE TABLE `q_books_has_authors` (
 CREATE TABLE `q_comments` (
   `comment_id` int(11) NOT NULL auto_increment,
   `author_id` int(11) NOT NULL,
-  `author_name` varchar(40) NOT NULL,
   `content_id` int(11) NOT NULL,
   `body` text NOT NULL,
   `created` int(11) NOT NULL,
   PRIMARY KEY  (`comment_id`),
   KEY `author_id` (`author_id`),
   KEY `content_id` (`content_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -83,13 +82,13 @@ CREATE TABLE `q_contents` (
   `content_id` int(11) NOT NULL auto_increment,
   `author_id` int(11) NOT NULL,
   `title` varchar(240) NOT NULL,
-  `comments_count` int(11) NOT NULL,
-  `marks_avg` float NOT NULL,
+  `comments_count` int(11) NOT NULL default '0',
+  `marks_avg` float NOT NULL default '0',
   `created` int(11) NOT NULL,
   `updated` datetime NOT NULL,
   PRIMARY KEY  (`content_id`),
   KEY `author_id` (`author_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
