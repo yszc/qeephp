@@ -29,11 +29,11 @@ assoc_key
     对于 belongs to 关联，assoc_key 的默认值是关联表的主键字段
     对于 many to many 关联，assoc_key 的默认值是关联表的主键字段
 
-mid_main_key （仅用于 many to many 关联）
+mid_main_key （可选，仅用于 many to many 关联）
     指示在中间表中，用哪个字段存储对主表的 main_key 引用
     mid_main_key 的默认值是中间表中与 main_key 同名的字段
 
-mid_assoc_key （仅用于 many to many 关联）
+mid_assoc_key （可选，仅用于 many to many 关联）
     指示在中间表中，用哪个字段存储对关联表的 assoc_key 引用
     mid_assoc_key 的默认值是中间表中与 assoc_key 同名的字段
 
@@ -54,6 +54,8 @@ mid_on_find_fields
     null     - 不查询中间表的字段
     *        - 查询中间表的所有字段
     字段列表 - 以逗号分隔的字段名或者包含字段名的数组
+
+    mid_on_find_fields 的默认值是 null。
 
 mid_on_find_prefix
     指示查询 many to many 关联，中间表的字段包含在查询结果中时要加上什么前缀

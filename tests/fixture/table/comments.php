@@ -1,5 +1,25 @@
 <?php
+/////////////////////////////////////////////////////////////////////////////
+// QeePHP Framework
+//
+// Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
+//
+// 许可协议，请查看源代码中附带的 LICENSE.TXT 文件，
+// 或者访问 http://www.qeephp.org/ 获得详细信息。
+/////////////////////////////////////////////////////////////////////////////
 
+/**
+ * 定义 Table_Comments 类
+ *
+ * @package test-fixture
+ * @version $Id$
+ */
+
+/**
+ * Table_Comments 封装了对 comments 表的操作
+ *
+ * @package test-fixture
+ */
 class Table_Comments extends QTable_Base
 {
     public $table_name = 'comments';
@@ -10,6 +30,16 @@ class Table_Comments extends QTable_Base
             'table_class'   => 'Table_Contents',
             'mapping_name'  => 'content',
             'foreign_key'   => 'content_id',
+            'count_cache'   => 'comments_count',
+            'on_find_fields' => 'title',
         ),
+
+        array(
+            'table_class'   => 'Table_Authors',
+            'mapping_name'  => 'author',
+            'foreign_key'   => 'author_id',
+            'count_cache'   => 'comments_count',
+            'on_find_fields' => 'name',
+        )
     );
 }

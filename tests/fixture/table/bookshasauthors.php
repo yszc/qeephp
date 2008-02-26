@@ -9,29 +9,18 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 Table_Tags 类
+ * 定义 Table_BooksHasAuthors
  *
  * @package test-fixture
  * @version $Id$
  */
 
 /**
- * Table_Tags 类封装了对 tags 表的操作
+ * Table_BooksHasAuthors 封装了一个 many to many 中间表的操作
  *
  * @package test-fixture
  */
-class Table_Tags extends QTable_Base
+class Table_BooksHasAuthors extends QTable_Base
 {
-    public $table_name = 'tags';
-    public $pk = 'tag_id';
-
-    protected $many_to_many = array(
-        array(
-            'table_class' => 'Table_Contents',
-            'mapping_name' => 'contents',
-            'mid_table_name' => 'contents_has_tags',
-            'on_find' => 'skip',
-        ),
-    );
-
+    public $table_name = 'books_has_authors';
 }
