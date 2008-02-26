@@ -9,18 +9,18 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 QTable_Link_Abstract 类
+ * 定义 QTable_Link 类
  *
  * @package database
  * @version $Id$
  */
 
 /**
- * QTable_Link_Abstract 封装数据表之间的关联关系
+ * QTable_Link 封装数据表之间的关联关系
  *
  * @package database
  */
-abstract class QTable_Link_Abstract
+class QTable_Link
 {
     /**
      * 该连接的名字，用于检索指定的连接
@@ -241,7 +241,7 @@ abstract class QTable_Link_Abstract
      * @param const $type
      * @param QTable_Base $main_table
      *
-     * @return QTable_Link_Abstract
+     * @return QTable_Link
      */
     protected function __construct(array $define, $type, QTable_Base $main_table)
     {
@@ -281,38 +281,25 @@ abstract class QTable_Link_Abstract
     }
 
     /**
-     * 创建 QTable_Link_Abstract 对象实例
+     * 创建 QTable_Link 对象实例
      *
      * @param array $define
      * @param const $type
      * @param QTable_Base $main_table
      *
-     * @return QTable_Link_Abstract
+     * @return QTable_Link
      */
     static function createLink(array $define, $type, QTable_Base $main_table)
     {
-        static $type_to_class = array(
-            QTable_Base::HAS_ONE        => 'QTable_Link_HasOne',
-            QTable_Base::HAS_MANY       => 'QTable_Link_HasMany',
-            QTable_Base::BELONGS_TO     => 'QTable_Link_BelongsTo',
-            QTable_Base::MANY_TO_MANY   => 'QTable_Link_ManyToMany',
-        );
-
-        if (!isset($type_to_class[$type])) {
-            // LC_MSG: Invalid parameter type: "%s".
-            throw new QTable_Link_Exception(__('Invalid parameter type: "%s".', $type));
-        }
         if (empty($define['mapping_name'])) {
             // LC_MSG: Expected parameter "mapping_name".
             throw new QTable_Link_Exception(__('Expected parameter "mapping_name".'));
         }
-
         if (empty($define['name'])) {
             $define['name'] = $define['mapping_name'];
         }
-
-        // 返回 QTable_Link_Abstract 继承类实例
-        return new $type_to_class[$type]($define, $type, $main_table);
+        // 返回 QTable_Link 继承类实例
+        return new QTable_Link($define, $type, $main_table);
     }
 
     /**
@@ -422,12 +409,14 @@ abstract class QTable_Link_Abstract
             $this->assoc_key = isset($p['assoc_key']) ? $p['assoc_key'] : $this->main_table->pk;
             $this->on_delete = isset($p['on_delete']) ? $p['on_delete'] : 'cascade';
             $this->on_save   = isset($p['on_save'])   ? $p['on_save']   : 'save';
+            $this->one_to_one = $this->type == QTable_Base::HAS_ONE;
             break;
         case QTable_Base::BELONGS_TO:
             $this->main_key  = isset($p['main_key'])  ? $p['main_key']  : $this->assoc_table->pk;
             $this->assoc_key = isset($p['assoc_key']) ? $p['assoc_key'] : $this->assoc_table->pk;
             $this->on_delete = isset($p['on_delete']) ? $p['on_delete'] : 'skip';
             $this->on_save   = isset($p['on_save'])   ? $p['on_save']   : 'skip';
+            $this->one_to_one = true;
             break;
         case QTable_Base::MANY_TO_MANY:
             $this->main_key      = isset($p['main_key'])      ? $p['main_key']      : $this->main_table->pk;
@@ -438,8 +427,7 @@ abstract class QTable_Link_Abstract
             $this->mid_on_find_prefix = isset($p['mid_on_find_prefix']) ? $p['mid_on_find_prefix'] : 'mid_';
             $this->on_delete     = isset($p['on_delete'])     ? $p['on_delete']     : 'skip';
             $this->on_save       = isset($p['on_save'])       ? $p['on_save']       : 'skip';
-
-            break;
+            $this->one_to_one = false;
         }
         $this->main_key_alias = isset($p['main_key_alias']) ? $p['main_key_alias'] : 'mka_' . $alias_index;
         $this->assoc_key_alias = isset($p['assoc_key_alias']) ? $p['assoc_key_alias'] : 'aka_' . $alias_index;
@@ -459,22 +447,11 @@ abstract class QTable_Link_Abstract
         $fields = $this->assoc_table->qfields($this->on_find_fields);
         $ak = $this->assoc_table->qfields($this->assoc_key);
         $sql = "SELECT {$ak} AS {$this->assoc_key_alias}, {$fields} FROM {$this->assoc_table->qtable_name}";
-        return $this->getFindSqlBase($sql, $mkvs);
-    }
 
-    /**
-     * 返回用于查询关联表数据的 SQL 语句
-     *
-     * @param string $sql
-     * @param array $mkvs
-     *
-     * @return string
-     */
-    protected function getFindSqlBase($sql, array $mkvs)
-    {
         if (!empty($mkvs)) {
             $sql .= $this->assoc_table->getDBO()->qinto(" WHERE {$this->assoc_key} IN (?)", $mkvs);
         }
+
 //        if ($this->conditions) {
 //            if (is_array($this->conditions)) {
 //                $conditions = Table_SqlHelper::parseConditions($this->conditions, $this->assoc_table);
@@ -495,4 +472,3 @@ abstract class QTable_Link_Abstract
         return $sql;
     }
 }
-

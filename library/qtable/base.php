@@ -215,6 +215,7 @@ class QTable_Base
         if (!is_array(reset($links_define))) {
             $links_define = array($links_define);
         }
+        Q::loadClass('QTable_Link_Abstract');
         foreach ($links_define as $define) {
             $link = QTable_Link_Abstract::createLink($define, $type, $this);
             $this->links[$link->name] = $link;
