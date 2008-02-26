@@ -342,10 +342,11 @@ abstract class QDBO_Adapter_Abstract
      * @param string $sql
      * @param array $params
      * @param enum $param_style
+     * @param boolean|int $ignore_args
      *
      * @return string
      */
-    function qinto($sql, array $params = null, $param_style = null)
+    function qinto($sql, array $params = null, $param_style = null, $ignore_args = false)
     {
         if (is_null($param_style)) {
             $param_style = $this->PARAM_STYLE;
@@ -360,13 +361,18 @@ abstract class QDBO_Adapter_Abstract
             } else {
                 $parts = preg_split('/\$[0-9]+/', $sql);
             }
-            if (count($params) != count($parts) - 1) {
+            $parts_count = count($parts);
+            if ($ignore_args === false && count($params) != $parts_count - 1) {
                 throw new QTable_Exception(__('Invalid parameters for "%s"', $sql));
             }
 
             $str = $parts[0];
             $offset = 1;
+            if ($ignore_args !== false && $ignore_args > 0) {
+                $params = array_slice($params, $ignore_args, $parts_count - 1);
+            }
             foreach ($params as $arg_value) {
+                if (!isset($parts[$offset])) { break; }
                 if (is_array($arg_value)) {
                     $arg_value = array_map($callback, $arg_value);
                     $str .= implode(',', $arg_value) . $parts[$offset];
@@ -375,14 +381,18 @@ abstract class QDBO_Adapter_Abstract
                 }
                 $offset++;
             }
-            return $str;
+            if ($ignore_args !== false) {
+                return array($str, $parts_count - 1);
+            } else {
+                return $str;
+            }
 
         case QDBO::PARAM_CL_NAMED:
         case QDBO::PARAM_AT_NAMED:
             $split = ($param_style == QDBO::PARAM_CL_NAMED) ? ':' : '@';
             $parts = preg_split('/(' . $split . '[a-z0-9_\-]+)/i', $sql, -1, PREG_SPLIT_DELIM_CAPTURE);
             $max = count($parts);
-            if (count($params) * 2 + 1 != $max) {
+            if ($ignore_args === false && count($params) * 2 + 1 != $max) {
                 throw new QDBO_Exception($sql, __('Invalid parameters for "%s"', $sql), 0);
             }
             $str = $parts[0];
@@ -399,7 +409,11 @@ abstract class QDBO_Adapter_Abstract
                     $str .= $this->qstr($params[$arg_name]) . $parts[$offset + 1];
                 }
             }
-            return $str;
+            if ($ignore_args !== false) {
+                return array($str, $max - 1);
+            } else {
+                return $str;
+            }
 
         default:
             return $sql;

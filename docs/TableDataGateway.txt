@@ -1,28 +1,34 @@
+
+
+
+QTable_Base 的主要属性：
+
+
 schmea
-    数据表所属 schema
+    数据表所属 schema（可选）
 
 table_name
-    要操作的数据表
+    要操作的数据表（必须）
 
 full_table_name
-    包含前缀的数据表名称
+    包含前缀的数据表名称（由 QTable_Base 自动设置）
     如果指定了 full_table_name，则 QTable_Base 不会根据全局数据表前缀在 table_name 之前添加前缀
 
 pk
-    主键字段
+    主键字段（可选，QTable_Base 实例化时可以自行确定主键）
     如果有多个主键字段，则以逗号分隔或使用数组表示
 
 belongs_to
 has_one
 has_many
 many_to_many
-    定义数据表关联
+    定义数据表关联（可选）
     关联的详细定义，参考 TableDataGateway Links.txt 文件
 
-created_time_fields
+created_time_fields（必须，但已有默认设置）
     创建记录时，要填充当前时间的字段
 
-updated_time_fields
+updated_time_fields（必须，但已有默认设置）
     更新记录时，要填充当前时间的字段
 
 
