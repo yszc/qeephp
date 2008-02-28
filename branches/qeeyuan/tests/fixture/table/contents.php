@@ -57,7 +57,7 @@ class Table_Contents extends QTable_Base
             /**
              * 指示在读取作者信息时，只获取作者表的哪些字段
              */
-            'on_find_fields' => array('username' => 'author_username'),
+            'on_find_fields' => array('author_id', 'name' => 'name_alias'),
         ),
     );
 
