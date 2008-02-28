@@ -245,8 +245,8 @@ class QTable_Link
      */
     protected function __construct(array $define, $type, QTable_Base $main_table)
     {
-      $this->name = strtolower($define['name']);
-      $this->mapping_name = $define['mapping_name'];
+        $this->name = strtolower($define['name']);
+        $this->mapping_name = $define['mapping_name'];
         $this->type = $type;
         $this->main_table = $main_table;
 
@@ -431,6 +431,10 @@ class QTable_Link
         }
         $this->main_key_alias = isset($p['main_key_alias']) ? $p['main_key_alias'] : 'mka_' . $alias_index;
         $this->assoc_key_alias = isset($p['assoc_key_alias']) ? $p['assoc_key_alias'] : 'aka_' . $alias_index;
+        $this->on_find = isset($p['on_find']) ? $p['on_find'] : 'all';
+        $this->on_find_fields = isset($p['on_find_fields']) ? $p['on_find_fields'] : '*';
+        $this->on_find_order = isset($p['on_find_order']) ? $p['on_find_order'] : null;
+        $this->on_delete_set_value = isset($p['on_delete_set_value']) ? $p['on_delete_set_value'] : null;
 
         $this->is_init = true;
     }

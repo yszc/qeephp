@@ -20,7 +20,7 @@ require_once dirname(__FILE__) . '/../../init.php';
 
 class Test_QTable_Links extends PHPUnit_Framework_TestCase
 {
-    function test_FindBelongsTo()
+    function testFindBelongsTo()
     {
         $tableAuthors = Q::getSingleton('Table_Authors');
         /* @var $tableAuthors Table_Authors */
@@ -40,7 +40,7 @@ class Test_QTable_Links extends PHPUnit_Framework_TestCase
         $find = $tableContents->find($id)->query();
         $tableContents->getDBO()->completeTrans(false);
 
-        QDebug::dump($find);
+        QDebug::dump($find, 'testFindBelongsTo');
 
         $this->assertEquals($content['title'], $find['title'], "\$find['title'] == \$content['title']");
         $this->assertTrue(!empty($find['author']), "!empty(\$find['author'])");
@@ -50,7 +50,7 @@ class Test_QTable_Links extends PHPUnit_Framework_TestCase
         $this->assertEquals('liaoyulei', $find['author']['name'], "\$find['author']['name'] == 'liaoyulei'");
     }
 
-    function test_FindHasMany()
+    function testFindHasMany()
     {
         $tableAuthors = Q::getSingleton('Table_Authors');
         /* @var $tableAuthors Table_Authors */
@@ -60,14 +60,29 @@ class Test_QTable_Links extends PHPUnit_Framework_TestCase
         $authors = $this->insertAuthors();
         $contents = $this->insertContents($authors);
         $this->insertComments($authors, $contents);
-
         $author = $tableAuthors->find($authors['dali'])->query();
-        QDebug::dump($author);
-
         $tableAuthors->getDBO()->completeTrans(false);
+
+        QDebug::dump($author, 'testFindHasMany');
+
+        $this->assertTrue(!empty($author['contents']), "!empty(\$author['contents'])");
+        $this->assertType('array', $author['contents'], "type of \$author['contents'] == array");
+        $first = reset($author['contents']);
+        $this->assertType('array', $first, "reset(\$author['contents']) == array");
+        $this->assertTrue(!empty($first['title']), "!empty(reset(\$author['contents']['title']))");
+
+        $link_contents = $tableAuthors->getLink('contents');
+        $on_find_fields = Q::normalize($link_contents->on_find_fields);
+        $this->assertEquals(count($on_find_fields), count($first), "count(\$first) == 1");
+        if (is_int($link_contents->on_find)) {
+            $this->assertEquals($link_contents->on_find, count($author['contents']), "count(\$author['contents']) == " . $link_contents->on_find);
+        }
+
     }
 
     /**
+     * 创建作者记录
+     *
      * @return array
      */
     protected function insertAuthors()
@@ -84,6 +99,14 @@ class Test_QTable_Links extends PHPUnit_Framework_TestCase
         return $authors;
     }
 
+    /**
+     * 创建内容记录
+     *
+     * @param array $authors
+     * @param int $nums
+     *
+     * @return array
+     */
     protected function insertContents(array $authors, $nums = 20)
     {
         $tableContents = Q::getSingleton('Table_Contents');
@@ -103,6 +126,15 @@ class Test_QTable_Links extends PHPUnit_Framework_TestCase
         return $contents;
     }
 
+    /**
+     * 创建评论记录
+     *
+     * @param array $authors
+     * @param array $contents
+     * @param int $nums
+     *
+     * @return array
+     */
     protected function insertComments(array $authors, array $contents, $nums = 80)
     {
         $tableComments = Q::getSingleton('Table_Comments');

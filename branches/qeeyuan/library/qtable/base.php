@@ -215,9 +215,9 @@ class QTable_Base
         if (!is_array(reset($links_define))) {
             $links_define = array($links_define);
         }
-        Q::loadClass('QTable_Link_Abstract');
+        Q::loadClass('QTable_Link');
         foreach ($links_define as $define) {
-            $link = QTable_Link_Abstract::createLink($define, $type, $this);
+            $link = QTable_Link::createLink($define, $type, $this);
             $this->links[$link->name] = $link;
         }
     }
@@ -239,7 +239,7 @@ class QTable_Base
      *
      * @param string $link_name
      *
-     * @return QTable_Link_Abstract
+     * @return QTable_Link
      */
     function getLink($link_name)
     {
@@ -943,7 +943,7 @@ class QTable_Base
             if (isset($this->links[$table])) {
                 // 找到一个关联表字段
                 $link = $this->links[$table];
-                /* @var $link QTable_Link_Abstract */
+                /* @var $link QTable_Link */
                 $used_links[] = $link;
                 // TODO: parseWhereString() 处理查询中的关联表
             } else {
