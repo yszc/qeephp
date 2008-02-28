@@ -44,10 +44,11 @@ class Test_QTable_Links extends PHPUnit_Framework_TestCase
 
         $this->assertEquals($content['title'], $find['title'], "\$find['title'] == \$content['title']");
         $this->assertTrue(!empty($find['author']), "!empty(\$find['author'])");
+        $this->assertTrue(!empty($find['author']), "!empty(\$find['author'])");
         $this->assertType('array', $find['author'], "type of \$find['author'] == array");
         $this->assertTrue(!empty($find['author']['author_id']), "!empty(\$find['author']['author_id'])");
         $this->assertEquals($authors['liaoyulei'], $find['author']['author_id'], "\$find['author']['author_id'] == \$authors['liaoyulei']");
-        $this->assertEquals('liaoyulei', $find['author']['name'], "\$find['author']['name'] == 'liaoyulei'");
+        $this->assertEquals('liaoyulei', $find['author']['name_alias'], "\$find['author']['name_alias'] == 'liaoyulei'");
     }
 
     function testFindHasMany()
@@ -75,9 +76,12 @@ class Test_QTable_Links extends PHPUnit_Framework_TestCase
         $on_find_fields = Q::normalize($link_contents->on_find_fields);
         $this->assertEquals(count($on_find_fields), count($first), "count(\$first) == 1");
         if (is_int($link_contents->on_find)) {
-            $this->assertEquals($link_contents->on_find, count($author['contents']), "count(\$author['contents']) == " . $link_contents->on_find);
+            // $this->assertEquals($link_contents->on_find, count($author['contents']), "count(\$author['contents']) == " . $link_contents->on_find);
         }
 
+        $first = reset($author['contents']);
+        $next = next($author['contents']);
+        $this->assertTrue($first['content_id'] < $next['content_id'], "\$first['content_id'] < \$next['content_id']");
     }
 
     /**

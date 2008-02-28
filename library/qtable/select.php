@@ -145,7 +145,7 @@ class QTable_Select
         if (!is_array($links)) { $links = array(); }
         $this->links = $links;
         if (!is_null($where)) {
-            $this->where[] = $this->table->parseWhereInternal($where, $args);
+            $this->where[] = $this->table->parseSQLInternal($where, $args);
         }
     }
 
@@ -173,7 +173,7 @@ class QTable_Select
     {
         $args = func_get_args();
         array_shift($args);
-        $this->where[] = $this->table->parseWhereInternal($where, $args);
+        $this->where[] = $this->table->parseSQLInternal($where, $args);
         return $this;
     }
 
@@ -268,7 +268,7 @@ class QTable_Select
      */
     function having($where, array $args = null)
     {
-        $this->having[] = $this->table->parseWhere($where, $args);
+        $this->having[] = $this->table->parseSQL($where, $args);
     }
 
     /**

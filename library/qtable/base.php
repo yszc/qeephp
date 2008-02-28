@@ -476,7 +476,7 @@ class QTable_Base
         $args = func_get_args();
         array_shift($args);
         array_shift($args);
-        list($where, ) = $this->parseWhereInternal($where, $args);
+        list($where, ) = $this->parseSQLInternal($where, $args);
         list($holders, $values) = $this->dbo->getPlaceholderPairs($pairs);
         $sql = "UPDATE {$this->qtable_name} SET " . implode(',', $holders);
         if (!empty($where)) {
@@ -636,7 +636,7 @@ class QTable_Base
         // TODO: removeWhere() 实现对关联的处理
         $args = func_get_args();
         array_shift($args);
-        list($where, ) = $this->parseWhereInternal($where, $args);
+        list($where, ) = $this->parseSQLInternal($where, $args);
         $sql = "DELETE FROM {$this->qtable_name}";
         if (!empty($where)) {
             $sql .= " WHERE {$where}";
@@ -792,7 +792,20 @@ class QTable_Base
      */
     function qfields($fields, $return_array = false)
     {
-        return $this->dbo->qfields($fields, $this->full_table_name, $this->schema, $return_array);
+        if (!is_array($fields)) {
+            $fields = Q::normalize($fields);
+        }
+        $return = array();
+        foreach ($fields as $key => $value) {
+            if (is_string($key)) {
+                $field = $this->dbo->qfield($key, $this->full_table_name, $this->schema);
+                $return[] =  $field . ' AS ' . $this->dbo->qfield($value);
+            } else {
+                $return[] = $this->dbo->qfield($value, $this->full_table_name, $this->schema);
+            }
+        }
+
+        return ($return_array) ? $return : implode(', ', $return);
     }
 
     /**
@@ -802,23 +815,23 @@ class QTable_Base
      *
      * @return string
      */
-    function parseWhere($where)
+    function parseSQL($where)
     {
         $args = func_get_args();
         array_shift($args);
-        list($string, ) = $this->parseWhereInternal($where, $args);
+        list($string, ) = $this->parseSQLInternal($where, $args);
         return $string;
     }
 
     /**
-     * 内部使用的 parseWhere()
+     * 内部使用的 parseSQL()
      *
      * @param mixed $where
      * @param array $args
      *
      * @return array
      */
-    function parseWhereInternal($where, array $args = null)
+    function parseSQLInternal($where, array $args = null)
     {
         if (empty($where)) { return array(null, null); }
         if (is_null($args)) {
@@ -828,9 +841,9 @@ class QTable_Base
             return array("{$this->qpk} = {$where}", array());
         }
         if (is_array($where)) {
-            return $this->parseWhereArray($where, $args);
+            return $this->parseSQLArray($where, $args);
         } else {
-            return $this->parseWhereString($where, $args);
+            return $this->parseSQLString($where, $args);
         }
     }
 
@@ -842,7 +855,7 @@ class QTable_Base
      *
      * @return array|string
      */
-    protected function parseWhereArray(array $where, array $args = null)
+    protected function parseSQLArray(array $where, array $args = null)
     {
         /**
          * 模式2：
@@ -860,8 +873,8 @@ class QTable_Base
 
         foreach ($where as $key => $value) {
             if (is_int($key)) {
-                // 如果是字符串条件，则用 parseWhereString() 进行分析
-                list($part, , $count) = $this->parseWhereString($value, $args, $args_count);
+                // 如果是字符串条件，则用 parseSQLString() 进行分析
+                list($part, , $count) = $this->parseSQLString($value, $args, $args_count);
                 $args_count += $count;
                 $parts[] = $part;
                 if ($value == ')') {
@@ -873,7 +886,7 @@ class QTable_Base
                 if ($next_op != '') {
                     $parts[] = $next_op;
                 }
-                $field = $this->parseWhereQfield(array('', $key));
+                $field = $this->parseSQLQfield(array('', $key));
                 if (is_array($value)) {
                     $value = array_map($callback, $value);
                     $parts[] = $field . ' IN (' . implode(',', $value) . ')';
@@ -897,7 +910,7 @@ class QTable_Base
      *
      * @return array|string
      */
-    protected function parseWhereString($where, array $args = null, $ignore_args = false)
+    protected function parseSQLString($where, array $args = null, $ignore_args = false)
     {
         /**
          * 模式1：
@@ -945,7 +958,7 @@ class QTable_Base
                 $link = $this->links[$table];
                 /* @var $link QTable_Link */
                 $used_links[] = $link;
-                // TODO: parseWhereString() 处理查询中的关联表
+                // TODO: parseSQLString() 处理查询中的关联表
             } else {
                 $field = $this->dbo->qfield($field, $table, $schema);
             }
@@ -983,7 +996,7 @@ class QTable_Base
      *
      * @return string
      */
-    private function parseWhereQfield($matches)
+    private function parseSQLQfield($matches)
     {
         $p = explode('.', $matches[1]);
         switch (count($p)) {
@@ -1060,7 +1073,7 @@ class QTable_Base
 
     protected function incrOrDecrWhere($field, $step, $is_incr, $where, array $args = null)
     {
-        $where = $this->parseWhereInternal($where, $args);
+        $where = $this->parseSQLInternal($where, $args);
         if (is_array($where)) { $where = reset($where); }
         $field = $this->dbo->qfield($field);
         $step = (int)$step;

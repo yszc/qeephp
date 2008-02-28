@@ -43,12 +43,12 @@ class Table_Authors extends QTable_Base
             /**
              * 指示在读取关联的内容记录时，只需要内容记录的哪些字段
              */
-            'on_find_fields' => 'title',
+            'on_find_fields' => 'content_id, title',
 
             /**
              * 指示按照什么排序规则查询关联的内容记录
              */
-            'on_find_order' => '[created] DESC',
+            'on_find_order' => '[content_id] ASC',
 
             /**
              * 指示在删除作者记录时，如何处理关联的内容记录

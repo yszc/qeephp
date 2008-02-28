@@ -33,7 +33,7 @@ $dsn = array(
     'host'      => 'localhost',
     'login'     => 'root',
     'password'  => '',
-    'database'  => 'test',
+    'database'  => 'qeephp_test',
     'prefix'    => 'q_',
     'charset'   => 'utf8',
 );
