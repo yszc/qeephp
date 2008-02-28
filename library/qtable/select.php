@@ -411,7 +411,7 @@ class QTable_Select
 
             // 进行关联查询，并组装数据集
             foreach ($used_links as $mka => $link) {
-                /* @var $link QTable_Link_Abstract */
+                /* @var $link QTable_Link */
                 $sql = $link->getFindSQL($refs_value[$mka]);
                 QDebug::dump($sql, 'assoc_' . $link->name .'_sql');
                 $h = $link->assoc_table->getDBO()->execute($sql);
@@ -502,7 +502,7 @@ class QTable_Select
         if (!$is_stat && $use_links) {
             // 如果使用了任何统计函数，则不进行关联查询
             foreach ($this->links as $link) {
-                /* @var $link QTable_Link_Abstract */
+                /* @var $link QTable_Link */
                 if (!$link->enabled || $link->on_find == 'skip') { continue; }
                 $link->init();
                 $sql .= ', ' . $link->main_key . ' AS ' . $link->main_key_alias;
@@ -552,80 +552,4 @@ class QTable_Select
 
         return array($sql, $is_stat, $used_links);
     }
-
-
-//        list($whereby, $distinct) = $this->getWhere($where);
-//        // 处理排序
-//        $sortby = $sort != '' ? " ORDER BY {$sort}" : '';
-//        // 处理 $limit
-//        if (is_array($limit)) {
-//            list($offset, $length) = $limit;
-//        } else {
-//            $length = $limit;
-//            $offset = null;
-//        }
-//
-//        // 构造从主表查询数据的 SQL 语句
-//        $fields = isset($params['fields']) ? $params['fields'] : '*';
-//        $queryLinks = isset($params['links']) ? $params['links'] : true;
-//        $enableLinks = count($this->links) > 0 && $queryLinks;
-//        if ($enableLinks) {
-//            $fields = $this->dbo->qfields($fields, $this->full_table_name, $this->schema);
-//        } else {
-//            $fields = $this->dbo->qfields($fields);
-//        }
-//        if ($enableLinks) {
-//            // 当有关联需要处理时，必须获得主表的主键字段值
-//            $sql = "SELECT {$distinct} {$this->qpka}, {$fields} FROM {$this->qtable_name} {$whereby} {$sortby}";
-//        } else {
-//            $sql = "SELECT {$distinct} {$fields} FROM {$this->qtable_name} {$whereby} {$sortby}";
-//        }
-//
-//        // 根据 $length 和 $offset 参数决定是否使用限定结果集的查询
-//        if (null !== $length || null !== $offset) {
-//            $result = $this->dbo->select_limit($sql, $length, $offset);
-//        } else {
-//            $result = $this->dbo->execute($sql);
-//        }
-//
-//        if ($enableLinks) {
-//            /**
-//             * 查询时同时将主键值单独提取出来，
-//             * 并且准备一个以主键值为键名的二维数组用于关联数据的装配
-//             */
-//            $pkvs = array();
-//            $assocRowset = array();
-//            $rowset = $result->fetch_all_refby($this->pk, $pkvs, $assocRowset);
-//            $in = 'IN (' . implode(',', array_map(array($this->dbo, 'qstr'), $pkvs)) . ')';
-//        } else {
-//            $rowset = $result->fetch_all();
-//        }
-//        unset($result);
-//
-//        // 如果没有关联需要处理或者没有查询结果，则直接返回查询结果
-//        if (!$enableLinks || empty($rowset) || !$this->autoLink) {
-//            return $rowset;
-//        }
-//
-//        /**
-//         * 遍历每一个关联对象，并从关联对象获取查询语句
-//         *
-//         * 查询获得数据后，将关联表的数据和主表数据装配在一起
-//         */
-//        $callback = create_function('& $r, $o, $m', '$r[$m] = null;');
-//        foreach ($this->links as $link) {
-//            /* @protected $link Table_Link */
-//            $mn = $link->mappingName;
-//            if (!$link->enabled || !$link->linkRead) { continue; }
-//            if (!$link->countOnly) {
-//                array_walk($assocRowset, $callback, $mn);
-//                $sql = $link->getFindSQL($in);
-//                $this->dbo->assemble($sql, $assocRowset, $mn, $link->oneToOne, $this->pka, $link->limit);
-//            } else {
-//                $link->calcCount($assocRowset, $mn, $in);
-//            }
-//        }
-//
-//        return $rowset;
 }
-
