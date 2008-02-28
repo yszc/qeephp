@@ -1,15 +1,64 @@
-#summary QTable_Link_Abstract 封装了数据表关联操作
+#summary QTable_Link 封装了数据表关联操作
 
 = 关联处理 =
 
-Extension_Associations 以扩展的形式为表数据入口提供了对关联的支持。
+QTable_Link 实现了数据表间的关联操作。支持的四种关联分别是：
 
-支持的四种关联分别是：
+ * has one 一对一
+ * has many 一对多
+ * belongs to 从属
+ * many to many 多对多
 
- * has_one 一对一
- * has_many 一对多
- * belongs_to 从属
- * many_to_many 多对多
+在定义一个数据表的关联时，通过表数据入口对象的 $has_one、$has_many、$belongs_to 和 $many_to_many 进行。
+
+例如：
+
+{{{
+/**
+ * Table_Contents 类封装了 contents 表的操作以及与相关表的关联操作
+ */
+class Table_Contents extends QTable_Base
+{
+    /**
+     * 不包含全局前缀的数据表名称
+     *
+     * @var string
+     */
+    public $table_name = 'contents';
+
+    /**
+     * 主键字段名
+     *
+     * @var string
+     */
+    public $pk = 'content_id';
+
+    /**
+     * belongs to 关联
+     *
+     * @var array
+     */
+    protected $belongs_to = array(
+        /**
+         * 每个内容都有一个作者
+         */
+        array(
+            'table_class'   => 'Table_Authors',
+            'mapping_name'  => 'author',
+            'link_field'    => 'author_id',
+            /**
+             * 指示在 Table_Authors 封装的数据表中使用什么字段存储关联内容的记录总数
+             */
+            'count_cache'   => 'contents_count',
+
+            /**
+             * 指示在读取作者信息时，只获取作者表的哪些字段
+             */
+            'on_find_fields' => array('author_id', 'name' => 'name_alias'),
+        ),
+    );
+}
+}}}
 
 == has_one 一对一 ==
 
