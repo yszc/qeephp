@@ -302,7 +302,7 @@ mid_table_obj、mid_table_class、mid_table_name 三者只需要指定一个，�
 指示查询 many to many 关联时，中间表的哪些字段要包含在查询结果中：
 
   * 空字符串 或 null  - 不查询中间表的字段
-  * '\*'               - 查询中间表的所有字段
+  * 星号             - 查询中间表的所有字段
   * 字段列表          - 以逗号分隔的字段名或者包含字段名的数组
 
 mid_on_find_fields 的默认值是 null。
