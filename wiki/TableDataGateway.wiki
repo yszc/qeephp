@@ -12,7 +12,7 @@
 
 查询对象提供完善的查询功能，特别是对复杂查询条件的支持。并且可以将查询结果直接返回为需要的 [QActiveRecord_Abstract] QActiveRecord 对象。
 
-[QTable_Link_Abstract 关联处理]
+[QTable_Link 数据表关联处理]
 
 实现 has_one、has_many、belongs_to 和 many_to_many 关联。四种关联关系提供对关联数据的 find、create、update 和 delete 操作。并且支持外键约束。
 
