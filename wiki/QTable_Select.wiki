@@ -25,7 +25,7 @@ $rowset = $table->find(...)
  *  limit() 限制查询结果总数
  *  limitPage() 设置分页查询
  *  getPageInfo() 获得查询后的分页信息
- *  groupBy() 指定 GROUP BY 子句
+ *  group() 指定 GROUP BY 子句
  *  having() 指定 HAVING 子句的条件
  *  forUpdate() 是否构造一个 FOR UPDATE 查询
  *  distinct() 是否构造一个 DISTINCT 查询
@@ -170,4 +170,3 @@ where(
 )
 // table.user_id IN ($id1, $id2, $id3)
 }}}
-
