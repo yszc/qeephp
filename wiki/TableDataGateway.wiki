@@ -10,7 +10,7 @@
 
 [QTable_Select 查询对象 QTable_Select]
 
-查询对象提供完善的查询功能，特别是对复杂查询条件的支持。并且可以将查询结果直接返回为需要的 [QActiveRecord_Abstract] QActiveRecord 对象。
+查询对象提供完善的查询功能，特别是对复杂查询条件的支持。并且可以将查询结果直接返回为需要的 [QActiveRecord_Abstract QActiveRecord 对象]。
 
 [QTable_Link 数据表关联处理]
 
