@@ -14,6 +14,37 @@
 
 四种关联的特点、区别以及适用场合，会在后面的内容详细说明。
 
+= 关联、主表和关联表的概念 =
+
+在 QeePHP 中，关联是指两个数据表之间的逻辑关系，并用一个 QTable_Link 对象封装。
+而主表，则是关联关系中，占据主动地位的一方。而关联表则是被主表所关联的数据表。
+
+例如，“文章”数据表关联到“评论”数据表：
+
+{{{
+QTable_Base 对象            QTable_Base 对象
+       |                           |
+       |                           |
+  +--------+                  +--------+
+  | 文章表 | ---- 一对多 ---> | 评论表 |
+  +--------+                  +--------+
+     主表        关联关系       关联表
+                    |
+                    |
+        封装为一个 QTable_Link 对象
+}}}
+
+通常，一个关联关系总是存在一个反向的关联。
+例如对于上面的“文章”关联到“评论”，就存在一个反向的“评论”到“文章”的关联关系：
+
+{{{
++--------+                  +--------+
+| 评论表 | ---- 从属于 ---> | 文章表 |
++--------+                  +--------+
+}}}
+
+不过在实际开发中，应该尽量避免不必要的关联定义。
+
 = QeePHP 对四种关联的支持 =
 
 QTable_Link 对四种数据表关联提供了全面的支持，包括自动查询关联数据、自动创建关联数据，以及维护关联关系等特征。
@@ -132,113 +163,130 @@ protected $has_one = array(
 
 可用的选项如下：
 
+==== 指定要关联的数据表 ====
+
+*assoc_table_obj*
+关联的表数据入口对象实例。通常用于动态构造关联时使用已有的表数据入口对象。
+
+*assoc_table_class*
+关联到哪一个表数据入口类。
+
+*assoc_table_name*
+关联到哪一个数据表。如果使用 assoc_table_name 直接指定要关联的数据表，则会创建一个匿名的表数据入口对象来处理关联操作。
+
+注意：assoc_table_obj、assoc_table_class、assoc_table_name 三者只需要指定一个，三者的优先级从上到下。
+
+如果 assoc_table_name 有效，则可以通过 assoc_table_???? 等一系列参数指示构造关联表数据入口时的选项。可用的 assoc_table_???? 系列选项有：
+
+  * assoc_table_pk 关联数据表的主键
+  * assoc_table_schema 关联数据表所属 schema
+
+==== 指定关联的名称 ====
+
+*mapping_name*
+指定关联的名称，以及关联数据在保存主表记录的数组中用什么名字引用。
+
+例如“文章”表有一个 has many 关联指向“评论”表，这个关联的 mapping_name 为 'comments'。那么在查询文章表数据时，文章相关的评论数据会以 'comments' 为键名保存在文章表数据数组中。
+
 {{{
-'assoc_table_obj'
-    关联的表数据入口对象实例
+$article = $table_articles->find(....)->query();
+// 输出文章的评论数据
+print_r($article['comments']);
+}}}
 
-'assoc_table_class'
-    关联到哪一个表数据入口类
+mapping_name 同时定义了关联的名称。因此在调用表数据入口对象的 getLink() 等方法时，需要以 mapping_name 指定的值作为参数来操作特定的关联。
 
-'assoc_table_name'
-    关联到哪一个数据表
+同样，在保存主表的数据时，关联对象也通过 mapping_name 去查找主表数据数组中包含的关联表数据。从而实现自动创建关联表记录等功能。
 
-    'assoc_table_obj'、'assoc_table_class'、'assoc_table_name' 三者只需要指定一个，三者的优先级从上到下。
-    如果 'assoc_table_name' 有效，则可以通过 'assoc_table_????' 等一系列参数指示构造关联表数据入口时的选项。
-    可用的 'assoc_table_????' 系列选项有：
+==== 指定用于关联的字段 ====
 
-    'assoc_table_pk'        关联数据表的主键
-    'assoc_table_schema'    关联数据表所属 schema
+*main_key*
+指示在主表中用什么字段和关联表记录进行关联。如果没有指定 main_key，会按照下面的规则取默认值：
+  * 对于 has many 和 has one 关联，main_key 的默认值是主表的主键字段
+  * 对于 belongs to 关联，main_key 的默认值是主表中与关联表主键字段同名的字段
+  * 对于 many to many 关联，main_key 的默认值是主表的主键字段
 
-'mapping_name'
-    关联的名称，以及关联数据在保存主表记录的数组中用什么名字引用
+*assoc_key*
+关联关系在关联表中使用哪一个字段。同样，该选项可以自动设置：
+  * 对于 has many、has one 关联，assoc_key 的默认值是关联表中与主表主键字段同名的字段
+  * 对于 belongs to 关联，assoc_key 的默认值是关联表的主键字段
+  * 对于 many to many 关联，assoc_key 的默认值是关联表的主键字段
 
-'main_key'
-    指示在主表中用什么字段和关联表记录进行关联
-    对于 has many 和 has one 关联，'main_key' 的默认值是主表的主键字段
-    对于 belongs to 关联，'main_key' 的默认值是主表中与关联表主键字段同名的字段
-    对于 many to many 关联，'main_key' 的默认值是主表的主键字段
+==== 查询关联表时的行为 ====
 
-'assoc_key'
-    关联关系在关联表中使用哪一个字段
-    对于 has many、has one 关联，'assoc_key' 的默认值是关联表中与主表主键字段同名的字段
-    对于 belongs to 关联，'assoc_key' 的默认值是关联表的主键字段
-    对于 many to many 关联，'assoc_key' 的默认值是关联表的主键字段
+*on_find*
+指示是否读取关联的记录
+  * true 或 'all'   - 读取所有关联记录
+  * false 或 'skip' - 跳过，不读取内容记录
+  * 整数            - 仅读取指定个数的内容记录，例如 on_find = 5 表示仅读取每个作者的 5 个内容记录
+  * 数组            - 包含读取起始位置和要读取的个数，例如 array($offset, $nums)
 
-'mid_main_key' （可选，仅用于 many to many 关联）
-    指示在中间表中，用哪个字段存储对主表的 'main_key' 引用
-    'mid_main_key' 的默认值是中间表中与 'main_key' 同名的字段
+对于所有类型的关联，on_find 的默认值都是 true。
 
-'mid_assoc_key' （可选，仅用于 many to many 关联）
-    指示在中间表中，用哪个字段存储对关联表的 'assoc_key' 引用
-    'mid_assoc_key' 的默认值是中间表中与 'assoc_key' 同名的字段
+*on_find_where*
+指示读取关联表数据时，要使用的查询条件。具体的查询条件构造，参考[QTable_Select 查询对象]介绍中关于如何使用复杂查询条件的部分。
 
-'mid_table_obj'
-    中间表的表数据入口对象实例
+*on_find_order*
+指示按照什么排序规则查询关联的记录，如果为空字符串或 null，则表示查询关联时不排序。on_find_order 的默认值是 null。
 
-'mid_table_class' （仅用于 many to many 关联）
-    指示用哪一个表数据入口对象封装对中间表的操作
+*on_find_fields*
+指示在读取关联记录时，只获取关联记录的哪些字段。on_find_fields 的默认值是 '*'，表示读取关联表的所有字段。
 
-'mid_table_name' （仅用于 many to many 关联）
-    指示中间表的名称（不含前缀）
-    'mid_table_obj'、'mid_table_class'、'mid_table_name' 三者只需要指定一个，三者的优先级从上到下。
-    如果 'mid_table_name' 有效，则可以通过 'mid_table_????' 等一系列参数指示构造关联表数据入口时的选项。
+*on_delete*
+指示在删除主表记录时，如何处理关联的记录：
+  * true 或 'cascade'   - 删除所有的关联记录
+  * 'set_null'          - 将关联记录的外键字段设置为 NULL
+  * 'set_value'         - 将关联记录的外键字段设置为指定的值
+  * false 或 'skip'     - 不处理关联记录
 
-'mid_on_find_fields'
-    指示查询 many to many 关联时，中间表的哪些字段要包含在查询结果中
-    空字符串 或 null - 不查询中间表的字段
-    *                - 查询中间表的所有字段
-    字段列表         - 以逗号分隔的字段名或者包含字段名的数组
+对于 belongs to 和 many to many 关联，on_delete 的默认值是 'skip'；
+对于 has many 和 has one 关联，默认值则是 cascade。
 
-    'mid_on_find_fields' 的默认值是 null。
+*on_delete_set_value*
+如果 on_delete 为 'set_value'，则通过 on_delete_set_value 指定要填充的值。on_delete_set_value 的默认值为 null。
 
-'mid_on_find_prefix'
-    指示查询 many to many 关联，中间表的字段包含在查询结果中时要加上什么前缀
-    默认的 'mid_on_find_prefix' 是 'mid_'
+*on_save*
+指示是否保存关联的记录：
 
-'on_find'
-    指示是否读取关联的记录
+  * true 或 'save'  - 根据关联记录是否具有主键值来决定是创建记录还是更新现有记录
+  * 'create'        - 强制创建新记录
+  * 'update'        - 强制更新记录
+  * 'replace'       - 使用数据库的 replace 操作来尝试替换记录
+  * false 或 'skip' - 不处理关联记录
+  * 'only_create'   - 仅仅保存需要创建的记录（根据是否具备主键值判断）
+  * 'only_update'   - 仅仅保存需要更新的记录（根据是否具备主键值判断）
 
-    true 或 'all'   - 读取所有关联记录
-    false 或 'skip' - 跳过，不读取内容记录
-    整数            - 仅读取指定个数的内容记录，例如 'on_find' = 5 表示仅读取每个作者的 5 个内容记录
-    数组            - 包含读取起始位置和要读取的个数，例如 array($offset, $nums)
+对于 belongs to 和 many to many 关联，on_save 的默认值是 'skip'；
+对于 has many 和 has one 关联，on_save 的默认值是 'save'。
 
-    对于所有类型的关联，'on_find' 的默认值都是 true
+==== 仅用于 many to many 关联的选项 ====
 
-'on_find_where'
-    指示读取关联表数据时，要使用的查询条件。具体的查询条件构造，参考[QTable_Select 查询对象]介绍中关于如何使用复杂查询条件的部分。
+*mid_main_key*
+指示在中间表中，用哪个字段存储对主表的 main_key 引用。mid_main_key 的默认值是中间表中与 main_key 选项值同名的字段。
 
-'on_find_order'
-    指示按照什么排序规则查询关联的记录，如果为空字符串或 null，则表示查询关联时不排序
+*mid_assoc_key*
+指示在中间表中，用哪个字段存储对关联表的 assoc_key 引用。mid_assoc_key 的默认值是中间表中与 assoc_key 选项值同名的字段。
 
-'on_find_fields'
-    指示在读取关联记录时，只获取关联记录的哪些字段
+*mid_table_obj*
+指示操作中间表的表数据入口对象实例。
 
-'on_delete'
-    指示在删除主表记录时，如何处理关联的记录
+*mid_table_class*
+指示用哪一个表数据入口对象封装对中间表的操作。
 
-    true 或 'cascade'   - 删除所有的关联记录
-    'set_null'          - 将关联记录的外键字段设置为 NULL
-    'set_value'         - 将关联记录的外键字段设置为指定的值
-    false 或 'skip'     - 不处理关联记录
+*mid_table_name*
+指示中间表的名称。
 
-    对于 belongs to 和 many to many 关联，'on_delete' 的默认值是 'skip'
-    对于 has many 和 has one 关联，默认值则是 'cascade'
+mid_table_obj、mid_table_class、mid_table_name 三者只需要指定一个，三者的优先级从上到下。
+如果 mid_table_name 有效，则可以通过 mid_table_???? 等一系列参数指示构造关联表数据入口时的选项。
 
-'on_delete_set_value'
-    如果 'on_delete' 为 'set_value'，则通过 'on_delete_set_value' 指定要填充的值
-    'on_delete_set_value' 的默认值为 null
+*mid_on_find_fields*
+指示查询 many to many 关联时，中间表的哪些字段要包含在查询结果中：
 
-'on_save'
-    指示是否保存关联的记录
+  * 空字符串 或 null  - 不查询中间表的字段
+  * '*'               - 查询中间表的所有字段
+  * 字段列表          - 以逗号分隔的字段名或者包含字段名的数组
 
-    true 或 'save'  - 根据关联记录是否具有主键值来决定是创建记录还是更新现有记录
-    'create'        - 强制创建新记录
-    'update'        - 强制更新记录
-    'replace'       - 使用数据库的 replace 操作来尝试替换记录
-    false 或 'skip' - 不处理关联记录
-    'only_create'   - 仅仅保存需要创建的记录（根据是否具备主键值判断）
-    'only_update'   - 仅仅保存需要更新的记录（根据是否具备主键值判断）
+mid_on_find_fields 的默认值是 null。
 
-    对于 belongs to 和 many to many 关联，'on_save' 的默认值是 'skip'
-    对于 has many 和 has one 关联，'on_save' 的默认值是 'save'
+*mid_on_find_prefix*
+指示查询 many to many 关联，中间表的字段包含在查询结果中时要加上什么前缀。mid_on_find_prefix 的默认值是 'mid_'。
