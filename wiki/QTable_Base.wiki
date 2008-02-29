@@ -23,7 +23,7 @@
  * $qpk 转义后的主键字段名
  * $created_time_fields 创建记录时，要填充当前时间的字段（必须，但已有默认设置）
  * $updated_time_fields 更新记录时，要填充当前时间的字段（必须，但已有默认设置）
- * $has_one、$has_many、$belongs_to、$many_to_many 定义数据表关联（可选），关联的详细定义，参考 [QTable_Link_Abstract]
+ * $has_one、$has_many、$belongs_to、$many_to_many 定义数据表关联（可选），关联的详细定义，参考 [QTable_Link 数据表关联]
 
 
 查询：
