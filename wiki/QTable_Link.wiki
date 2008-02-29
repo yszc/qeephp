@@ -1,0 +1,104 @@
+#summary QTable_Link 封装了数据表关联操作
+
+= 什么叫做关联 =
+
+数据表关联是指两个或者多个数据表的*记录之间的逻辑关系* 。
+
+比如一篇文章（一篇文章保存为“文章”数据表的一条记录）有多个评论（一个评论保存为“评论”数据表的一条记录）。那么就可以说“文章”对于“评论”是一个 *“一对多”* 的关系。
+
+从现实角度，只有“一对一”和“一对多”两种关系。但由于关系式数据库不能直接存储数据之间的关系，所以两种关系扩展为 *“一对一”* 、 *“一对多”* 、 *“从属”* 和 *“多对多”* 四种关系。
+
+如果加上更多的限制条件，四种关联还可以扩展出更多类型的关联。例如“一对多”通常表示一个事物 *“拥有（HAS）”* 多个其他事物，但有时也可以表示一个事物和多个事物相关，但并不能够决定这些事物的存在。
+
+典型的例子就是文章与评论。文章“拥有”多个评论，因为评论是不能单独存在的，必定是属于一个文章。但同样是“一对多”，一个分类对应多个商品就不同。虽然商品必定属于一个分类，但是在删除分类时，如果有属于该分类的商品，要么是禁止删除分类，要么是将属于该分类的商品划分到另一个分类。
+
+四种关联的特点、区别以及适用场合，会在后面的内容详细说明。
+
+= QeePHP 对四种关联的支持 =
+
+
+
+QTable_Link 实现了数据表间的关联操作。支持的四种关联分别是：
+
+ * has one 一对一
+ * has many 一对多
+ * belongs to 从属
+ * many to many 多对多
+
+== has one 一对一 ==
+
+== has many 一对多 ==
+
+== belongs to 从属 ==
+
+== many to many 多对多 ==
+
+
+= 如何定义一个关联 =
+
+在定义一个数据表的关联时，通过表数据入口继承类的 $has_one、$has_many、$belongs_to 和 $many_to_many 进行。
+
+例如：
+
+{{{
+/**
+ * Table_Contents 类封装了 contents 表的操作以及与相关表的关联操作
+ */
+class Table_Contents extends QTable_Base
+{
+    /**
+     * 不包含全局前缀的数据表名称
+     *
+     * @var string
+     */
+    public $table_name = 'contents';
+
+    /**
+     * 主键字段名
+     *
+     * @var string
+     */
+    public $pk = 'content_id';
+
+    /**
+     * belongs to 关联
+     *
+     * @var array
+     */
+    protected $belongs_to = array(
+        /**
+         * 每个内容都有一个作者
+         */
+        array(
+            'table_class'   => 'Table_Authors',
+            'mapping_name'  => 'author',
+            'link_field'    => 'author_id',
+            /**
+             * 指示在 Table_Authors 封装的数据表中使用什么字段存储关联内容的记录总数
+             */
+            'count_cache'   => 'contents_count',
+
+            /**
+             * 指示在读取作者信息时，只获取作者表的哪些字段
+             */
+            'on_find_fields' => array('author_id', 'name' => 'name_alias'),
+        ),
+    );
+}
+}}}
+
+因为有可能需要定义多个同一种类型的关联，所以 $has_one、$has_many、$belongs_to 和 $many_to_many 成员变量的格式都是一个二维数组。
+
+{{{
+protected $has_one = array(
+    // 第一个 has one 关联
+    array(
+        .....
+    ),
+
+    // 第二个 has one 关联
+    array(
+        .....
+    ),
+);
+}}}
