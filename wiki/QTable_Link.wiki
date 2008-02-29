@@ -205,6 +205,9 @@ protected $has_one = array(
 
     对于所有类型的关联，'on_find' 的默认值都是 true
 
+'on_find_where'
+    指示读取关联表数据时，要使用的查询条件。具体的查询条件构造，参考[QTable_Select 查询对象]介绍中关于如何使用复杂查询条件的部分。
+
 'on_find_order'
     指示按照什么排序规则查询关联的记录，如果为空字符串或 null，则表示查询关联时不排序
 
