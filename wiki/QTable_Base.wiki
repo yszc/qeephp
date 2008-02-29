@@ -14,6 +14,18 @@
 
 == 表数据入口的主要方法和属性 ==
 
+属性：
+ * $schema 数据表所属 schema（可选）
+ * $table_name 要操作的数据表（必须）
+ * $full_table_name 包含前缀的数据表名称（由 QTable_Base 自动设置），如果指定了 full_table_name，则 QTable_Base 不会根据全局数据表前缀在 table_name 之前添加前缀
+ * $qtable_name 包含前缀的数据表完全限定名
+ * $pk 主键字段（可选，QTable_Base 实例化时可以自行确定主键），如果有多个主键字段，则以逗号分隔或使用数组表示
+ * $qpk 转义后的主键字段名
+ * $created_time_fields 创建记录时，要填充当前时间的字段（必须，但已有默认设置）
+ * $updated_time_fields 更新记录时，要填充当前时间的字段（必须，但已有默认设置）
+ * $has_one、$has_many、$belongs_to、$many_to_many 定义数据表关联（可选），关联的详细定义，参考 [QTable_Link_Abstract]
+
+
 查询：
  * find() 创建一个查询对象 [QTable_Select]
  * findBySql() 直接执行一个 SQL 语句，并返回结果集（数组）
@@ -42,15 +54,6 @@
 
 元数据：
  * columns() 返回所有字段的元数据
- * $schema 数据表所属 schema（可选）
- * $table_name 要操作的数据表（必须）
- * $full_table_name 包含前缀的数据表名称（由 QTable_Base 自动设置），如果指定了 full_table_name，则 QTable_Base 不会根据全局数据表前缀在 table_name 之前添加前缀
- * $qtable_name 包含前缀的数据表完全限定名
- * $pk 主键字段（可选，QTable_Base 实例化时可以自行确定主键），如果有多个主键字段，则以逗号分隔或使用数组表示
- * $qpk 转义后的主键字段名
- * $created_time_fields 创建记录时，要填充当前时间的字段（必须，但已有默认设置）
- * $updated_time_fields 更新记录时，要填充当前时间的字段（必须，但已有默认设置）
- * $has_one、$has_many、$belongs_to、$many_to_many 定义数据表关联（可选），关联的详细定义，参考 [QTable_Link_Abstract]
 
 辅助操作：
  * nextID() 为当前数据表产生一个新的主键值
@@ -60,7 +63,7 @@
  * isCompositePK() 确认是否是复合主键
  * connect() 连接到数据库
  * qfields() 转义字段
- * parseWhere() 分析查询条件和参数
+ * parseSQL() 分析SQL，并处理SQL中的字段名和参数占位符
 
 == 查询条件 ==
 
