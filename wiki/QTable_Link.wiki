@@ -179,7 +179,7 @@ protected $has_one = array(
 
 注意：assoc_table_obj、assoc_table_class、assoc_table_name 三者只需要指定一个，三者的优先级从上到下。
 
-如果 assoc_table_name 有效，则可以通过 assoc_table_???? 等一系列参数指示构造关联表数据入口时的选项。可用的 assoc_table_???? 系列选项有：
+如果 assoc_table_name 有效，则可以通过 assoc_table_xxxx 等一系列参数指示构造关联表数据入口时的选项。可用的 assoc_table_xxxx 系列选项有：
 
   * assoc_table_pk 关联数据表的主键
   * assoc_table_schema 关联数据表所属 schema
@@ -295,14 +295,14 @@ mapping_name 同时定义了关联的名称。因此在调用表数据入口对�
 指示中间表的名称。
 
 mid_table_obj、mid_table_class、mid_table_name 三者只需要指定一个，三者的优先级从上到下。
-如果 mid_table_name 有效，则可以通过 mid_table_???? 等一系列参数指示构造关联表数据入口时的选项。
+如果 mid_table_name 有效，则可以通过 mid_table_xxxx 等一系列参数指示构造关联表数据入口时的选项。
 
 *mid_on_find_fields*
 
 指示查询 many to many 关联时，中间表的哪些字段要包含在查询结果中：
 
   * 空字符串 或 null  - 不查询中间表的字段
-  * 星号             - 查询中间表的所有字段
+  * 星号              - 查询中间表的所有字段
   * 字段列表          - 以逗号分隔的字段名或者包含字段名的数组
 
 mid_on_find_fields 的默认值是 null。
