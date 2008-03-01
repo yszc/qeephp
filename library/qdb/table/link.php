@@ -155,13 +155,6 @@ class QDB_Table_Link
     public $on_find_where = null;
 
     /**
-     * 查询关联表时使用的查询条件需要的参数
-     *
-     * @var array
-     */
-    public $on_find_where_args = null;
-
-    /**
      * 指示按照什么排序规则查询关联的记录
      */
     public $on_find_order = null;
@@ -281,7 +274,6 @@ class QDB_Table_Link
             'mid_on_find_prefix',
             'on_find',
             'on_find_where',
-            'on_find_where_args',
             'on_find_order',
             'on_find_fields',
             'on_delete',
@@ -449,7 +441,6 @@ class QDB_Table_Link
         $this->assoc_key_alias = isset($p['assoc_key_alias']) ? $p['assoc_key_alias'] : 'aka_' . $alias_index;
         $this->on_find = isset($p['on_find']) ? $p['on_find'] : 'all';
         $this->on_find_where = isset($p['on_find_where']) ? $p['on_find_where'] : null;
-        $this->on_find_where_args = isset($p['on_find_where_args']) ? $p['on_find_where_args'] : null;
         $this->on_find_fields = isset($p['on_find_fields']) ? $p['on_find_fields'] : '*';
         $this->on_find_order = isset($p['on_find_order']) ? $p['on_find_order'] : null;
         $this->on_delete_set_value = isset($p['on_delete_set_value']) ? $p['on_delete_set_value'] : null;
@@ -471,11 +462,11 @@ class QDB_Table_Link
         $sql = "SELECT {$ak} AS {$this->assoc_key_alias}, {$fields} FROM {$this->assoc_table->qtable_name}";
 
         if (!empty($mkvs)) {
-            $sql .= $this->assoc_table->getDBO()->qinto(" WHERE {$this->assoc_key} IN (?)", $mkvs);
+            $sql .= $this->assoc_table->getConn()->qinto(" WHERE {$this->assoc_key} IN (?)", $mkvs);
         }
 
         if ($this->on_find_where) {
-            $where = $this->assoc_table->parseSQLInternal($this->on_find_where, $this->on_find_where_args);
+            $where = $this->assoc_table->parseSQLInternal($this->on_find_where);
             $sql .= " AND {$where}";
         }
 

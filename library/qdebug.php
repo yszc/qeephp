@@ -47,4 +47,50 @@ class QDebug
         echo $content;
         return null;
     }
+
+    /**
+     * 显示应用程序执行路径，通常用于调试
+     *
+     * @package core
+     *
+     * @return string
+     */
+    static function dumpTrace()
+    {
+        $debug = debug_backtrace();
+        $lines = '';
+        $index = 0;
+        for ($i = 0; $i < count($debug); $i++) {
+            if ($i == 0) { continue; }
+            $file = $debug[$i];
+            if (!isset($file['file'])) {
+                $file['file'] = 'eval';
+            }
+            if (!isset($file['line'])) {
+                $file['line'] = null;
+            }
+            $line = "#{$index} {$file['file']}({$file['line']}): ";
+            if (isset($file['class'])) {
+                $line .= "{$file['class']}{$file['type']}";
+            }
+            $line .= "{$file['function']}(";
+            if (isset($file['args']) && count($file['args'])) {
+                foreach ($file['args'] as $arg) {
+                    $line .= gettype($arg) . ', ';
+                }
+                $line = substr($line, 0, -2);
+            }
+            $line .= ')';
+            $lines .= $line . "\n";
+            $index++;
+        } // for
+        $lines .= "#{$index} {main}\n";
+
+        if (ini_get('html_errors')) {
+            echo nl2br(str_replace(' ', '&nbsp;', $lines));
+        } else {
+            echo $lines;
+        }
+    }
+
 }

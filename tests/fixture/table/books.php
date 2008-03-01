@@ -23,7 +23,7 @@
 class Table_Books extends QDB_Table
 {
     public $table_name = 'books';
-    public $pk = 'book_id';
+    public $pk = 'book_code';
 
     protected $many_to_many = array(
         array(

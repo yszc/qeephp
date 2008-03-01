@@ -463,10 +463,11 @@ abstract class QDB_Adapter_Abstract
      * @param string $field_name
      * @param string $table_name
      * @param string $schema
+     * @param string $alias
      *
      * @return string
      */
-    abstract function qfield($field_name, $table_name = null, $schema = null);
+    abstract function qfield($field_name, $table_name = null, $schema = null, $alias = null);
 
     /**
      * 返回多个字段名称的完全限定名
@@ -501,8 +502,12 @@ abstract class QDB_Adapter_Abstract
             $fields = array_map('trim', $fields);
         }
         $return = array();
-        foreach ($fields as $field_name) {
-            $return[] = $this->qfield($field_name, $table_name, $schema);
+        foreach ($fields as $key => $value) {
+            if (is_string($key)) {
+                $return[] = $this->qfield($key, $table_name, $schema, $value);
+            } else {
+                $return[] = $this->qfield($value, $table_name, $schema);
+            }
         }
         return $return_array ? $return : implode(', ', $return);
     }
