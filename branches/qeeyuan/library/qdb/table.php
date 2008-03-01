@@ -176,7 +176,7 @@ class QDB_Table
             $this->pk = $params['pk'];
         }
         if (!empty($params['dbo'])) {
-            $this->setDBO($params['dbo']);
+            $this->setConn($params['dbo']);
         }
         if ($connect_now) {
             $this->connect();
@@ -215,9 +215,9 @@ class QDB_Table
         if (!is_array(reset($links_define))) {
             $links_define = array($links_define);
         }
-        Q::loadClass('QTable_Link');
+        Q::loadClass('QDB_Table_Link');
         foreach ($links_define as $define) {
-            $link = QTable_Link::createLink($define, $type, $this);
+            $link = QDB_Table_Link::createLink($define, $type, $this);
             $this->links[$link->name] = $link;
         }
     }
@@ -239,7 +239,7 @@ class QDB_Table
      *
      * @param string $link_name
      *
-     * @return QTable_Link
+     * @return QDB_Table_Link
      */
     function getLink($link_name)
     {
@@ -324,13 +324,13 @@ class QDB_Table
      *
      * @param string|array $where
      *
-     * @return QTable_Select
+     * @return QDB_Table_Select
      */
     function find($where = null)
     {
         $args = func_get_args();
         array_shift($args);
-        return new QTable_Select($this, $where, $args, $this->links);
+        return new QDB_Table_Select($this, $where, $args, $this->links);
     }
 
     /**
@@ -691,7 +691,7 @@ class QDB_Table
      *
      * @return QDBO_Adapter_Abstract
      */
-    function getDBO()
+    function getConn()
     {
         return $this->dbo;
     }
@@ -699,9 +699,9 @@ class QDB_Table
     /**
      * 设置数据库访问对象
      *
-     * @param QDBO_Adapter_Abstract $dbo
+     * @param QDB_Adapter_Abstract $dbo
      */
-    function setDBO($dbo)
+    function setConn($dbo)
     {
         $this->dbo = $dbo;
         if (empty($this->schema) && $dbo->getSchema() != '') {
@@ -720,8 +720,8 @@ class QDB_Table
      */
     function setupDBO()
     {
-        $dbo = QDBO::getConn();
-        $this->setDBO($dbo);
+        $dbo = QDB::getConn();
+        $this->setConn($dbo);
     }
 
     /**
@@ -956,7 +956,7 @@ class QDB_Table
             if (isset($this->links[$table])) {
                 // 找到一个关联表字段
                 $link = $this->links[$table];
-                /* @var $link QTable_Link */
+                /* @var $link QDB_Table_Link */
                 $used_links[] = $link;
                 // TODO: parseSQLString() 处理查询中的关联表
             } else {
@@ -973,11 +973,11 @@ class QDB_Table
         $args_count = null;
         if (strpos($where, '?') !== false) {
             // 使用 ? 作为占位符的情况
-            $ret = $this->dbo->qinto($where, $args, QDBO::PARAM_QM, $ignore_args);
+            $ret = $this->dbo->qinto($where, $args, QDB::PARAM_QM, $ignore_args);
         } elseif (strpos($where, ':') !== false) {
             // 使用 : 开头的命名参数占位符
             $args = reset($args);
-            $ret = $this->dbo->qinto($where, $args, QDBO::PARAM_CL_NAMED, $ignore_args);
+            $ret = $this->dbo->qinto($where, $args, QDB::PARAM_CL_NAMED, $ignore_args);
         } else {
             $ret = $where;
         }

@@ -20,7 +20,7 @@
  *
  * @package test_fixture
  */
-class Table_Authors extends QTable_Base
+class Table_Authors extends QDB_Table
 {
     public $table_name = 'authors';
     public $pk = 'author_id';

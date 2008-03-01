@@ -20,9 +20,19 @@ define('TEST_INIT', true);
 
 date_default_timezone_set('Asia/ShangHai');
 
-require dirname(__FILE__) . '/../library/qexpress.php';
-Q::setIni('internal_cache_dir', dirname(__FILE__) . '/../tmp');
-define('FIXTURE_DIR', dirname(__FILE__) . DS . 'fixture');
+require_once 'PHPUnit/Framework.php';
+require dirname(__FILE__) . '/../../library/qexpress.php';
+Q::setIni('internal_cache_dir', dirname(__FILE__) . '/../../tmp');
+define('FIXTURE_DIR', dirname(dirname(__FILE__)) . DS . 'fixture');
 Q::import(FIXTURE_DIR);
 
-require_once 'PHPUnit/Framework.php';
+$dsn = array(
+    'driver'    => 'mysql',
+    'host'      => 'localhost',
+    'login'     => 'root',
+    'password'  => '',
+    'database'  => 'qeephp_test',
+    'prefix'    => 'q_',
+    'charset'   => 'utf8',
+);
+Q::setIni('dsn_mysql', $dsn);

@@ -20,7 +20,7 @@
  *
  * @package test-fixture
  */
-class Table_Books extends QTable_Base
+class Table_Books extends QDB_Table
 {
     public $table_name = 'books';
     public $pk = 'book_id';

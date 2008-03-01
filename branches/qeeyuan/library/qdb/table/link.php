@@ -9,18 +9,18 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 QDB_Link 类
+ * 定义 QDB_Table_Link 类
  *
  * @package database
  * @version $Id$
  */
 
 /**
- * QDB_Link 封装数据表之间的关联关系
+ * QDB_Table_Link 封装数据表之间的关联关系
  *
  * @package database
  */
-class QDB_Link
+class QDB_Table_Link
 {
     /**
      * 该连接的名字，用于检索指定的连接
@@ -255,7 +255,7 @@ class QDB_Link
      * @param const $type
      * @param QDB_Table $main_table
      *
-     * @return QDB_Link
+     * @return QDB_Table_Link
      */
     protected function __construct(array $define, $type, QDB_Table $main_table)
     {
@@ -297,25 +297,25 @@ class QDB_Link
     }
 
     /**
-     * 创建 QDB_Link 对象实例
+     * 创建 QDB_Table_Link 对象实例
      *
      * @param array $define
      * @param const $type
      * @param QDB_Table $main_table
      *
-     * @return QDB_Link
+     * @return QDB_Table_Link
      */
     static function createLink(array $define, $type, QDB_Table $main_table)
     {
         if (empty($define['mapping_name'])) {
             // LC_MSG: Expected parameter "mapping_name".
-            throw new QDB_Link_Exception(__('Expected parameter "mapping_name".'));
+            throw new QDB_Table_Link_Exception(__('Expected parameter "mapping_name".'));
         }
         if (empty($define['name'])) {
             $define['name'] = $define['mapping_name'];
         }
-        // 返回 QDB_Link 继承类实例
-        return new QDB_Link($define, $type, $main_table);
+        // 返回 QDB_Table_Link 继承类实例
+        return new QDB_Table_Link($define, $type, $main_table);
     }
 
     /**
@@ -377,7 +377,7 @@ class QDB_Link
         } else {
             // LC_MSG: Expected parameter "%s".
             $err = 'assoc_table_obj or assoc_table_class or assoc_table_name';
-            throw new QDB_Link_Exception(__('Expected parameter "%s".', $err));
+            throw new QDB_Table_Link_Exception(__('Expected parameter "%s".', $err));
         }
 
         // 设置关联表数据入口对象
@@ -407,7 +407,7 @@ class QDB_Link
             } else {
                 // LC_MSG: Expected parameter "%s".
                 $err = 'mid_table_obj or mid_table_class or mid_table_name';
-                throw new QDB_Link_Exception(__('Expected parameter "%s".', $err));
+                throw new QDB_Table_Link_Exception(__('Expected parameter "%s".', $err));
             }
 
             // 设置中间表的表数据入口对象

@@ -20,7 +20,7 @@
  *
  * @package test-fixture
  */
-class Table_Tags extends QTable_Base
+class Table_Tags extends QDB_Table
 {
     public $table_name = 'tags';
     public $pk = 'tag_id';

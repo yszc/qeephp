@@ -1,9 +1,9 @@
 <?php
 
 /**
- * QDB_Select 利用方法链，实现灵活的查询构造
+ * QDB_Table_Select 利用方法链，实现灵活的查询构造
  */
-class QDB_Select
+class QDB_Table_Select
 {
     /**
      * 查询使用的表数据入口对象
@@ -120,7 +120,7 @@ class QDB_Select
     /**
      * 查询结果
      *
-     * @var QDBO_Result_Abstract
+     * @var QDB_Result_Abstract
      */
     protected $handle = null;
 
@@ -161,7 +161,7 @@ class QDB_Select
      *
      * @param array|string $expr
      *
-     * @return QDB_Select
+     * @return QDB_Table_Select
      */
     function select($expr = '*')
     {
@@ -174,7 +174,7 @@ class QDB_Select
      *
      * @param int $recursion
      *
-     * @return QDB_Select
+     * @return QDB_Table_Select
      */
     function recursion($recursion)
     {
@@ -189,7 +189,7 @@ class QDB_Select
      *
      * @param array|string $links
      *
-     * @return QDB_Select
+     * @return QDB_Table_Select
      */
     function links($links)
     {
@@ -213,7 +213,7 @@ class QDB_Select
      *
      * @param array|string $where
      *
-     * @return QDB_Select
+     * @return QDB_Table_Select
      */
     function where($where)
     {
@@ -228,7 +228,7 @@ class QDB_Select
      *
      * @param string $expr
      *
-     * @return QDB_Select
+     * @return QDB_Table_Select
      */
     function order($expr)
     {
@@ -239,7 +239,7 @@ class QDB_Select
     /**
      * 指示查询所有符合条件的记录
      *
-     * @return QDB_Select
+     * @return QDB_Table_Select
      */
     function all()
     {
@@ -253,7 +253,7 @@ class QDB_Select
      * @param int $count
      * @param int $offset
      *
-     * @return QDB_Select
+     * @return QDB_Table_Select
      */
     function limit($count, $offset = 0)
     {
@@ -268,7 +268,7 @@ class QDB_Select
      * @param int $page_size
      * @param int $base
      *
-     * @return QDB_Select
+     * @return QDB_Table_Select
      */
     function limitPage($page, $page_size = 20, $base = 1)
     {
@@ -297,7 +297,7 @@ class QDB_Select
      *
      * @param string $expr
      *
-     * @return QDB_Select
+     * @return QDB_Table_Select
      */
     function group($expr)
     {
@@ -310,7 +310,7 @@ class QDB_Select
      * @param array|string $where
      * @param array $args
      *
-     * @return QDB_Select
+     * @return QDB_Table_Select
      */
     function having($where, array $args = null)
     {
@@ -322,7 +322,7 @@ class QDB_Select
      *
      * @param boolean $flag
      *
-     * @return QDB_Select
+     * @return QDB_Table_Select
      */
     function forUpdate($flag = true)
     {
@@ -335,7 +335,7 @@ class QDB_Select
      *
      * @param boolean $flag
      *
-     * @return QDB_Select
+     * @return QDB_Table_Select
      */
     function distinct($flag = true)
     {
@@ -348,7 +348,7 @@ class QDB_Select
      *
      * @param string $class_name
      *
-     * @return QDB_Select
+     * @return QDB_Table_Select
      */
     function asObject($class_name)
     {
@@ -362,7 +362,7 @@ class QDB_Select
      * @param string $expr
      * @param string $alias
      *
-     * @return QDB_Select
+     * @return QDB_Table_Select
      */
     function count($expr = '*', $alias = 'row_count')
     {
@@ -376,7 +376,7 @@ class QDB_Select
      * @param string $expr
      * @param string $alias
      *
-     * @return QDB_Select
+     * @return QDB_Table_Select
      */
     function avg($expr, $alias = 'avg_value')
     {
@@ -390,7 +390,7 @@ class QDB_Select
      * @param string $expr
      * @param string $alias
      *
-     * @return QDB_Select
+     * @return QDB_Table_Select
      */
     function max($expr, $alias = 'max_value')
     {
@@ -404,7 +404,7 @@ class QDB_Select
      * @param string $expr
      * @param string $alias
      *
-     * @return QDB_Select
+     * @return QDB_Table_Select
      */
     function min($expr, $alias = 'min_value')
     {
@@ -418,7 +418,7 @@ class QDB_Select
      * @param string $expr
      * @param string $alias
      *
-     * @return QDB_Select
+     * @return QDB_Table_Select
      */
     function sum($expr, $alias = 'sum_value')
     {
@@ -437,16 +437,16 @@ class QDB_Select
 
         if (!is_array($this->limit)) {
             if (is_null($this->limit)) {
-                $handle = $this->table->getDBO()->execute($sql);
+                $handle = $this->table->getConn()->execute($sql);
             } else {
-                $handle = $this->table->getDBO()->selectLimit($sql, intval($this->limit));
+                $handle = $this->table->getConn()->selectLimit($sql, intval($this->limit));
             }
         } else {
             list($count, $offset) = $this->limit;
-            $handle = $this->table->getDBO()->selectLimit($sql, $count, $offset);
+            $handle = $this->table->getConn()->selectLimit($sql, $count, $offset);
         }
 
-        /* @var $handle QDBO_Result_Abstract */
+        /* @var $handle QDB_Result_Abstract */
 
         if (!$is_stat) {
             // 对于非统计方式，一律进行关联数据表的查询
@@ -469,7 +469,7 @@ class QDB_Select
 
                 // $sql = $link->getFindSQL($refs_value[$mka]);
                 // QDebug::dump($sql, 'assoc_' . $link->name .'_sql');
-                // $h = $link->assoc_table->getDBO()->execute($sql);
+                // $h = $link->assoc_table->getConn()->execute($sql);
                 // $handle->assemble($h, $refs[$mka], $link->mapping_name, $link->one_to_one, $link->assoc_key_alias);
             }
 

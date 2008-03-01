@@ -20,7 +20,7 @@
  *
  * @package test-fixture
  */
-class Table_BooksHasAuthors extends QTable_Base
+class Table_BooksHasAuthors extends QDB_Table
 {
     public $table_name = 'books_has_authors';
 }
