@@ -9,18 +9,18 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 QActiveRecord_Interface 接口
+ * 定义 QDB_ActiveRecord_Interface 接口
  *
  * @package core
  * @version $Id$
  */
 
 /**
- * QActiveRecord_Interface 接口确定了所有 QActiveRecord_Abstract 继承类必须实现的静态方法
+ * QDB_ActiveRecord_Interface 接口确定了所有 QActiveRecord_Abstract 继承类必须实现的静态方法
  *
  * @package core
  */
-interface QActiveRecord_Interface
+interface QDB_ActiveRecord_Interface
 {
     /**
      * 返回对象的定义
