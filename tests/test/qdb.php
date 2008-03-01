@@ -3,16 +3,16 @@
 require_once 'PHPUnit/Framework.php';
 require_once dirname(__FILE__) . '/../init.php';
 
-class TestQDBO extends PHPUnit_Framework_TestCase
+class TestQDB extends PHPUnit_Framework_TestCase
 {
     /**
-     * @var QDBO_Adapter_Abstract
+     * @var QDB_Adapter_Abstract
      */
     protected $dbo;
 
     protected function setUp()
     {
-        $this->dbo = QDBO::getConn();
+        $this->dbo = QDB::getConn();
         $this->dbo->connect();
     }
 
@@ -75,19 +75,19 @@ class TestQDBO extends PHPUnit_Framework_TestCase
     function testQinto()
     {
         switch($this->dbo->paramStyle()) {
-        case QDBO::PARAM_QM:
+        case QDB::PARAM_QM:
             $sql = "SELECT * FROM testtable WHERE level_ix > ? AND int_x = ?";
             $args = array(1, 2);
             break;
-        case QDBO::PARAM_CL_NAMED:
+        case QDB::PARAM_CL_NAMED:
             $sql = "SELECT * FROM testtable WHERE level_ix > :level_ix AND int_x = :int_x";
             $args = array('level_ix' => 1, 'int_x' => 2);
             break;
-        case QDBO::PARAM_DL_SEQUENCE:
+        case QDB::PARAM_DL_SEQUENCE:
             $sql = "SELECT * FROM testtable WHERE level_ix > $1 AND int_x = $2";
             $args = array(1, 2);
             break;
-        case QDBO::PARAM_AT_NAMED:
+        case QDB::PARAM_AT_NAMED:
             $sql = "SELECT * FROM testtable WHERE level_ix > @level_ix AND int_x = @int_x";
             $args = array('level_ix' => 1, 'int_x' => 2);
             break;
@@ -103,22 +103,22 @@ class TestQDBO extends PHPUnit_Framework_TestCase
             array(
                 "SELECT * FROM testtable WHERE level_ix > ? AND int_x = ?",
                 array(1, 2),
-                QDBO::PARAM_QM
+                QDB::PARAM_QM
             ),
             array(
                 "SELECT * FROM testtable WHERE level_ix > :level_ix AND int_x = :int_x",
                 array('level_ix' => 1, 'int_x' => 2),
-                QDBO::PARAM_CL_NAMED
+                QDB::PARAM_CL_NAMED
             ),
             array(
                 "SELECT * FROM testtable WHERE level_ix > $1 AND int_x = $2",
                 array(1, 2),
-                QDBO::PARAM_DL_SEQUENCE
+                QDB::PARAM_DL_SEQUENCE
             ),
             array(
                 "SELECT * FROM testtable WHERE level_ix > @level_ix AND int_x = @int_x",
                 array('level_ix' => 1, 'int_x' => 2),
-                QDBO::PARAM_AT_NAMED
+                QDB::PARAM_AT_NAMED
             ),
         );
 
@@ -333,7 +333,7 @@ class TestQDBO extends PHPUnit_Framework_TestCase
         $sql = 'SELECT COUNT(*) FROM q_posts';
         $count = $this->dbo->getOne($sql);
         $tran = $this->dbo->beginTrans();
-        $this->assertType('QDBO_Transaction', $tran);
+        $this->assertType('QDB_Transaction', $tran);
         $this->insertIntoPosts(10);
         unset($tran);
         $newCount = $this->dbo->getOne($sql);
@@ -345,7 +345,7 @@ class TestQDBO extends PHPUnit_Framework_TestCase
         $sql = 'SELECT COUNT(*) FROM q_posts';
         $count = $this->dbo->getOne($sql);
         $tran = $this->dbo->beginTrans();
-        $this->assertType('QDBO_Transaction', $tran);
+        $this->assertType('QDB_Transaction', $tran);
         $this->insertIntoPosts(10);
 
         // 明确的回滚事务
@@ -360,7 +360,7 @@ class TestQDBO extends PHPUnit_Framework_TestCase
         $sql = 'SELECT COUNT(*) FROM q_posts';
         $count = $this->dbo->getOne($sql);
         $tran = $this->dbo->beginTrans();
-        $this->assertType('QDBO_Transaction', $tran);
+        $this->assertType('QDB_Transaction', $tran);
         $this->insertIntoPosts(10);
 
         // 明确的回滚事务
@@ -375,7 +375,7 @@ class TestQDBO extends PHPUnit_Framework_TestCase
         $sql = 'SELECT COUNT(*) FROM q_posts';
         $count = $this->dbo->getOne($sql);
         $tran = $this->dbo->beginTrans();
-        $this->assertType('QDBO_Transaction', $tran);
+        $this->assertType('QDB_Transaction', $tran);
         $this->insertIntoPosts(10);
         try {
             // 当事务中出现数据库操作错误时回滚
