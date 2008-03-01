@@ -1,7 +1,7 @@
 <?php
 
 
-class QActiveRecord_Select
+class QDB_ActiveRecord_Select
 {
     /**
      * @var string
@@ -47,7 +47,7 @@ class QActiveRecord_Select
      *
      * @param mixed $where
      *
-     * @return QActiveRecord_Select
+     * @return QDB_ActiveRecord_Select
      */
     function where($where)
     {
@@ -68,7 +68,7 @@ class QActiveRecord_Select
      *
      * @param mixed $order
      *
-     * @return QActiveRecord_Select
+     * @return QDB_ActiveRecord_Select
      */
     function order($order)
     {
@@ -79,7 +79,7 @@ class QActiveRecord_Select
     /**
      * 查询所有符合条件的记录
      *
-     * @return QActiveRecord_Select
+     * @return QDB_ActiveRecord_Select
      */
     function all()
     {
@@ -93,7 +93,7 @@ class QActiveRecord_Select
      * @param int $count
      * @param int $offset
      *
-     * @return QActiveRecord_Select
+     * @return QDB_ActiveRecord_Select
      */
     function limit($count, $offset = 0)
     {
@@ -104,7 +104,7 @@ class QActiveRecord_Select
     /**
      * 统计符合条件的记录数
      *
-     * @return QActiveRecord_Select
+     * @return QDB_ActiveRecord_Select
      */
     function count()
     {
@@ -142,7 +142,7 @@ class QActiveRecord_Select
     /**
      * 重置所有查询选项
      *
-     * @return QActiveRecord_Select
+     * @return QDB_ActiveRecord_Select
      */
     function reset()
     {

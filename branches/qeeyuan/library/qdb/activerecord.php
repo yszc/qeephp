@@ -9,14 +9,14 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * QActiveRecord_Abstract 类实现了 Active Record 模式
+ * QDB_ActiveRecord 类实现了 Active Record 模式
  *
  * @copyright Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
  * @author 起源科技(www.qeeyuan.com)
  * @package core
  * @version $Id$
  */
-abstract class QActiveRecord_Abstract implements QActiveRecord_Callbacks_Interface, QActiveRecord_Interface
+abstract class QDB_ActiveRecord implements QDB_ActiveRecord_Callbacks, QDB_ActiveRecord_Interface
 {
     /**
      * 聚合关系

@@ -1,6 +1,6 @@
 <?php
 
-class QActiveRecord_Exception extends QException
+class QDB_ActiveRecord_Exception extends QException
 {
 
 }
