@@ -159,7 +159,7 @@ class QTable_Select
     /**
      * 指定 SELECT 子句后要查询的内容
      *
-     * @param string $expr
+     * @param array|string $expr
      *
      * @return QTable_Select
      */
