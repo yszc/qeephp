@@ -9,18 +9,18 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 QDBO 类
+ * 定义 QDB 类
  *
  * @package database
  * @version $Id$
  */
 
 /**
- * QDBO 类提供了管理数据库驱动的接口
+ * QDB 类提供了管理数据库驱动的接口
  *
  * @package database
  */
-class QDBO
+class QDB
 {
     /**
      * 参数占位符类型
@@ -41,7 +41,7 @@ class QDBO
      *
      * @param mixed $dsn
      *
-     * @return QDBO_Adapter_Abstract
+     * @return QDB_Adapter_Abstract
      */
     static function getConn($dsn = null)
     {
@@ -59,7 +59,7 @@ class QDBO
             return Q::registry($objid);
         }
 
-        $class_name = 'QDBO_Adapter_' . ucfirst($dbtype);
+        $class_name = 'QDB_Adapter_' . ucfirst($dbtype);
         Q::loadClass($class_name);
         $dbo = new $class_name($dsn, $objid);
         Q::register($dbo, $objid);
