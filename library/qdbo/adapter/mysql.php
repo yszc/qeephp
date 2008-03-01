@@ -9,25 +9,25 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 QDBO_Mysql 类
+ * 定义 QDB_Mysql 类
  *
  * @package database
  * @version $Id$
  */
 
 /**
- * QDBO_Mysql 提供了对 mysql 数据库的支持
+ * QDB_Mysql 提供了对 mysql 数据库的支持
  *
  * @package database
  */
-class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
+class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
 {
     protected $BIND_ENABLED = false;
 
     function __construct($dsn, $id)
     {
         if (!is_array($dsn)) {
-            $dsn = QDBO_Adapter_Abstract::parseDSN($dsn);
+            $dsn = QDB_Adapter_Abstract::parseDSN($dsn);
         }
         parent::__construct($dsn, $id);
         $this->schema = $dsn['database'];
@@ -55,7 +55,7 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
         }
 
         if (!is_resource($this->conn)) {
-            throw new QDBO_Exception('CONNECT DATABASE', mysql_error(), mysql_errno());
+            throw new QDB_Exception('CONNECT DATABASE', mysql_error(), mysql_errno());
         }
 
         if (!empty($this->dsn['database'])) {
@@ -88,7 +88,7 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
     {
         if (!$this->conn) { $this->connect(); }
         if (!mysql_select_db($database, $this->conn)) {
-            throw new QDBO_Exception("USE {$database}", mysql_error($this->conn), mysql_errno($this->conn));
+            throw new QDB_Exception("USE {$database}", mysql_error($this->conn), mysql_errno($this->conn));
         }
     }
 
@@ -141,7 +141,7 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
             if ($this->affectedRows() > 0) {
                 $successed = true;
             }
-        } catch (QDBO_Exception $ex) {
+        } catch (QDB_Exception $ex) {
             // 产生序列值失败，创建序列表
             unset($ex);
             $this->execute(sprintf('CREATE TABLE %s (id INT NOT NULL)', $seqname));
@@ -195,8 +195,8 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
         $result = mysql_query($sql, $this->conn);
 
         if (is_resource($result)) {
-            Q::loadClass('QDBO_Result_Mysql');
-            return new QDBO_Result_Mysql($result, $this->fetch_mode);
+            Q::loadClass('QDB_Result_Mysql');
+            return new QDB_Result_Mysql($result, $this->fetch_mode);
         } elseif ($result) {
             $this->last_err = null;
             $this->last_err_code = null;
@@ -206,7 +206,7 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
             $this->last_err_code = mysql_errno($this->conn);
             $this->has_failed_query = true;
             QDebug::dump($sql, 'error sql');
-            throw new QDBO_Exception($sql, $this->last_err, $this->last_err_code);
+            throw new QDB_Exception($sql, $this->last_err, $this->last_err_code);
         }
     }
 
@@ -303,9 +303,9 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
         $table_name = $this->qtable($table_name, $schema);
         $rs = $this->execute(sprintf('SHOW FULL COLUMNS FROM %s', $table_name));
         if (!$rs) { return false; }
-        /* @var $rs QDBO_Result_Abstract */
+        /* @var $rs QDB_Result_Abstract */
         $retarr = array();
-        $rs->fetchMode = QDBO::FETCH_MODE_ARRAY;
+        $rs->fetchMode = QDB::FETCH_MODE_ARRAY;
         while (($row = $rs->fetchRow())) {
             $field = array();
             $field['name'] = $row['Field'];
@@ -369,7 +369,7 @@ class QDBO_Adapter_Mysql extends QDBO_Adapter_Abstract
             $sql .= ' LIKE ' . $this->qstr($pattern);
         }
         $rs = $this->execute($sql);
-        /* @var $rs QDBO_Result_Abstract */
+        /* @var $rs QDB_Result_Abstract */
         $tables = array();
         while (($table_name = $rs->fetchOne())) {
            $tables[] = $table_name;

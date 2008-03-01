@@ -9,23 +9,23 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 QDBO_Transaction 类
+ * 定义 QDB_Transaction 类
  *
  * @package database
  * @version $Id$
  */
 
 /**
- * QDBO_Transaction 类封装了数据库事务操作
+ * QDB_Transaction 类封装了数据库事务操作
  *
  * @package database
  */
-class QDBO_Transaction
+class QDB_Transaction
 {
     /**
      * 数据库访问对象
      *
-     * @var QDBO_Adapter_Abstract
+     * @var QDB_Adapter_Abstract
      */
     protected $dbo;
 
@@ -39,9 +39,9 @@ class QDBO_Transaction
     /**
      * 构造函数
      *
-     * @param QDBO_Adapter_Abstract $dbo
+     * @param QDB_Adapter_Abstract $dbo
      */
-    function __construct(QDBO_Adapter_Abstract $dbo)
+    function __construct(QDB_Adapter_Abstract $dbo)
     {
         $this->dbo = $dbo;
         $this->dbo->startTrans();

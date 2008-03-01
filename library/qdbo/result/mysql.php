@@ -9,18 +9,18 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 QDBO_Result_Mysql 类
+ * 定义 QDB_Result_Mysql 类
  *
  * @package database
  * @version $Id$
  */
 
 /**
- * QDBO_Result_Mysql 封装了一个 mysql 查询句柄，便于释放资源
+ * QDB_Result_Mysql 封装了一个 mysql 查询句柄，便于释放资源
  *
  * @package database
  */
-class QDBO_Result_Mysql extends QDBO_Result_Abstract 
+class QDB_Result_Mysql extends QDB_Result_Abstract
 {
     function free()
     {
@@ -30,7 +30,7 @@ class QDBO_Result_Mysql extends QDBO_Result_Abstract
 
     function fetchRow()
     {
-        if ($this->fetch_mode == QDBO::FETCH_MODE_ASSOC) {
+        if ($this->fetch_mode == QDB::FETCH_MODE_ASSOC) {
             return mysql_fetch_assoc($this->handle);
         } else {
             return mysql_fetch_array($this->handle);

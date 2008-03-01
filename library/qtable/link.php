@@ -9,18 +9,18 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 QTable_Link 类
+ * 定义 QDB_Link 类
  *
  * @package database
  * @version $Id$
  */
 
 /**
- * QTable_Link 封装数据表之间的关联关系
+ * QDB_Link 封装数据表之间的关联关系
  *
  * @package database
  */
-class QTable_Link
+class QDB_Link
 {
     /**
      * 该连接的名字，用于检索指定的连接
@@ -35,21 +35,21 @@ class QTable_Link
     /**
      * 关联中的主表
      *
-     * @var QTable_Base
+     * @var QDB_Table
      */
     public $main_table;
 
     /**
      * 关联到哪一个表数据入口对象
      *
-     * @var QTable_Base
+     * @var QDB_Table
      */
     public $assoc_table;
 
     /**
      * many to many 关联中处理中间表的表数据入口对象
      *
-     * @var QTable_Base
+     * @var QDB_Table
      */
     public $mid_table;
 
@@ -253,11 +253,11 @@ class QTable_Link
      *
      * @param array $define
      * @param const $type
-     * @param QTable_Base $main_table
+     * @param QDB_Table $main_table
      *
-     * @return QTable_Link
+     * @return QDB_Link
      */
-    protected function __construct(array $define, $type, QTable_Base $main_table)
+    protected function __construct(array $define, $type, QDB_Table $main_table)
     {
         $this->name = strtolower($define['name']);
         $this->mapping_name = $define['mapping_name'];
@@ -297,25 +297,25 @@ class QTable_Link
     }
 
     /**
-     * 创建 QTable_Link 对象实例
+     * 创建 QDB_Link 对象实例
      *
      * @param array $define
      * @param const $type
-     * @param QTable_Base $main_table
+     * @param QDB_Table $main_table
      *
-     * @return QTable_Link
+     * @return QDB_Link
      */
-    static function createLink(array $define, $type, QTable_Base $main_table)
+    static function createLink(array $define, $type, QDB_Table $main_table)
     {
         if (empty($define['mapping_name'])) {
             // LC_MSG: Expected parameter "mapping_name".
-            throw new QTable_Link_Exception(__('Expected parameter "mapping_name".'));
+            throw new QDB_Link_Exception(__('Expected parameter "mapping_name".'));
         }
         if (empty($define['name'])) {
             $define['name'] = $define['mapping_name'];
         }
-        // 返回 QTable_Link 继承类实例
-        return new QTable_Link($define, $type, $main_table);
+        // 返回 QDB_Link 继承类实例
+        return new QDB_Link($define, $type, $main_table);
     }
 
     /**
@@ -373,11 +373,11 @@ class QTable_Link
                     $params[substr($key, 12)] = $value;
                 }
             }
-            $assoc_table = new QTable_Base($params);
+            $assoc_table = new QDB_Table($params);
         } else {
             // LC_MSG: Expected parameter "%s".
             $err = 'assoc_table_obj or assoc_table_class or assoc_table_name';
-            throw new QTable_Link_Exception(__('Expected parameter "%s".', $err));
+            throw new QDB_Link_Exception(__('Expected parameter "%s".', $err));
         }
 
         // 设置关联表数据入口对象
@@ -391,7 +391,7 @@ class QTable_Link
          * 如果 mid_table_name 有效，则可以通过 mid_table_???? 等一系列参数指示构造关联表数据入口时的选项。
          *
          */
-        if ($this->type == QTable_Base::MANY_TO_MANY) {
+        if ($this->type == QDB_Table::MANY_TO_MANY) {
             if (!empty($p['mid_table_obj'])) {
                 $mid_table = $p['mid_table_obj'];
             } elseif (!empty($p['mid_table_class'])) {
@@ -403,11 +403,11 @@ class QTable_Link
                         $params[substr($key, 10)] = $value;
                     }
                 }
-                $mid_table = new QTable_Base($params);
+                $mid_table = new QDB_Table($params);
             } else {
                 // LC_MSG: Expected parameter "%s".
                 $err = 'mid_table_obj or mid_table_class or mid_table_name';
-                throw new QTable_Link_Exception(__('Expected parameter "%s".', $err));
+                throw new QDB_Link_Exception(__('Expected parameter "%s".', $err));
             }
 
             // 设置中间表的表数据入口对象
@@ -419,22 +419,22 @@ class QTable_Link
          * 根据关联类型设置各项默认值
          */
         switch ($this->type) {
-        case QTable_Base::HAS_ONE:
-        case QTable_Base::HAS_MANY:
+        case QDB_Table::HAS_ONE:
+        case QDB_Table::HAS_MANY:
             $this->main_key  = isset($p['main_key'])  ? $p['main_key']  : $this->main_table->pk;
             $this->assoc_key = isset($p['assoc_key']) ? $p['assoc_key'] : $this->main_table->pk;
             $this->on_delete = isset($p['on_delete']) ? $p['on_delete'] : 'cascade';
             $this->on_save   = isset($p['on_save'])   ? $p['on_save']   : 'save';
-            $this->one_to_one = $this->type == QTable_Base::HAS_ONE;
+            $this->one_to_one = $this->type == QDB_Table::HAS_ONE;
             break;
-        case QTable_Base::BELONGS_TO:
+        case QDB_Table::BELONGS_TO:
             $this->main_key  = isset($p['main_key'])  ? $p['main_key']  : $this->assoc_table->pk;
             $this->assoc_key = isset($p['assoc_key']) ? $p['assoc_key'] : $this->assoc_table->pk;
             $this->on_delete = isset($p['on_delete']) ? $p['on_delete'] : 'skip';
             $this->on_save   = isset($p['on_save'])   ? $p['on_save']   : 'skip';
             $this->one_to_one = true;
             break;
-        case QTable_Base::MANY_TO_MANY:
+        case QDB_Table::MANY_TO_MANY:
             $this->main_key      = isset($p['main_key'])      ? $p['main_key']      : $this->main_table->pk;
             $this->assoc_key     = isset($p['assoc_key'])     ? $p['assoc_key']     : $this->assoc_table->pk;
             $this->mid_main_key  = isset($p['mid_main_key'])  ? $p['mid_main_key']  : $this->main_table->pk;

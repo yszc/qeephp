@@ -1,6 +1,6 @@
 <?php
 
-abstract class QTable_Extension_Abstract
+abstract class QDB_Table_Extension_Abstract
 {
 
 }

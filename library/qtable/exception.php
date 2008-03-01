@@ -1,6 +1,6 @@
 <?php
 
-class QTable_Exception extends QException
+class QDB_Table_Exception extends QException
 {
 
 }
