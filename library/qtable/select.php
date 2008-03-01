@@ -132,6 +132,13 @@ class QTable_Select
     protected $links;
 
     /**
+     * 递归关联查询的层数
+     *
+     * @var int
+     */
+    protected $recursion = 1;
+
+    /**
      * 构造函数
      *
      * @param QTable_Base $table
@@ -159,6 +166,45 @@ class QTable_Select
     function select($expr = '*')
     {
         $this->select = $expr;
+        return $this;
+    }
+
+    /**
+     * 设置递归关联查询的层数（默认为1层）
+     *
+     * @param int $recursion
+     *
+     * @return QTable_Select
+     */
+    function recursion($recursion)
+    {
+        $this->recursion = abs($recursion);
+        return $this;
+    }
+
+    /**
+     * 设置关联查询时要使用的关联
+     *
+     * $links 可以是数组或字符串。如果 $links 为 null，则表示不查询关联。
+     *
+     * @param array|string $links
+     *
+     * @return QTable_Select
+     */
+    function links($links)
+    {
+        if (empty($links)) {
+            $this->links = array();
+        } else {
+            $links = Q::normalize($links);
+            $enabled = array();
+            foreach ($links as $link) {
+                if (isset($this->links[$link])) {
+                    $enabled[$link] = $this->links[$link];
+                }
+            }
+            $this->links = $enabled;
+        }
         return $this;
     }
 
@@ -412,10 +458,19 @@ class QTable_Select
             // 进行关联查询，并组装数据集
             foreach ($used_links as $mka => $link) {
                 /* @var $link QTable_Link */
-                $sql = $link->getFindSQL($refs_value[$mka]);
-                QDebug::dump($sql, 'assoc_' . $link->name .'_sql');
-                $h = $link->assoc_table->getDBO()->execute($sql);
-                $handle->assemble($h, $refs[$mka], $link->mapping_name, $link->one_to_one, $link->assoc_key_alias);
+                $assoc_rowset = $link->assoc_table->find("[{$link->assoc_key}] IN (?)", $refs[$mka])
+                                                  ->recursion($this->recursion - 1)
+                                                  ->order($link->on_find_order)
+                                                  ->select($link->on_find_fields)
+                                                  ->where($link->on_find_where, $link->on_find_where_args)
+                                                  ->limit($link->on_find_limit)
+                                                  ->query();
+                QDebug::dump($assoc_rowset);
+
+                // $sql = $link->getFindSQL($refs_value[$mka]);
+                // QDebug::dump($sql, 'assoc_' . $link->name .'_sql');
+                // $h = $link->assoc_table->getDBO()->execute($sql);
+                // $handle->assemble($h, $refs[$mka], $link->mapping_name, $link->one_to_one, $link->assoc_key_alias);
             }
 
             unset($refs_value);
