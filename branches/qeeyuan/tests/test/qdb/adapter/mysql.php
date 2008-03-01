@@ -1,9 +1,28 @@
 <?php
+/////////////////////////////////////////////////////////////////////////////
+// QeePHP Framework
+//
+// Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
+//
+// 许可协议，请查看源代码中附带的 LICENSE.TXT 文件，
+// 或者访问 http://www.qeephp.org/ 获得详细信息。
+/////////////////////////////////////////////////////////////////////////////
 
-require_once 'PHPUnit/Framework.php';
-require_once dirname(__FILE__) . '/../init.php';
+/**
+ * 测试 QDB 的 MySQL 驱动
+ *
+ * @package tests
+ * @version $Id$
+ */
 
-class TestQDB extends PHPUnit_Framework_TestCase
+require_once dirname(__FILE__) . '/../../_include.php';
+
+/**
+ * MySQL 驱动的单元测试
+ *
+ * @package tests
+ */
+class Test_QDB_Adapter_MySQL extends PHPUnit_Framework_TestCase
 {
     /**
      * @var QDB_Adapter_Abstract
@@ -12,6 +31,17 @@ class TestQDB extends PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
+        $dsn = array(
+            'driver'    => 'mysql',
+            'host'      => 'localhost',
+            'login'     => 'root',
+            'password'  => '',
+            'database'  => 'qeephp_test',
+            'prefix'    => 'q_',
+            'charset'   => 'utf8',
+        );
+        Q::setIni('dsn', $dsn);
+
         $this->dbo = QDB::getConn();
         $this->dbo->connect();
     }
