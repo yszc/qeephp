@@ -33,7 +33,7 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
         $this->schema = $dsn['database'];
     }
 
-    function connect($pconnect = false, $forcenew = false)
+    function connect($pconnect = false, $force_new = false)
     {
         if (is_resource($this->conn)) { return; }
 
@@ -49,9 +49,9 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
         if (!isset($this->dsn['password'])) { $this->dsn['password'] = ''; }
 
         if ($pconnect) {
-            $this->conn = mysql_pconnect($host, $this->dsn['login'], $this->dsn['password'], $forcenew);
+            $this->conn = mysql_pconnect($host, $this->dsn['login'], $this->dsn['password'], $force_new);
         } else {
-            $this->conn = mysql_connect($host, $this->dsn['login'], $this->dsn['password'], $forcenew);
+            $this->conn = mysql_connect($host, $this->dsn['login'], $this->dsn['password'], $force_new);
         }
 
         if (!is_resource($this->conn)) {
@@ -97,6 +97,9 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
         if (is_int($value)) { return $value; }
         if (is_bool($value)) { return $value ? $this->TRUE_VALUE : $this->FALSE_VALUE; }
         if (is_null($value)) { return $this->NULL_VALUE; }
+        if (is_array($value)) {
+            QDebug::dumpTrace();
+        }
         return "'" . mysql_real_escape_string($value, $this->conn) . "'";
     }
 
@@ -112,32 +115,39 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
         return $schema != '' ? "`{$schema}`.`{$table_name}`" : "`{$table_name}`";
     }
 
-    function qfield($fieldName, $table_name = null, $schema = null)
+    function qfield($field_name, $table_name = null, $schema = null, $alias = null)
     {
-        if (strpos($fieldName, '.') !== false) {
-            $parts = explode('.', $fieldName);
+        if (strpos($field_name, '.') !== false) {
+            $parts = explode('.', $field_name);
             if (isset($parts[2])) {
                 $schema = $parts[0];
                 $table_name = $parts[1];
-                $fieldName = $parts[2];
+                $field_name = $parts[2];
             } elseif (isset($parts[1])) {
                 $table_name = $parts[0];
-                $fieldName = $parts[1];
+                $field_name = $parts[1];
             }
         }
-        $fieldName = trim($fieldName, '`');
-        $fieldName = ($fieldName == '*') ? '*' : "`{$fieldName}`";
-        return $table_name != '' ? $this->qtable($table_name, $schema) . '.' . $fieldName : $fieldName;
+        $field_name = trim($field_name, '`');
+        $field_name = ($field_name == '*') ? '*' : "`{$field_name}`";
+        if ($table_name) {
+            $field_name = $this->qtable($table_name, $schema) . '.' . $field_name;
+        }
+        if ($alias) {
+            return "{$field_name} AS `{$alias}`";
+        } else {
+            return $field_name;
+        }
     }
 
     function nextID($seqname = 'qdbo_global_seq', $start_value = 1)
     {
-        $nextSql = sprintf('UPDATE %s SET id = LAST_INSERT_ID(id + 1)', $seqname);
+        $next_sql = sprintf('UPDATE %s SET id = LAST_INSERT_ID(id + 1)', $seqname);
 
         $successed = false;
         try {
             // 首先产生下一个序列值
-            $this->execute($nextSql);
+            $this->execute($next_sql);
             if ($this->affectedRows() > 0) {
                 $successed = true;
             }
@@ -153,7 +163,7 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
                 $sql = sprintf('INSERT INTO %s VALUES (%s)', $seqname, $start_value);
                 $this->execute($sql);
             }
-            $this->execute($nextSql);
+            $this->execute($next_sql);
         }
         // 获得新的序列值
         $this->insert_id = $this->insertID();

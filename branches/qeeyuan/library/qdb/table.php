@@ -689,7 +689,7 @@ class QDB_Table
     /**
      * 返回该表数据入口对象使用的数据访问对象
      *
-     * @return QDBO_Adapter_Abstract
+     * @return QDB_Adapter_Abstract
      */
     function getConn()
     {
@@ -833,13 +833,14 @@ class QDB_Table
      */
     function parseSQLInternal($where, array $args = null)
     {
-        if (empty($where)) { return array(null, null); }
+        if (empty($where)) { return array(null, null, null); }
         if (is_null($args)) {
             $args = array();
         }
         if (is_int($where)) {
-            return array("{$this->qpk} = {$where}", array());
+            return array("{$this->qpk} = {$where}", array(), null);
         }
+
         if (is_array($where)) {
             return $this->parseSQLArray($where, $args);
         } else {
@@ -864,7 +865,6 @@ class QDB_Table
          * where(array('(', 'user_id' => $user_id, 'OR', 'level_ix' => $level_ix, ')'))
          * where(array('user_id' => array($id1, $id2, $id3)))
          */
-        // 查询条件中用到的关联表
 
         $parts = array();
         $callback = array($this->dbo, 'qstr');
@@ -873,8 +873,9 @@ class QDB_Table
 
         foreach ($where as $key => $value) {
             if (is_int($key)) {
-                // 如果是字符串条件，则用 parseSQLString() 进行分析
-                list($part, , $count) = $this->parseSQLString($value, $args, $args_count);
+                // 递归调用，进一步分析 SQL
+                list($part, , $count) = $this->parseSQLInternal($value, $args, $args_count);
+                if (empty($part)) { continue; }
                 $args_count += $count;
                 $parts[] = $part;
                 if ($value == ')') {
@@ -898,7 +899,7 @@ class QDB_Table
             }
         }
 
-        return array(implode(' ', $parts), array());
+        return array(implode(' ', $parts), array(), null);
     }
 
     /**

@@ -67,10 +67,10 @@ class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
         $tableAuthors->disableLinks('books');
 
         $authors = $this->insertAuthors();
-        $contents = $this->insertContents($authors);
-        $this->insertComments($authors, $contents);
-        $author = $tableAuthors->find($authors['dali'])->query();
-        $tableAuthors->getConn()->completeTrans(false);
+        $contents = $this->insertContents($authors, 9);
+        $this->insertComments($authors, $contents, 300);
+        $author = $tableAuthors->find($authors['dali'])->recursion(2)->query();
+        $tableAuthors->getConn()->completeTrans(true);
 
         QDebug::dump($author, 'testFindHasMany');
 

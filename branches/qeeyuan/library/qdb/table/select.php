@@ -219,7 +219,10 @@ class QDB_Table_Select
     {
         $args = func_get_args();
         array_shift($args);
-        $this->where[] = $this->table->parseSQLInternal($where, $args);
+        list($sql, ) = $this->table->parseSQLInternal($where, $args);
+        if (!empty($sql)) {
+            $this->where[] = $sql;
+        }
         return $this;
     }
 
@@ -435,6 +438,8 @@ class QDB_Table_Select
     {
         list($sql, $is_stat, $used_links) = $this->toStringInternal();
 
+        QDebug::dump($sql, 'query() - ' . $this->table->table_name);
+
         if (!is_array($this->limit)) {
             if (is_null($this->limit)) {
                 $handle = $this->table->getConn()->execute($sql);
@@ -448,7 +453,7 @@ class QDB_Table_Select
 
         /* @var $handle QDB_Result_Abstract */
 
-        if (!$is_stat) {
+        if (!$is_stat && $this->recursion > 0) {
             // 对于非统计方式，一律进行关联数据表的查询
             $used_alias = array_keys($used_links);
             $refs_value = null;
@@ -457,15 +462,24 @@ class QDB_Table_Select
 
             // 进行关联查询，并组装数据集
             foreach ($used_links as $mka => $link) {
-                /* @var $link QTable_Link */
-                $assoc_rowset = $link->assoc_table->find("[{$link->assoc_key}] IN (?)", $refs[$mka])
-                                                  ->recursion($this->recursion - 1)
-                                                  ->order($link->on_find_order)
-                                                  ->select($link->on_find_fields)
-                                                  ->where($link->on_find_where, $link->on_find_where_args)
-                                                  ->limit($link->on_find_limit)
-                                                  ->query();
-                QDebug::dump($assoc_rowset);
+                /* @var $link QDB_Table_Link */
+                $select = $link->assoc_table->find("[{$link->assoc_key}] IN (?)", $refs_value[$mka])
+                                            ->recursion($this->recursion - 1)
+                                            ->order($link->on_find_order)
+                                            ->select($link->on_find_fields)
+                                            ->where($link->on_find_where);
+                if (is_int($link->on_find) || is_array($link->on_find)) {
+                    $select->limit($link->on_find);
+                }
+                $assoc_rowset = $select->query();
+                if (is_int($link->on_find) && $link->on_find == 1) {
+                    $assoc_rowset = array($assoc_rowset);
+                }
+
+                // 组装数据集
+                foreach ($refs_value[$mka] as $v) {
+                    $refs[$mka][$v][$link->mapping_name] = $assoc_rowset;
+                }
 
                 // $sql = $link->getFindSQL($refs_value[$mka]);
                 // QDebug::dump($sql, 'assoc_' . $link->name .'_sql');
@@ -492,9 +506,9 @@ class QDB_Table_Select
             }
         } else {
             if ($this->limit == 1) {
-                return $handle->fetchOne();
+                return $handle->fetchRow();
             } else {
-                return $handle->fetchCol();
+                return $handle->fetchAll();
             }
         }
     }
@@ -511,6 +525,22 @@ class QDB_Table_Select
     }
 
     /**
+     * 将一个字段列表或者一个表达式转换为字符串
+     *
+     * @param mixed $part
+     *
+     * @return string
+     */
+    protected function toStringPart($part)
+    {
+        if (is_object($part)) {
+            return $part->toString();
+        } else {
+            return $this->table->getConn()->qfields($part);
+        }
+    }
+
+    /**
      * 返回查询语句以及相关关联的信息
      *
      * @param boolean $use_links
@@ -524,85 +554,82 @@ class QDB_Table_Select
             $sql .= 'DISTINCT ';
         }
 
-        $sql .= $this->select;
+        $sql .= $this->toStringPart($this->select);
         $is_stat = false;
 
         if ($this->count) {
-            list($expr, $alias) = $this->count;
             $is_stat = true;
+            list($expr, $alias) = $this->count;
+            $expr = $this->toStringPart($expr);
             $sql .= ", COUNT({$expr}) AS {$alias}";
         }
         if ($this->avg) {
-            list($expr, $alias) = $this->avg;
             $is_stat = true;
+            list($expr, $alias) = $this->avg;
+            $expr = $this->toStringPart($expr);
             $sql .= ", AVG({$expr}) AS {$alias} ";
         }
         if ($this->max) {
-            list($expr, $alias) = $this->max;
             $is_stat = true;
+            list($expr, $alias) = $this->max;
+            $expr = $this->toStringPart($expr);
             $sql .= ", MAX({$expr}) AS {$alias} ";
         }
         if ($this->min) {
-            list($expr, $alias) = $this->min;
             $is_stat = true;
+            list($expr, $alias) = $this->min;
+            $expr = $this->toStringPart($expr);
             $sql .= ", MIN({$expr}) AS {$alias} ";
         }
         if ($this->sum) {
-            list($expr, $alias) = $this->sum;
             $is_stat = true;
+            list($expr, $alias) = $this->sum;
+            $expr = $this->toStringPart($expr);
             $sql .= ", SUM({$expr}) AS {$alias} ";
         }
 
         $used_links = array();
-        if (!$is_stat && $use_links) {
+        if (!$is_stat && $use_links && $this->recursion > 0) {
             // 如果使用了任何统计函数，则不进行关联查询
             foreach ($this->links as $link) {
                 /* @var $link QTable_Link */
                 if (!$link->enabled || $link->on_find == 'skip') { continue; }
                 $link->init();
-                $sql .= ', ' . $link->main_key . ' AS ' . $link->main_key_alias;
+                $sql .= ', ' . $this->table->getConn()->qfield($link->main_key) . ' AS ' . $link->main_key_alias;
                 $used_links[$link->main_key_alias] = $link;
             }
         }
 
-        $sql .= " FROM {$this->table->qtable_name} ";
+        $sql .= " FROM {$this->table->qtable_name}";
 
         $c = array();
         foreach ($this->where as $where) {
-            if (is_array($where)) {
-                $c[] = '(' . $where[0] . ')';
-            } else {
-                $c[] = '(' . $where . ')';
-            }
+            $c[] = '(' . $this->table->parseSQL($where) . ')';
         }
         if (!empty($c)) {
-            $c = implode(' AND ', $c);
-            $sql .= "WHERE {$c} ";
+            $sql .= ' WHERE ' . implode(' AND ', $c);
         }
 
         if ($this->group) {
-            $sql .= "GROUP BY {$this->group} ";
+            $group = $this->table->parseSQL($this->group);
+            $sql .= " GROUP BY {$group}";
         }
 
         $c = array();
         foreach ($this->having as $where) {
-            if (is_array($where)) {
-                $c[] = '(' . $where[0] . ')';
-            } else {
-                $c[] = '(' . $where . ')';
-            }
+            $c[] = '(' . $this->table->parseSQL($where) . ')';
         }
         if (!empty($c)) {
-            $c = implode(' AND ', $c);
-            $sql .= "HAVING {$c} ";
+            $sql .= ' HAVING ' . implode(' AND ', $c);
         }
 
         if ($this->order) {
-            $sql .= "ORDER BY {$this->order} ";
+            $order = $this->table->parseSQL($this->order);
+            $sql .= " ORDER BY {$order}";
         }
 
         if ($this->for_update) {
-            $sql .= "FOR UPDATE";
+            $sql .= ' FOR UPDATE';
         }
 
         return array($sql, $is_stat, $used_links);
