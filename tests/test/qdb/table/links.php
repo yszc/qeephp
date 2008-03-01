@@ -15,16 +15,24 @@
  * @version $Id$
  */
 
-require_once 'PHPUnit/Framework.php';
-require_once dirname(__FILE__) . '/../../init.php';
+require_once dirname(__FILE__) . '/../../_include.php';
 
-class Test_QTable_Links extends PHPUnit_Framework_TestCase
+class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
 {
+    function __construct()
+    {
+        $dsn = Q::getIni('dsn');
+        if (empty($dsn)) {
+            Q::setIni('dsn', Q::getIni('dsn_mysql'));
+        }
+        parent::__construct();
+    }
+
     function testFindBelongsTo()
     {
         $tableAuthors = Q::getSingleton('Table_Authors');
         /* @var $tableAuthors Table_Authors */
-        $tableAuthors->getDBO()->startTrans();
+        $tableAuthors->getConn()->startTrans();
 
         $authors = $this->insertAuthors();
 
@@ -38,7 +46,7 @@ class Test_QTable_Links extends PHPUnit_Framework_TestCase
         );
         $id = $tableContents->create($content);
         $find = $tableContents->find($id)->query();
-        $tableContents->getDBO()->completeTrans(false);
+        $tableContents->getConn()->completeTrans(false);
 
         QDebug::dump($find, 'testFindBelongsTo');
 
@@ -55,14 +63,14 @@ class Test_QTable_Links extends PHPUnit_Framework_TestCase
     {
         $tableAuthors = Q::getSingleton('Table_Authors');
         /* @var $tableAuthors Table_Authors */
-        $tableAuthors->getDBO()->startTrans();
+        $tableAuthors->getConn()->startTrans();
         $tableAuthors->disableLinks('books');
 
         $authors = $this->insertAuthors();
         $contents = $this->insertContents($authors);
         $this->insertComments($authors, $contents);
         $author = $tableAuthors->find($authors['dali'])->query();
-        $tableAuthors->getDBO()->completeTrans(false);
+        $tableAuthors->getConn()->completeTrans(false);
 
         QDebug::dump($author, 'testFindHasMany');
 

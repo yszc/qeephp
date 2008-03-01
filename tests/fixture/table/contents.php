@@ -20,7 +20,7 @@
  *
  * @package test_fixture
  */
-class Table_Contents extends QTable_Base
+class Table_Contents extends QDB_Table
 {
     /**
      * 不包含全局前缀的数据表名称

@@ -15,31 +15,34 @@
  * @version $Id$
  */
 
-require_once 'PHPUnit/Framework.php';
-require_once dirname(__FILE__) . '/../../init.php';
+require_once dirname(__FILE__) . '/../../_include.php';
 
-class Test_QTable_Basic extends PHPUnit_Framework_TestCase
+class Test_QDB_Table_Basic extends PHPUnit_Framework_TestCase
 {
     /**
-     * @var QTable_Base
+     * @var QDB_Table
      */
     protected $table;
 
     protected function setUp()
     {
-        $dbo = QDBO::getConn();
+        $dsn = Q::getIni('dsn');
+        if (empty($dsn)) {
+            Q::setIni('dsn', Q::getIni('dsn_mysql'));
+        }
+        $dbo = QDB::getConn();
         $params = array(
             'table_name' => 'posts',
             'pk'         => 'post_id',
             'dbo'        => $dbo
         );
-        $this->table = new QTable_Base($params, false);
+        $this->table = new QDB_Table($params, false);
     }
 
     function testFind()
     {
         $select = $this->table->find();
-        $this->assertType('QTable_Select', $select);
+        $this->assertType('QDB_Table_Select', $select);
     }
 
     function testFind2()
@@ -47,7 +50,7 @@ class Test_QTable_Basic extends PHPUnit_Framework_TestCase
         $conditions = '[post_id] = :post_id AND created > :created';
         $select = $this->table->find($conditions, array('post_id' => 1, 'created' => 0));
         $actual = trim($select->toString());
-        $expected = 'SELECT * FROM `q_posts` WHERE (`test`.`q_posts`.`post_id` = 1 AND created > 0)';
+        $expected = 'SELECT * FROM `q_posts` WHERE (`qeephp_test`.`q_posts`.`post_id` = 1 AND created > 0)';
         $this->assertEquals($expected, $actual);
     }
 
@@ -228,7 +231,7 @@ class Test_QTable_Basic extends PHPUnit_Framework_TestCase
     function testParseSQLString4()
     {
         $where = '[user_id] = ? AND [level_ix] > ?';
-        $expected = '`test`.`q_posts`.`user_id` = 1 AND `test`.`q_posts`.`level_ix` > 3';
+        $expected = '`qeephp_test`.`q_posts`.`user_id` = 1 AND `qeephp_test`.`q_posts`.`level_ix` > 3';
         $actual = $this->table->parseSQL($where, 1, 3);
         $this->assertEquals($expected, $actual);
     }
@@ -236,7 +239,7 @@ class Test_QTable_Basic extends PHPUnit_Framework_TestCase
     function testParseSQLString5()
     {
         $where = '[posts.user_id] = :user_id AND [level.level_ix] > :level_ix';
-        $expected = '`test`.`posts`.`user_id` = 2 AND `test`.`level`.`level_ix` > 55';
+        $expected = '`qeephp_test`.`posts`.`user_id` = 2 AND `qeephp_test`.`level`.`level_ix` > 55';
         $actual = $this->table->parseSQL($where, array('user_id' => 2, 'level_ix' => 55));
         $this->assertEquals($expected, $actual);
     }
@@ -244,7 +247,7 @@ class Test_QTable_Basic extends PHPUnit_Framework_TestCase
     function testParseSQLString6()
     {
         $where = '[user_id] IN (:users_id) AND [schema.level.level_ix] > :level_ix';
-        $expected = '`test`.`q_posts`.`user_id` IN (1,2,3) AND `schema`.`level`.`level_ix` > 55';
+        $expected = '`qeephp_test`.`q_posts`.`user_id` IN (1,2,3) AND `schema`.`level`.`level_ix` > 55';
         $actual = $this->table->parseSQL($where, array('users_id' => array(1, 2, 3), 'level_ix' => 55));
         $this->assertEquals($expected, $actual);
     }
@@ -284,7 +287,7 @@ class Test_QTable_Basic extends PHPUnit_Framework_TestCase
     function testParseSQLArray5()
     {
         $where = array('posts.user_id' => 1, 'OR', '[title] LIKE ?');
-        $expected = '`q_posts`.`user_id` = 1 OR `test`.`q_posts`.`title` LIKE \'%ABC%\'';
+        $expected = '`q_posts`.`user_id` = 1 OR `qeephp_test`.`q_posts`.`title` LIKE \'%ABC%\'';
         $actual = $this->table->parseSQL($where, '%ABC%');
         $this->assertEquals($expected, $actual);
     }
@@ -292,7 +295,7 @@ class Test_QTable_Basic extends PHPUnit_Framework_TestCase
     function testParseSQLArray6()
     {
         $where = array('posts.user_id' => 1, 'OR', '[title] LIKE :title');
-        $expected = '`q_posts`.`user_id` = 1 OR `test`.`q_posts`.`title` LIKE \'%ABC%\'';
+        $expected = '`q_posts`.`user_id` = 1 OR `qeephp_test`.`q_posts`.`title` LIKE \'%ABC%\'';
         $actual = $this->table->parseSQL($where, array('title' => '%ABC%'));
         $this->assertEquals($expected, $actual);
     }
@@ -300,7 +303,7 @@ class Test_QTable_Basic extends PHPUnit_Framework_TestCase
     function testParseSQLArray7()
     {
         $where = array('[user_id] = ?', 'OR', '[title] LIKE ?');
-        $expected = '`test`.`q_posts`.`user_id` = 1 OR `test`.`q_posts`.`title` LIKE \'%ABC%\'';
+        $expected = '`qeephp_test`.`q_posts`.`user_id` = 1 OR `qeephp_test`.`q_posts`.`title` LIKE \'%ABC%\'';
         $actual = $this->table->parseSQL($where, 1, '%ABC%');
         $this->assertEquals($expected, $actual);
     }
@@ -308,7 +311,7 @@ class Test_QTable_Basic extends PHPUnit_Framework_TestCase
     function testParseSQLArray8()
     {
         $where = array('[user_id] = :user_id', 'OR', '[title] LIKE :title');
-        $expected = '`test`.`q_posts`.`user_id` = 1 OR `test`.`q_posts`.`title` LIKE \'%ABC%\'';
+        $expected = '`qeephp_test`.`q_posts`.`user_id` = 1 OR `qeephp_test`.`q_posts`.`title` LIKE \'%ABC%\'';
         $actual = $this->table->parseSQL($where, array('user_id' => 1, 'title' => '%ABC%'));
         $this->assertEquals($expected, $actual);
     }

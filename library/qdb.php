@@ -52,6 +52,11 @@ class QDB
 
         if (is_null($dsn)) {
             $dsn = Q::getIni('dsn');
+
+            if (empty($dsn)) {
+                // LC_MSG: Invalid DSN.
+                throw new QException(__('Invalid DSN.'));
+            }
         }
         $dbtype = $dsn['driver'];
         $objid = "dbo_{$dbtype}_" .  md5(serialize($dsn));

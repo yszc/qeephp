@@ -219,7 +219,7 @@ abstract class Q
             $suffix = trim($suffix, '\\/');
             $suffix = DS . $suffix;
         }
-        
+
         if ($filename != $class_name) {
             $dirname = dirname($filename);
             if (is_null($dirs)) {
@@ -245,8 +245,14 @@ abstract class Q
             $dirs = self::$class_path;
             $filename .= '.php';
         }
-        
-        self::loadFile($filename, false, $dirs);
+
+        try {
+            self::loadFile($filename, false, $dirs);
+        } catch (QException $ex) {
+            unset($ex);
+            // LC_MSG: Not found class "%s".
+            throw new QException(__('Not found class "%s".', $class_name));
+        }
     }
     // }}}
 
@@ -272,7 +278,7 @@ abstract class Q
         static $loaded = array();
 
         $id = $filename . implode(':', (array)$dirs);
-        
+
         if ($once && isset($loaded[$id])) { return null; }
         if (preg_match('/[^a-z0-9\-_.]/i', $filename)) {
             // LC_MSG: Security check: Illegal character in filename "%s".
@@ -287,11 +293,11 @@ abstract class Q
         foreach ($dirs as $dir) {
             $path = rtrim($dir, '\\/') . DS . $filename;
             if (self::isReadable($path)) {
-                if ($once) { 
+                if ($once) {
                     $loaded[$id] = true;
                     return include_once $path;
                 } else {
-                	return include $path;
+                    return include $path;
                 }
             }
         }
@@ -299,8 +305,8 @@ abstract class Q
         // include 会在 include_path 中寻找文件
         if (self::isReadable($filename)) {
             if ($once) {
-            	$loaded[$id] = true;
-            	return include $filename;
+                $loaded[$id] = true;
+                return include $filename;
             } else {
                 return include $filename;
             }
@@ -441,9 +447,9 @@ abstract class Q
      */
     static function import($dir)
     {
-    	if (!isset(self::$class_path[$dir]) || !is_dir($dir)) {
-    		self::$class_path[$dir] = realpath($dir);
-    	}
+        if (!isset(self::$class_path[$dir]) || !is_dir($dir)) {
+            self::$class_path[$dir] = realpath($dir);
+        }
     }
     // }}}
 

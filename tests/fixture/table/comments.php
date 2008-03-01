@@ -20,7 +20,7 @@
  *
  * @package test-fixture
  */
-class Table_Comments extends QTable_Base
+class Table_Comments extends QDB_Table
 {
     public $table_name = 'comments';
     public $pk = 'comment_id';
