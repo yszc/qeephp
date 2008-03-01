@@ -9,24 +9,24 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 QDBO_Exception 类
+ * 定义 QDB_Exception 类
  *
  * @package database
  * @version $Id$
  */
 
 /**
- * QDBO_Exception 用于封装数据库操作相关的异常
+ * QDB_Exception 用于封装数据库操作相关的异常
  *
  * @package database
  */
-class QDBO_Exception extends QException
+class QDB_Exception extends QException
 {
-	/**
-	 * 引发异常的 SQL 语句
-	 *
-	 * @var string
-	 */
+    /**
+     * 引发异常的 SQL 语句
+     *
+     * @var string
+     */
     public $sql;
 
     function __construct($sql, $error, $errcode)

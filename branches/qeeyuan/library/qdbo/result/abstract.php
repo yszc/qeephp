@@ -9,18 +9,18 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 QDBO_Result_Abstract 类
+ * 定义 QDB_Result_Abstract 类
  *
  * @package database
  * @version $Id$
  */
 
 /**
- * QDBO_Result_Abstract 是封装查询结果对象的抽象基础类
+ * QDB_Result_Abstract 是封装查询结果对象的抽象基础类
  *
  * @package database
  */
-abstract class QDBO_Result_Abstract
+abstract class QDB_Result_Abstract
 {
     /**
      * 指示返回结果集的形式
@@ -125,7 +125,7 @@ abstract class QDBO_Result_Abstract
     function fetchCol($col = 0)
     {
         $mode = $this->fetch_mode;
-        $this->fetch_mode = QDBO::FETCH_MODE_ARRAY;
+        $this->fetch_mode = QDB::FETCH_MODE_ARRAY;
         $cols = array();
         while (($row = $this->fetchRow())) {
             $cols[] = $row[$col];
@@ -217,13 +217,13 @@ abstract class QDBO_Result_Abstract
     /**
      * 将 $handle 查询获得的结果组装到 $rowset 中
      *
-     * @param QDBO_Result_Abstract $assoc_handle
+     * @param QDB_Result_Abstract $assoc_handle
      * @param array $rowset
      * @param string $mapping_name
      * @param boolean $one_to_one
      * @param string $ref_key
      */
-    function assemble(QDBO_Result_Abstract $assoc_handle, array & $rowset, $mapping_name, $one_to_one, $ref_key)
+    function assemble(QDB_Result_Abstract $assoc_handle, array & $rowset, $mapping_name, $one_to_one, $ref_key)
     {
         if ($one_to_one) {
             // 一对一组装数据

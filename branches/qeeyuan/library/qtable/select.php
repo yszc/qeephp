@@ -1,14 +1,14 @@
 <?php
 
 /**
- * QTable_Select 利用方法链，实现灵活的查询构造
+ * QDB_Select 利用方法链，实现灵活的查询构造
  */
-class QTable_Select
+class QDB_Select
 {
     /**
      * 查询使用的表数据入口对象
      *
-     * @var QTable_Base
+     * @var QDB_Table
      */
     protected $table;
 
@@ -141,12 +141,12 @@ class QTable_Select
     /**
      * 构造函数
      *
-     * @param QTable_Base $table
+     * @param QDB_Table $table
      * @param array|string $where
      * @param array $args
      * @param array $links
      */
-    function __construct(QTable_Base $table, $where = null, array $args = null, array $links = null)
+    function __construct(QDB_Table $table, $where = null, array $args = null, array $links = null)
     {
         $this->table = $table;
         if (!is_array($links)) { $links = array(); }
@@ -161,7 +161,7 @@ class QTable_Select
      *
      * @param array|string $expr
      *
-     * @return QTable_Select
+     * @return QDB_Select
      */
     function select($expr = '*')
     {
@@ -174,7 +174,7 @@ class QTable_Select
      *
      * @param int $recursion
      *
-     * @return QTable_Select
+     * @return QDB_Select
      */
     function recursion($recursion)
     {
@@ -189,7 +189,7 @@ class QTable_Select
      *
      * @param array|string $links
      *
-     * @return QTable_Select
+     * @return QDB_Select
      */
     function links($links)
     {
@@ -213,7 +213,7 @@ class QTable_Select
      *
      * @param array|string $where
      *
-     * @return QTable_Select
+     * @return QDB_Select
      */
     function where($where)
     {
@@ -228,7 +228,7 @@ class QTable_Select
      *
      * @param string $expr
      *
-     * @return QTable_Select
+     * @return QDB_Select
      */
     function order($expr)
     {
@@ -239,7 +239,7 @@ class QTable_Select
     /**
      * 指示查询所有符合条件的记录
      *
-     * @return QTable_Select
+     * @return QDB_Select
      */
     function all()
     {
@@ -253,7 +253,7 @@ class QTable_Select
      * @param int $count
      * @param int $offset
      *
-     * @return QTable_Select
+     * @return QDB_Select
      */
     function limit($count, $offset = 0)
     {
@@ -268,7 +268,7 @@ class QTable_Select
      * @param int $page_size
      * @param int $base
      *
-     * @return QTable_Select
+     * @return QDB_Select
      */
     function limitPage($page, $page_size = 20, $base = 1)
     {
@@ -297,7 +297,7 @@ class QTable_Select
      *
      * @param string $expr
      *
-     * @return QTable_Select
+     * @return QDB_Select
      */
     function group($expr)
     {
@@ -310,7 +310,7 @@ class QTable_Select
      * @param array|string $where
      * @param array $args
      *
-     * @return QTable_Select
+     * @return QDB_Select
      */
     function having($where, array $args = null)
     {
@@ -322,7 +322,7 @@ class QTable_Select
      *
      * @param boolean $flag
      *
-     * @return QTable_Select
+     * @return QDB_Select
      */
     function forUpdate($flag = true)
     {
@@ -335,7 +335,7 @@ class QTable_Select
      *
      * @param boolean $flag
      *
-     * @return QTable_Select
+     * @return QDB_Select
      */
     function distinct($flag = true)
     {
@@ -348,7 +348,7 @@ class QTable_Select
      *
      * @param string $class_name
      *
-     * @return QTable_Select
+     * @return QDB_Select
      */
     function asObject($class_name)
     {
@@ -362,7 +362,7 @@ class QTable_Select
      * @param string $expr
      * @param string $alias
      *
-     * @return QTable_Select
+     * @return QDB_Select
      */
     function count($expr = '*', $alias = 'row_count')
     {
@@ -376,7 +376,7 @@ class QTable_Select
      * @param string $expr
      * @param string $alias
      *
-     * @return QTable_Select
+     * @return QDB_Select
      */
     function avg($expr, $alias = 'avg_value')
     {
@@ -390,7 +390,7 @@ class QTable_Select
      * @param string $expr
      * @param string $alias
      *
-     * @return QTable_Select
+     * @return QDB_Select
      */
     function max($expr, $alias = 'max_value')
     {
@@ -404,7 +404,7 @@ class QTable_Select
      * @param string $expr
      * @param string $alias
      *
-     * @return QTable_Select
+     * @return QDB_Select
      */
     function min($expr, $alias = 'min_value')
     {
@@ -418,7 +418,7 @@ class QTable_Select
      * @param string $expr
      * @param string $alias
      *
-     * @return QTable_Select
+     * @return QDB_Select
      */
     function sum($expr, $alias = 'sum_value')
     {

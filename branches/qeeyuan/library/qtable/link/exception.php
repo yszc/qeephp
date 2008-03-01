@@ -9,17 +9,17 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 QTable_Link_Exception 异常
+ * 定义 QDB_Link_Exception 异常
  *
  * @package database
  * @version $Id$
  */
 
 /**
- * QTable_Link_Exception 封装与关联操作相关的异常
+ * QDB_Link_Exception 封装与关联操作相关的异常
  *
  * @package database
  */
-class QTable_Link_Exception extends QException
+class QDB_Link_Exception extends QException
 {
 }

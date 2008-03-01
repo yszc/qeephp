@@ -9,18 +9,18 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 QTable_Base 类
+ * 定义 QDB_Table 类
  *
  * @package database
  * @version $Id$
  */
 
 /**
- * QTable_Base 类（表数据入口）封装数据表的 CRUD 操作，并提供了扩展接口。
+ * QDB_Table 类（表数据入口）封装数据表的 CRUD 操作，并提供了扩展接口。
  *
  * @package database
  */
-class QTable_Base
+class QDB_Table
 {
     /**
      * 关联关系
@@ -248,7 +248,7 @@ class QTable_Base
         }
 
         // LC_MSG: Specified link "%s" not found.
-        throw new QTable_Exception(__('Specified link "%s" not found.', $link_name));
+        throw new QDB_Table_Exception(__('Specified link "%s" not found.', $link_name));
     }
 
     /**
@@ -266,7 +266,7 @@ class QTable_Base
                 $this->links[$name]->enable();
             } else {
                 // LC_MSG: Specified link "%s" not found.
-                throw new QTable_Exception(__('Specified link "%s" not found.', $name));
+                throw new QDB_Table_Exception(__('Specified link "%s" not found.', $name));
             }
         }
     }
@@ -286,7 +286,7 @@ class QTable_Base
                 $this->links[$name]->disable();
             } else {
                 // LC_MSG: Specified link "%s" not found.
-                throw new QTable_Exception(__('Specified link "%s" not found.', $name));
+                throw new QDB_Table_Exception(__('Specified link "%s" not found.', $name));
             }
         }
     }
@@ -306,7 +306,7 @@ class QTable_Base
                 unset($this->links[$name]);
             } else {
                 // LC_MSG: Specified link "%s" not found.
-                throw new QTable_Exception(__('Specified link "%s" not found.', $name));
+                throw new QDB_Table_Exception(__('Specified link "%s" not found.', $name));
             }
         }
     }
@@ -549,8 +549,8 @@ class QTable_Base
     {
         if ($this->is_cpk) {
             // 对于复合主键的数据表，save() 方法无法判断是创建还是更新，所以抛出一个异常
-            // LC_MSG: QTable_Base::save() with composite primary key not implemented.
-            throw new QTable_Exception(__('QTable_Base::save() with composite primary key not implemented.'));
+            // LC_MSG: QDB_Table::save() with composite primary key not implemented.
+            throw new QDB_Table_Exception(__('QDB_Table::save() with composite primary key not implemented.'));
         }
 
         if (isset($row[$this->pk])) {
@@ -745,7 +745,7 @@ class QTable_Base
             $this->setupDBO();
             return $this->dbo;
         }
-        throw new QTable_Exception(__('Undefined property "%s"', $varname));
+        throw new QDB_Table_Exception(__('Undefined property "%s"', $varname));
     }
 
     /**

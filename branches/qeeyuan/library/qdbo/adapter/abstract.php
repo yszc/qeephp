@@ -9,18 +9,18 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 QDBO_Adapter_Abstract 类
+ * 定义 QDB_Adapter_Abstract 类
  *
  * @package database
  * @version $Id$
  */
 
 /**
- * QDBO_Adapter_Abstract 是所有数据库驱动的抽象基础类
+ * QDB_Adapter_Abstract 是所有数据库驱动的抽象基础类
  *
  * @package database
  */
-abstract class QDBO_Adapter_Abstract
+abstract class QDB_Adapter_Abstract
 {
     /**
      * 所有 SQL 查询的日志
@@ -62,7 +62,7 @@ abstract class QDBO_Adapter_Abstract
      *
      * @var const
      */
-    protected $fetch_mode = QDBO::FETCH_MODE_ASSOC;
+    protected $fetch_mode = QDB::FETCH_MODE_ASSOC;
 
     /**
      * 数据库连接句柄
@@ -136,7 +136,7 @@ abstract class QDBO_Adapter_Abstract
      *
      * @var string
      */
-    protected $PARAM_STYLE  = QDBO::PARAM_QM;
+    protected $PARAM_STYLE  = QDB::PARAM_QM;
 
     /**
      * 指示数据库是否有自增字段功能
@@ -354,9 +354,9 @@ abstract class QDBO_Adapter_Abstract
 
         $callback = array($this, 'qstr');
         switch ($param_style) {
-        case QDBO::PARAM_QM:
-        case QDBO::PARAM_DL_SEQUENCE:
-            if ($param_style == QDBO::PARAM_QM) {
+        case QDB::PARAM_QM:
+        case QDB::PARAM_DL_SEQUENCE:
+            if ($param_style == QDB::PARAM_QM) {
                 $parts = explode('?', $sql);
             } else {
                 $parts = preg_split('/\$[0-9]+/', $sql);
@@ -387,20 +387,20 @@ abstract class QDBO_Adapter_Abstract
                 return $str;
             }
 
-        case QDBO::PARAM_CL_NAMED:
-        case QDBO::PARAM_AT_NAMED:
-            $split = ($param_style == QDBO::PARAM_CL_NAMED) ? ':' : '@';
+        case QDB::PARAM_CL_NAMED:
+        case QDB::PARAM_AT_NAMED:
+            $split = ($param_style == QDB::PARAM_CL_NAMED) ? ':' : '@';
             $parts = preg_split('/(' . $split . '[a-z0-9_\-]+)/i', $sql, -1, PREG_SPLIT_DELIM_CAPTURE);
             $max = count($parts);
             if ($ignore_args === false && count($params) * 2 + 1 != $max) {
-                throw new QDBO_Exception($sql, __('Invalid parameters for "%s"', $sql), 0);
+                throw new QDB_Exception($sql, __('Invalid parameters for "%s"', $sql), 0);
             }
             $str = $parts[0];
 
             for ($offset = 1; $offset < $max; $offset += 2) {
                 $arg_name = substr($parts[$offset], 1);
                 if (!isset($params[$arg_name])) {
-                    throw new QDBO_Exception($sql, __('Invalid parameter "%s" for "%s"', $arg_name, $sql));
+                    throw new QDB_Exception($sql, __('Invalid parameter "%s" for "%s"', $arg_name, $sql));
                 }
                 if (is_array($params[$arg_name])) {
                     $arg_value = array_map($callback, $params[$arg_name]);
@@ -585,8 +585,8 @@ abstract class QDBO_Adapter_Abstract
      * 如果执行的查询是 SELECT 等会返回结果集的操作，
      * 则 execute() 执行成功后会返回一个 DBO_Result 对象，失败时将抛出异常。
      *
-     * QDBO_Result_Abstract 对象封装了查询结果句柄，而不是结果集。
-     * 因此要获得查询的数据，需要调用 QDBO_Result_Abstract 的 fetchAll() 等方法。
+     * QDB_Result_Abstract 对象封装了查询结果句柄，而不是结果集。
+     * 因此要获得查询的数据，需要调用 QDB_Result_Abstract 的 fetchAll() 等方法。
      *
      * 如果希望执行 SQL 后直接获得结果集，可以使用驱动的 getAll()、getRow() 等方法。
      *
@@ -607,12 +607,12 @@ abstract class QDBO_Adapter_Abstract
      * @param string $sql
      * @param array $inputarr
      *
-     * @return QDBO_Result_Abstract
+     * @return QDB_Result_Abstract
      */
     abstract function execute($sql, $inputarr = null);
 
     /*
-     * 进行限定范围的查询，并且返回 QDBO_Result_Abstract 对象，出错时抛出异常
+     * 进行限定范围的查询，并且返回 QDB_Result_Abstract 对象，出错时抛出异常
      *
      * 使用 selectLimit()，可以限定 SELECT 查询返回的结果集的大小。
      * $length 参数指定结果集最多包含多少条记录。而 $offset 参数则指定在查询结果中，从什么位置开始提取记录。
@@ -623,8 +623,8 @@ abstract class QDBO_Adapter_Abstract
      *
      * 注意：$offset 参数是从 0 开始计算的。因此 $offset 为 59 时，实际上是从第 60 条记录开始提取。
      *
-     * selectLimit() 并不直接返回结果集，而是返回 QDBO_Result_Abstract 对象。
-     * 因此需要调用 QDBO_Result_Abstract 对象的 fetchAll() 等方法来获得数据。
+     * selectLimit() 并不直接返回结果集，而是返回 QDB_Result_Abstract 对象。
+     * 因此需要调用 QDB_Result_Abstract 对象的 fetchAll() 等方法来获得数据。
      *
      * example:
      * <code>
@@ -642,7 +642,7 @@ abstract class QDBO_Adapter_Abstract
      * @param int $offset
      * @param array $inputarr
      *
-     * @return QDBO_Result_Abstract
+     * @return QDB_Result_Abstract
      */
     abstract function selectLimit($sql, $length = null, $offset = null, array $inputarr = null);
 
@@ -727,9 +727,9 @@ abstract class QDBO_Adapter_Abstract
     }
 
     /**
-     * 开始一个事务，并且返回一个 QDBO_Transaction 对象
+     * 开始一个事务，并且返回一个 QDB_Transaction 对象
      *
-     * 使用 beginTrans() 的好处是在 QDBO_Transaction 对象销毁时，会自动提交事务或回滚事务。
+     * 使用 beginTrans() 的好处是在 QDB_Transaction 对象销毁时，会自动提交事务或回滚事务。
      *
      * 传统的事务处理代码：
      * <code>
@@ -767,16 +767,16 @@ abstract class QDBO_Adapter_Abstract
      * 正常执行到 doSometing() 函数结束时，$tran 对象会在销毁前自动提交事务。
      *
      * <strong>
-     * 使用 beginTrans() 最重要的一点就是必须用一个变量存储 beginTrans() 返回的 QDBO_Transaction 对象。
+     * 使用 beginTrans() 最重要的一点就是必须用一个变量存储 beginTrans() 返回的 QDB_Transaction 对象。
      * </strong>
      *
-     * QDBO_Transaction 对象也提供了明确的事务提交和回滚操作。具体信息请参考 QDBO_Transaction 类的描述。
+     * QDB_Transaction 对象也提供了明确的事务提交和回滚操作。具体信息请参考 QDB_Transaction 类的描述。
      *
-     * @return QDBO_Transaction
+     * @return QDB_Transaction
      */
     function beginTrans()
     {
-        return new QDBO_Transaction($this);
+        return new QDB_Transaction($this);
     }
 
     /**
@@ -961,10 +961,10 @@ abstract class QDBO_Adapter_Abstract
         foreach (array_keys($inputarr) as $offset => $key) {
             if (!isset($fields[strtolower($key)])) { continue; }
             switch($this->PARAM_STYLE) {
-            case QDBO::PARAM_QM:
+            case QDB::PARAM_QM:
                 $holders[] = '?';
                 break;
-            case QDBO::PARAM_DL_SEQUENCE:
+            case QDB::PARAM_DL_SEQUENCE:
                 $holders[] = '$' . ($offset + 1);
                 break;
             default:
@@ -995,10 +995,10 @@ abstract class QDBO_Adapter_Abstract
             if (!isset($fields[strtolower($key)])) { continue; }
             $qkey = $this->qfield($key);
             switch($this->PARAM_STYLE) {
-            case QDBO::PARAM_QM:
+            case QDB::PARAM_QM:
                 $pairs[] = "{$qkey}={$this->PARAM_STYLE}";
                 break;
-            case QDBO::PARAM_DL_SEQUENCE:
+            case QDB::PARAM_DL_SEQUENCE:
                 $pairs[] = "{$qkey}=\$" . ($offset + 1);
                 break;
             default:
