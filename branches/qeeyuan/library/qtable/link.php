@@ -148,6 +148,20 @@ class QTable_Link
     public $on_find = 'all';
 
     /**
+     * 查询关联表时使用的查询条件
+     *
+     * @var array|string
+     */
+    public $on_find_where = null;
+
+    /**
+     * 查询关联表时使用的查询条件需要的参数
+     *
+     * @var array
+     */
+    public $on_find_where_args = null;
+
+    /**
      * 指示按照什么排序规则查询关联的记录
      */
     public $on_find_order = null;
@@ -266,6 +280,8 @@ class QTable_Link
             'mid_on_find_fields',
             'mid_on_find_prefix',
             'on_find',
+            'on_find_where',
+            'on_find_where_args',
             'on_find_order',
             'on_find_fields',
             'on_delete',
@@ -432,6 +448,8 @@ class QTable_Link
         $this->main_key_alias = isset($p['main_key_alias']) ? $p['main_key_alias'] : 'mka_' . $alias_index;
         $this->assoc_key_alias = isset($p['assoc_key_alias']) ? $p['assoc_key_alias'] : 'aka_' . $alias_index;
         $this->on_find = isset($p['on_find']) ? $p['on_find'] : 'all';
+        $this->on_find_where = isset($p['on_find_where']) ? $p['on_find_where'] : null;
+        $this->on_find_where_args = isset($p['on_find_where_args']) ? $p['on_find_where_args'] : null;
         $this->on_find_fields = isset($p['on_find_fields']) ? $p['on_find_fields'] : '*';
         $this->on_find_order = isset($p['on_find_order']) ? $p['on_find_order'] : null;
         $this->on_delete_set_value = isset($p['on_delete_set_value']) ? $p['on_delete_set_value'] : null;
@@ -456,22 +474,14 @@ class QTable_Link
             $sql .= $this->assoc_table->getDBO()->qinto(" WHERE {$this->assoc_key} IN (?)", $mkvs);
         }
 
-//        if ($this->conditions) {
-//            if (is_array($this->conditions)) {
-//                $conditions = Table_SqlHelper::parseConditions($this->conditions, $this->assoc_table);
-//                if (is_array($conditions)) {
-//                    $conditions = $conditions[0];
-//                }
-//            } else {
-//                $conditions = $this->conditions;
-//            }
-//            if ($conditions) {
-//                $sql .= " AND {$conditions}";
-//            }
-//        }
-//        if ($this->sort && $this->countOnly == false) {
-//            $sql .= " ORDER BY {$this->sort}";
-//        }
+        if ($this->on_find_where) {
+            $where = $this->assoc_table->parseSQLInternal($this->on_find_where, $this->on_find_where_args);
+            $sql .= " AND {$where}";
+        }
+
+        if ($this->on_find_order) {
+            $sql .= " ORDER BY " . $this->assoc_table->parseSQL($this->on_find_order);
+        }
 
         return $sql;
     }
