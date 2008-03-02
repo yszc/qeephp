@@ -463,6 +463,10 @@ class QDB_Table_Select
             // 进行关联查询，并组装数据集
             foreach ($used_links as $mka => $link) {
                 /* @var $link QDB_Table_Link */
+                if ($link->assoc_table->qtable_name == $this->table->qtable_name) {
+                    continue;
+                }
+
                 $select = $link->assoc_table->find("[{$link->assoc_key}] IN (?)", $refs_value[$mka])
                                             ->recursion($this->recursion - 1)
                                             ->order($link->on_find_order)
