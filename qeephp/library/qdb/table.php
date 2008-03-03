@@ -421,7 +421,7 @@ class QDB_Table
             // 如果只有一个主键字段，并且主键字段不是自增，则通过 nextID() 获得一个主键字段值
             if (empty($row[$this->pk])) {
                 unset($row[$this->pk]);
-                if (!self::$tables_meta[$this->cache_id][strtolower($pk)]['auto_incr']) {
+                if (!self::$tables_meta[$this->cache_id][$this->pk]['auto_incr']) {
                     $row[$this->pk] = $this->nextID();
                 }
             } else {
@@ -520,6 +520,7 @@ class QDB_Table
         // TODO: update() 实现对复合主键的处理
         $this->fillFieldsWithCurrentTime($row, $this->updated_time_fields);
         $sql = $this->dbo->getUpdateSQL($row, $this->pk, $this->full_table_name, $this->schema);
+        QDebug::dump($sql, '$sql - update()');
         unset($row[$this->pk]);
         $this->dbo->execute($sql, $row);
         return $this->dbo->affectedRows();

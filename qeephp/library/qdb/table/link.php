@@ -242,6 +242,13 @@ class QDB_Table_Link
     private $init_params = array();
 
     /**
+     * 字段别名增量
+     *
+     * @var int
+     */
+    private static $alias_index = 0;
+
+    /**
      * 构造函数
      *
      * @param array $define
@@ -252,6 +259,8 @@ class QDB_Table_Link
      */
     protected function __construct(array $define, $type, QDB_Table $main_table)
     {
+        self::$alias_index++;
+
         $this->name = strtolower($define['name']);
         $this->mapping_name = $define['mapping_name'];
         $this->type = $type;
@@ -312,28 +321,34 @@ class QDB_Table_Link
 
     /**
      * 允许使用该关联
+     *
+     * @return QDB_Table_Link
      */
     function enable()
     {
         $this->enabled = true;
+        return $this;
     }
 
     /**
      * 禁用该关联
+     *
+     * @return QDB_Table_Link
      */
     function disable()
     {
         $this->enabled = false;
+        return $this;
     }
 
     /**
      * 初始化关联对象
+     *
+     * @return QDB_Table_Link
      */
     function init()
     {
-        static $alias_index = 0;
-        if ($this->is_init) { return; }
-        $alias_index++;
+        if ($this->is_init) { return $this; }
 
         $this->main_table->connect();
 
@@ -355,9 +370,9 @@ class QDB_Table_Link
          * 如果 table_name 有效，则可以通过 assoc_table_???? 等一系列参数指示构造关联表数据入口时的选项。
          */
         if (!empty($p['table_obj'])) {
-            $assoc_table = $p['table_obj'];
+            $this->assoc_table = $p['table_obj'];
         } elseif (!empty($p['table_class'])) {
-            $assoc_table = Q::getSingleton($p['table_class']);
+            $this->assoc_table = Q::getSingleton($p['table_class']);
         } elseif (!empty($p['table_name'])) {
             $params = array('table_name' => $p['table_name']);
             foreach ($p as $key => $value) {
@@ -365,15 +380,12 @@ class QDB_Table_Link
                     $params[substr($key, 12)] = $value;
                 }
             }
-            $assoc_table = new QDB_Table($params);
+            $this->assoc_table = new QDB_Table($params);
         } else {
             // LC_MSG: Expected parameter "%s".
             $err = 'table_obj or table_class or table_name';
             throw new QDB_Table_Link_Exception(__('Expected parameter "%s" for link "%s".', $err, $this->name));
         }
-
-        // 设置关联表数据入口对象
-        $this->assoc_table = $assoc_table;
         $this->assoc_table->connect();
 
         /**
@@ -385,9 +397,9 @@ class QDB_Table_Link
          */
         if ($this->type == QDB_Table::MANY_TO_MANY) {
             if (!empty($p['mid_table_obj'])) {
-                $mid_table = $p['mid_table_obj'];
+                $this->mid_table = $p['mid_table_obj'];
             } elseif (!empty($p['mid_table_class'])) {
-                $mid_table = Q::getSingleton($p['mid_table_class']);
+                $this->mid_table = Q::getSingleton($p['mid_table_class']);
             } elseif (!empty($p['mid_table_name'])) {
                 $params = array('table_name' => $p['mid_table_name']);
                 foreach ($p as $key => $value) {
@@ -395,15 +407,12 @@ class QDB_Table_Link
                         $params[substr($key, 10)] = $value;
                     }
                 }
-                $mid_table = new QDB_Table($params);
+                $this->mid_table = new QDB_Table($params);
             } else {
                 // LC_MSG: Expected parameter "%s".
                 $err = 'mid_table_obj or mid_table_class or mid_table_name';
                 throw new QDB_Table_Link_Exception(__('Expected parameter "%s" for link "%s".', $err, $this->name));
             }
-
-            // 设置中间表的表数据入口对象
-            $this->mid_table = $mid_table;
             $this->mid_table->connect();
         }
 
@@ -437,8 +446,8 @@ class QDB_Table_Link
             $this->on_save       = isset($p['on_save'])       ? $p['on_save']       : 'skip';
             $this->one_to_one = false;
         }
-        $this->main_key_alias = isset($p['main_key_alias']) ? $p['main_key_alias'] : 'mka_' . $alias_index;
-        $this->assoc_key_alias = isset($p['assoc_key_alias']) ? $p['assoc_key_alias'] : 'aka_' . $alias_index;
+        $this->main_key_alias = isset($p['main_key_alias']) ? $p['main_key_alias'] : 'm_k_a_' . self::$alias_index;
+        $this->assoc_key_alias = isset($p['assoc_key_alias']) ? $p['assoc_key_alias'] : 'a_k_a_' . self::$alias_index;
         $this->on_find = isset($p['on_find']) ? $p['on_find'] : 'all';
         $this->on_find_where = isset($p['on_find_where']) ? $p['on_find_where'] : null;
         $this->on_find_fields = isset($p['on_find_fields']) ? $p['on_find_fields'] : '*';
@@ -446,6 +455,8 @@ class QDB_Table_Link
         $this->on_delete_set_value = isset($p['on_delete_set_value']) ? $p['on_delete_set_value'] : null;
 
         $this->is_init = true;
+
+        return $this;
     }
 
     /**
@@ -454,9 +465,12 @@ class QDB_Table_Link
      * @param array $link_data
      * @param mixed $assoc_key_value
      * @param int $recursion
+     *
+     * @return QDB_Table_Link
      */
     function saveAssocData(array $link_data, $assoc_key_value, $recursion)
     {
+        if ($this->on_save === false || $this->on_save == 'skip') { return; }
         switch ($this->type) {
         case QDB_Table::BELONGS_TO:
         case QDB_Table::HAS_ONE:
@@ -469,6 +483,8 @@ class QDB_Table_Link
             $this->saveManyToMany($link_data, $assoc_key_value, $recursion);
             break;
         }
+
+        return $this;
     }
 
     /**
@@ -508,88 +524,73 @@ class QDB_Table_Link
      */
     protected function saveManyToMany($link_data, $assoc_key_value, $recursion)
     {
-        if (!$this->init) { $this->init(); }
-        $apkvs = array();
-        $entityRowset = array();
+        $link_data = array(
+           array('tag_id' => 1, 'name' => 'php'),
+           array('tag_id' => 2, 'name' => 'c++'),
+           array('tag_id' => 3, 'name' => 'delphi'),
+        );
 
-        foreach ($row as $arow) {
-            if (!is_array($arow)) {
-                $apkvs[] = $arow;
+        $mid_rowset = array();
+        $akvs = array();
+
+        $keys = array_keys($link_data);
+        $len = strlen($this->mid_on_find_prefix);
+        foreach ($keys as $offset) {
+            if (!is_array($link_data[$offset])) {
+                $akvs[$offset] = $link_data[$offset];
                 continue;
             }
 
-            if (!isset($arow[$this->assocTDG->primaryKey])) {
-                // 如果关联记录尚未保存到数据库，则创建一条新的关联记录
-                $newrowid = $this->assocTDG->create($arow);
-                if ($newrowid == false) {
-                    return false;
+            // 分离出中间表字段
+            foreach ($link_data[$offset] as $field => $value) {
+                if (substr($field, 0, $len) == $this->mid_on_find_prefix) {
+                    $mid_rowset[$offset][substr($field, $len)] = $value;
+                    unset($link_data[$offset][$field]);
                 }
-                $apkv = $newrowid;
-            } else {
-                $apkv = $arow[$this->assocTDG->primaryKey];
             }
-            $apkvs[] = $apkv;
 
-            if ($this->joinTableIsEntity && isset($arow['#JOIN#'])) {
-                $entityRowset[$apkv] =& $arow['#JOIN#'];
+            if (!empty($link_data[$offset][$this->assoc_table->pk])) {
+                $akvs[$offset] = $link_data[$offset][$this->assoc_table->pk];
+            } else {
+                // 如果关联记录尚未保存到数据库，则创建一条新的关联记录
+                $akvs[$offset] = $this->assoc_table->create($link_data[$offset], $recursion);
             }
         }
 
         // 首先取出现有的关联信息
-        $qpkv = $this->dbo->qstr($pkv);
-        $sql = "SELECT {$this->qassocForeignKey} FROM {$this->qjoinTable} WHERE {$this->qforeignKey} = {$qpkv} ";
-        $existsMiddle = (array)$this->dbo->getCol($sql);
+        $v = $this->assoc_table->getConn()->qstr($assoc_key_value);
+        $sql = "SELECT {$this->mid_assoc_key} FROM {$this->mid_table->qtable_name} WHERE {$this->mid_main_key} = {$v}";
+        $exists_mid = $this->mid_table->getConn()->getCol($sql);
 
         // 然后确定要添加的关联信息
-        $insertAssoc = array_diff($apkvs, $existsMiddle);
-        $removeAssoc = array_diff($existsMiddle, $apkvs);
+        $insert_mid = array_flip(array_diff($akvs, $exists_mid));
+        $remove_mid = array_flip(array_diff($exists_mid, $akvs));
+        $exists_mid = array_flip($exists_mid);
 
-        if ($this->joinTableIsEntity) {
-            $insertEntityRowset = array();
-            foreach ($insertAssoc as $assocId) {
-                if (isset($entityRowset[$assocId])) {
-                    $row = $entityRowset[$assocId];
+        foreach ($keys as $offset) {
+            if (isset($insert_mid[$akvs[$offset]])) {
+                // 增加一个中间记录
+                if (!empty($mid_rowset[$offset])) {
+                    $row = $mid_rowset[$offset];
                 } else {
                     $row = array();
                 }
-                $row[$this->foreignKey] = $pkv;
-                $row[$this->assocForeignKey] = $assocId;
-                $insertEntityRowset[] = $row;
-            }
-            if ($this->joinTDG->createRowset($insertEntityRowset) === false) {
-                return false;
-            }
-        } else {
-            $sql = "INSERT INTO {$this->qjoinTable} ({$this->qforeignKey}, {$this->qassocForeignKey}) VALUES ({$qpkv}, ";
-            foreach ($insertAssoc as $assocId) {
-                if (!$this->dbo->execute($sql . $this->dbo->qstr($assocId) . ')')) {
-                    return false;
+                $row[$this->mid_main_key] = $assoc_key_value;
+                $row[$this->mid_assoc_key] = $akvs[$offset];
+                $this->mid_table->create($row);
+            } elseif (isset($remove_mid[$akvs[$offset]])) {
+                // 删除一个中间记录
+                $this->mid_table->remove($akvs[$offset]);
+            } elseif (isset($exists_mid[$akvs[$offset]])) {
+                // 增加一个中间记录
+                if (empty($mid_rowset[$offset])) {
+                    continue;
                 }
+                $row = $mid_rowset[$offset];
+                $row[$this->mid_main_key] = $assoc_key_value;
+                $row[$this->mid_assoc_key] = $akvs[$offset];
+                $this->mid_table->update($row);
             }
         }
-
-        // 最后删除不再需要的关联信息
-        if ($this->joinTableIsEntity) {
-            $conditions = array($this->foreignKey => $pkv);
-            foreach ($removeAssoc as $assocId) {
-                $conditions[$this->assocForeignKey] = $assocId;
-                if ($this->joinTDG->removeByConditions($conditions) === false) {
-                    return false;
-                }
-            }
-        } else {
-            $sql = "DELETE FROM {$this->qjoinTable} WHERE {$this->qforeignKey} = {$qpkv} AND {$this->qassocForeignKey} = ";
-            foreach ($removeAssoc as $assocId) {
-                if (!$this->dbo->execute($sql . $this->dbo->qstr($assocId))) {
-                    return false;
-                }
-            }
-        }
-
-        if ($this->counterCache) {
-            $sql = "UPDATE {$this->mainTDG->qtableName} SET {$this->counterCache} = (SELECT COUNT(*) FROM {$this->qjoinTable} WHERE {$this->qforeignKey} = {$qpkv}) WHERE {$this->mainTDG->qpk} = {$qpkv}";
-            $this->mainTDG->dbo->execute($sql);
-        }
-
     }
 }
