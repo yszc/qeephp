@@ -27,4 +27,3 @@ interface QActiveRecord_Callbacks_Interface
      */
     const custom_callback             = 0xff01; // 行为插件自定义方法
 }
-

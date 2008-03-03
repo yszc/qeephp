@@ -37,6 +37,7 @@ class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
 
         $conn = $tableAuthors->getConn();
         $conn->startTrans();
+        $tableAuthors->getLink('contents')->init()->on_save = 'save';
 
         $authors = $this->getAuthors();
         $map = array();
@@ -57,7 +58,6 @@ class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
             $this->assertEquals(count($author['contents']), count($contents));
             foreach ($contents as $offset => $content) {
                 $this->assertEquals($author['contents'][$offset]['title'], $content['title']);
-                $this->assertEquals($author['contents'][$offset]['body'], $content['title']);
             }
         }
 
@@ -105,6 +105,7 @@ class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
         // $tableAuthors->disableLinks('books');
 
         $authors = $this->insertAuthors();
+        return;
         $contents = $this->insertContents($authors, 3);
         $this->insertComments($authors, $contents, 20);
         $tableAuthors->getConn()->completeTrans(true);
@@ -185,15 +186,9 @@ class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
     protected function getAuthors()
     {
         $authors = array(
-            array(
-                'name' => 'liaoyulei',
-            ),
-            array(
-                'name' => 'dali',
-            ),
-            array(
-                'name' => 'xiecong',
-            ),
+            array('name' => 'liaoyulei'),
+            array('name' => 'dali'),
+            array('name' => 'xiecong'),
         );
         return $authors;
     }
