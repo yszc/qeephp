@@ -108,9 +108,9 @@ class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
         return;
         $contents = $this->insertContents($authors, 3);
         $this->insertComments($authors, $contents, 20);
-        $tableAuthors->getConn()->completeTrans(true);
 
         $author = $tableAuthors->find($authors['liaoyulei'])->query();
+        $tableAuthors->getConn()->completeTrans(false);
 
         QDebug::dump($author, 'testFindHasMany');
 
