@@ -97,9 +97,6 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
         if (is_int($value)) { return $value; }
         if (is_bool($value)) { return $value ? $this->TRUE_VALUE : $this->FALSE_VALUE; }
         if (is_null($value)) { return $this->NULL_VALUE; }
-        if (is_array($value)) {
-            QDebug::dumpTrace();
-        }
         return "'" . mysql_real_escape_string($value, $this->conn) . "'";
     }
 

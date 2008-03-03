@@ -394,51 +394,84 @@ class QDB_Table
      * 创建一条新记录，返回新记录的主键值
      *
      * @param array $row
+     * @param int $recursion 保存记录时，递归多少层关联
      *
      * @return mixed
      */
-    function create(array $row)
+    function create(array $row, $recursion = 1)
     {
-        // TODO: create() 实现对关联的处理
-        $this->fillFieldsWithCurrentTime($row, $this->created_time_fields);
-
-        $fill_pk = false;
+        /**
+         * 处理主键字段
+         *
+         * 对于包含空值（null、0、空字符串）的主键字段，一律清除，以便让数据库自动填充
+         */
         if ($this->is_cpk) {
-            // 处理复合主键
-            $pkvc = 0;
+            $insert_id = array();
             foreach ($this->pk as $pk) {
-                if (!isset($row[$pk])) { continue; }
-                if ($row[$pk] === '' || $row[$pk] === 0) {
+                if (empty($row[$pk])) {
                     unset($row[$pk]);
                 } else {
-                    $pkvc++;
+                    $insert_id[$pk] = $row[$pk];
                 }
             }
-            if ($pkvc == 0 && $this->pk_count == 1) {
-                /**
-                 * 如果没有指定任何主键值，并且仅有一个主键时，判断该主键是否是自增
-                 * 如果不是自增主键，则通过序列获取一个新的主键值
-                 */
-                $fill_pk = true;
-                $pk = $this->pk[0];
+            if (empty($insert_id)) {
+                unset($insert_id);
             }
         } else {
-            // 单一主键
-            if (isset($row[$this->pk]) && ($row[$this->pk] === '' || $row[$this->pk] === 0)) {
+            // 如果只有一个主键字段，并且主键字段不是自增，则通过 nextID() 获得一个主键字段值
+            if (empty($row[$this->pk])) {
                 unset($row[$this->pk]);
+                if (!self::$tables_meta[$this->cache_id][strtolower($pk)]['auto_incr']) {
+                    $row[$this->pk] = $this->nextID();
+                }
+            } else {
+                $insert_id = $row[$this->pk];
             }
-            $fill_pk = true;
-            $pk = $this->pk;
-        }
-        // 如果没有设置主键字段，并且主键
-        if ($fill_pk && !self::$tables_meta[$this->cache_id][strtolower($pk)]['auto_incr']) {
-            $row[$pk] = $this->nextID();
-            $insert_id = $row[$pk];
         }
 
+        /**
+         * 将 $row 包含的关联表数据提取出来单独处理
+         */
+        if ($recursion > 0) {
+            $used_links = array();
+            foreach (array_keys($row) as $field) {
+                if (isset($this->links[$field])) {
+                    $used_links[$field] = $row[$field];
+                    unset($row[$field]);
+                }
+            }
+        }
+
+        // 填充当前时间
+        $this->fillFieldsWithCurrentTime($row, $this->created_time_fields);
         // 创建 INSERT 语句并执行
         $sql = $this->dbo->getInsertSQL($row, $this->full_table_name, $this->schema);
         $this->dbo->execute($sql, $row);
+
+        // 创建主表的记录成功后，尝试获取新记录的主键值
+        if (!isset($insert_id)) {
+            if (!$this->is_cpk) {
+                // 仅有一个主键，且主键为自增时，才能通过 insertID() 获得新记录的主键值
+                $insert_id = $this->dbo->insertID();
+                $row[$this->pk] = $insert_id;
+            }
+        }
+
+        if ($recursion > 0 && !empty($used_links)) {
+            foreach ($used_links as $link_name => $link_data) {
+                $link = $this->links[$link_name];
+                /* @var $link QDB_Table_Link */
+                $link->init();
+
+                if (empty($row[$link->main_key])) {
+                    throw new QDB_Table_Link_Exception(__('Link "%s" expected "%s" field value in $row.',
+                                                          $link->main_key,
+                                                          $link->name));
+                }
+
+                $link->saveAssocData($link_data, $row[$link->main_key], $recursion - 1);
+            }
+        }
 
         if (isset($insert_id)) {
             return $insert_id;
@@ -460,14 +493,15 @@ class QDB_Table
      * 批量创建新记录，并返回包含新记录主键值的数组
      *
      * @param array $rowset
+     * @param int $recursion 保存记录时，递归多少层关联
      *
      * @return array
      */
-    function createRowset(array $rowset)
+    function createRowset(array $rowset, $recursion = 1)
     {
         $return = array();
         foreach (array_keys($rowset) as $offset) {
-            $return[] = $this->create($rowset[$offset]);
+            $return[] = $this->create($rowset[$offset], $recursion);
         }
         return $return;
     }
@@ -476,10 +510,11 @@ class QDB_Table
      * 更新一条记录，返回被更新记录的总数
      *
      * @param array $row
+     * @param int $recursion 保存记录时，递归多少层关联
      *
      * @return int
      */
-    function update(array $row)
+    function update(array $row, $recursion = 1)
     {
         // TODO: update() 实现对关联的处理
         // TODO: update() 实现对复合主键的处理
@@ -494,8 +529,11 @@ class QDB_Table
      * 批量更新记录，返回被更新记录的总数
      *
      * @param array $rowset
+     * @param int $recursion 保存记录时，递归多少层关联
+     *
+     * @return int
      */
-    function updateRowset(array $rowset)
+    function updateRowset(array $rowset, $recursion = 1)
     {
         $update_count = 0;
         foreach (array_keys($rowset) as $offset) {
@@ -585,20 +623,33 @@ class QDB_Table
     /**
      * 根据是否包含主键字段值，创建或更新一条记录，返回记录的主键值
      *
+     * @param array $row
+     * @param int $recursion 保存记录时，递归多少层关联
+     * @param string $method
+     *
      * @return mixed
      */
-    function save(array $row)
+    function save(array $row, $recursion = 1, $method = 'save')
     {
         if ($this->is_cpk) {
-            // 对于复合主键的数据表，save() 方法无法判断是创建还是更新，所以抛出一个异常
-            // LC_MSG: QDB_Table::save() with composite primary key not implemented.
-            throw new QDB_Table_Exception(__('QDB_Table::save() with composite primary key not implemented.'));
+            // 如果是复合主键，并且需要自动判断使用 create() 或 update()，则抛出异常
+            if ($method == 'save' || $method == 'only_create' || $method == 'only_update') {
+                // LC_MSG: QDB_Table::save() with composite primary key not implemented.
+                throw new QDB_Table_Exception(__('QDB_Table::save() with composite primary key not implemented.'));
+            }
+        }
+        if ($method == 'create') {
+            return $this->create($row, $recursion);
+        } elseif ($method == 'update') {
+            return $this->update($row, $recursion);
+        } elseif ($method == 'replace') {
+            return $this->replace($row);
         }
 
-        if (isset($row[$this->pk])) {
-            return $this->update($row);
+        if (empty($row[$this->pk]) && ($method == 'save' || $method == 'only_create')) {
+            return $this->create($row, $recursion);
         } else {
-            return $this->create($row);
+            return $this->update($row, $recursion);
         }
     }
 
@@ -606,14 +657,16 @@ class QDB_Table
      * 批量保存记录集，返回所有记录的主键值
      *
      * @param array $rowset
+     * @param int $recursion 保存记录时，递归多少层关联
+     * @param string $method
      *
      * @return array
      */
-    function saveRowset(array $rowset)
+    function saveRowset(array $rowset, $recursion = 1, $method = 'save')
     {
         $return = array();
         foreach (array_keys($rowset) as $offset) {
-            $return[] = $this->save($rowset[$offset]);
+            $return[] = $this->save($rowset[$offset], $recursion, $method);
         }
         return $return;
     }

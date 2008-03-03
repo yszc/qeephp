@@ -449,31 +449,147 @@ class QDB_Table_Link
     }
 
     /**
-     * 获得进行关联查询的 SQL
+     * 存储关联的数据
      *
-     * @param array $mkvs
-     *
-     * @return string
+     * @param array $link_data
+     * @param mixed $assoc_key_value
+     * @param int $recursion
      */
-    function getFindSQL(array $mkvs)
+    function saveAssocData(array $link_data, $assoc_key_value, $recursion)
     {
-        $fields = $this->assoc_table->qfields($this->on_find_fields);
-        $ak = $this->assoc_table->qfields($this->assoc_key);
-        $sql = "SELECT {$ak} AS {$this->assoc_key_alias}, {$fields} FROM {$this->assoc_table->qtable_name}";
+        switch ($this->type) {
+        case QDB_Table::BELONGS_TO:
+        case QDB_Table::HAS_ONE:
+            $this->saveOneToOne($link_data, $assoc_key_value, $recursion);
+            break;
+        case QDB_Table::HAS_MANY:
+            $this->saveOneToMany($link_data, $assoc_key_value, $recursion);
+            break;
+        case QDB_Table::MANY_TO_MANY:
+            $this->saveManyToMany($link_data, $assoc_key_value, $recursion);
+            break;
+        }
+    }
 
-        if (!empty($mkvs)) {
-            $sql .= $this->assoc_table->getConn()->qinto(" WHERE {$this->assoc_key} IN (?)", $mkvs);
+    /**
+     * 保存一对一记录
+     *
+     * @param array $link_data
+     * @param mixed $assoc_key_value
+     * @param int $recursion
+     */
+    protected function saveOneToOne(array $link_data, $assoc_key_value, $recursion)
+    {
+        $link_data[$this->assoc_key] = $assoc_key_value;
+        $this->assoc_table->save($link_data, $recursion, $this->on_save);
+    }
+
+    /**
+     * 保存一对多记录
+     *
+     * @param array $link_data
+     * @param mixed $assoc_key_value
+     * @param int $recursion
+     */
+    protected function saveOneToMany($link_data, $assoc_key_value, $recursion)
+    {
+        foreach (array_keys($link_data) as $offset) {
+            $link_data[$offset][$this->assoc_key] = $assoc_key_value;
+        }
+        $this->assoc_table->saveRowset($link_data, $recursion, $this->on_save);
+    }
+
+    /**
+     * 保存多对多记录
+     *
+     * @param array $link_data
+     * @param mixed $assoc_key_value
+     * @param int $recursion
+     */
+    protected function saveManyToMany($link_data, $assoc_key_value, $recursion)
+    {
+        if (!$this->init) { $this->init(); }
+        $apkvs = array();
+        $entityRowset = array();
+
+        foreach ($row as $arow) {
+            if (!is_array($arow)) {
+                $apkvs[] = $arow;
+                continue;
+            }
+
+            if (!isset($arow[$this->assocTDG->primaryKey])) {
+                // 如果关联记录尚未保存到数据库，则创建一条新的关联记录
+                $newrowid = $this->assocTDG->create($arow);
+                if ($newrowid == false) {
+                    return false;
+                }
+                $apkv = $newrowid;
+            } else {
+                $apkv = $arow[$this->assocTDG->primaryKey];
+            }
+            $apkvs[] = $apkv;
+
+            if ($this->joinTableIsEntity && isset($arow['#JOIN#'])) {
+                $entityRowset[$apkv] =& $arow['#JOIN#'];
+            }
         }
 
-        if ($this->on_find_where) {
-            $where = $this->assoc_table->parseSQLInternal($this->on_find_where);
-            $sql .= " AND {$where}";
+        // 首先取出现有的关联信息
+        $qpkv = $this->dbo->qstr($pkv);
+        $sql = "SELECT {$this->qassocForeignKey} FROM {$this->qjoinTable} WHERE {$this->qforeignKey} = {$qpkv} ";
+        $existsMiddle = (array)$this->dbo->getCol($sql);
+
+        // 然后确定要添加的关联信息
+        $insertAssoc = array_diff($apkvs, $existsMiddle);
+        $removeAssoc = array_diff($existsMiddle, $apkvs);
+
+        if ($this->joinTableIsEntity) {
+            $insertEntityRowset = array();
+            foreach ($insertAssoc as $assocId) {
+                if (isset($entityRowset[$assocId])) {
+                    $row = $entityRowset[$assocId];
+                } else {
+                    $row = array();
+                }
+                $row[$this->foreignKey] = $pkv;
+                $row[$this->assocForeignKey] = $assocId;
+                $insertEntityRowset[] = $row;
+            }
+            if ($this->joinTDG->createRowset($insertEntityRowset) === false) {
+                return false;
+            }
+        } else {
+            $sql = "INSERT INTO {$this->qjoinTable} ({$this->qforeignKey}, {$this->qassocForeignKey}) VALUES ({$qpkv}, ";
+            foreach ($insertAssoc as $assocId) {
+                if (!$this->dbo->execute($sql . $this->dbo->qstr($assocId) . ')')) {
+                    return false;
+                }
+            }
         }
 
-        if ($this->on_find_order) {
-            $sql .= " ORDER BY " . $this->assoc_table->parseSQL($this->on_find_order);
+        // 最后删除不再需要的关联信息
+        if ($this->joinTableIsEntity) {
+            $conditions = array($this->foreignKey => $pkv);
+            foreach ($removeAssoc as $assocId) {
+                $conditions[$this->assocForeignKey] = $assocId;
+                if ($this->joinTDG->removeByConditions($conditions) === false) {
+                    return false;
+                }
+            }
+        } else {
+            $sql = "DELETE FROM {$this->qjoinTable} WHERE {$this->qforeignKey} = {$qpkv} AND {$this->qassocForeignKey} = ";
+            foreach ($removeAssoc as $assocId) {
+                if (!$this->dbo->execute($sql . $this->dbo->qstr($assocId))) {
+                    return false;
+                }
+            }
         }
 
-        return $sql;
+        if ($this->counterCache) {
+            $sql = "UPDATE {$this->mainTDG->qtableName} SET {$this->counterCache} = (SELECT COUNT(*) FROM {$this->qjoinTable} WHERE {$this->qforeignKey} = {$qpkv}) WHERE {$this->mainTDG->qpk} = {$qpkv}";
+            $this->mainTDG->dbo->execute($sql);
+        }
+
     }
 }
