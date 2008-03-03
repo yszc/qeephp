@@ -176,10 +176,10 @@ abstract class QDB_Result_Abstract
      *
      * $reference = array(
      *     'post_id' => array(
-     *          1 => & array(...),
-     *          2 => & array(...),
-     *          7 => & array(...),
-     *         15 => & array(...)
+     *          1 => & array(array(...)),
+     *          2 => & array(array(...), array(...)),
+     *          7 => & array(array(...), array(...)),
+     *         15 => & array(array(...), array(...), array(...))
      *     ),
      * );
      * </code>
@@ -190,25 +190,38 @@ abstract class QDB_Result_Abstract
      * @param array $fields
      * @param array $fields_value
      * @param array $reference
+     * @param boolean $clean_up
      *
      * @return array
      */
-    function fetchAllRefby(array $fields, & $fields_value, & $reference)
+    function fetchAllRefby(array $fields, & $fields_value, & $reference, $clean_up)
     {
         $fields_value = array();
         $reference = array();
         $offset = 0;
         $data = array();
 
-        while (($row = $this->fetchRow())) {
-            $data[$offset] = $row;
-            foreach ($fields as $field) {
-                $fieldValue = $row[$field];
-                $fields_value[$field][$offset] = $fieldValue;
-                $reference[$field][$fieldValue] =& $data[$offset];
-                unset($data[$offset][$field]);
+        if ($clean_up) {
+            while (($row = $this->fetchRow())) {
+                $data[$offset] = $row;
+                foreach ($fields as $field) {
+                    $fieldValue = $row[$field];
+                    $fields_value[$field][$offset] = $fieldValue;
+                    $reference[$field][$fieldValue][] =& $data[$offset];
+                    unset($data[$offset][$field]);
+                }
+                $offset++;
             }
-            $offset++;
+        } else {
+            while (($row = $this->fetchRow())) {
+                $data[$offset] = $row;
+                foreach ($fields as $field) {
+                    $fieldValue = $row[$field];
+                    $fields_value[$field][$offset] = $fieldValue;
+                    $reference[$field][$fieldValue][] =& $data[$offset];
+                }
+                $offset++;
+            }
         }
 
         return $data;

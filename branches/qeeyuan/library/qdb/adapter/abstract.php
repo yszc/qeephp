@@ -374,6 +374,7 @@ abstract class QDB_Adapter_Abstract
             foreach ($params as $arg_value) {
                 if (!isset($parts[$offset])) { break; }
                 if (is_array($arg_value)) {
+                    $arg_value = array_unique($arg_value);
                     $arg_value = array_map($callback, $arg_value);
                     $str .= implode(',', $arg_value) . $parts[$offset];
                 } else {

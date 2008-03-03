@@ -368,8 +368,8 @@ class QDB_Table_Link
             $assoc_table = new QDB_Table($params);
         } else {
             // LC_MSG: Expected parameter "%s".
-            $err = 'assoc_table_obj or assoc_table_class or assoc_table_name';
-            throw new QDB_Table_Link_Exception(__('Expected parameter "%s".', $err));
+            $err = 'table_obj or table_class or table_name';
+            throw new QDB_Table_Link_Exception(__('Expected parameter "%s" for link "%s".', $err, $this->name));
         }
 
         // 设置关联表数据入口对象
@@ -399,7 +399,7 @@ class QDB_Table_Link
             } else {
                 // LC_MSG: Expected parameter "%s".
                 $err = 'mid_table_obj or mid_table_class or mid_table_name';
-                throw new QDB_Table_Link_Exception(__('Expected parameter "%s".', $err));
+                throw new QDB_Table_Link_Exception(__('Expected parameter "%s" for link "%s".', $err, $this->name));
             }
 
             // 设置中间表的表数据入口对象

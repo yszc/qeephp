@@ -235,6 +235,26 @@ class QDB_Table
     }
 
     /**
+     * 返回所有关联
+     *
+     * @return array
+     */
+    function getAllLinks()
+    {
+        return $this->links;
+    }
+
+    /**
+     * 返回所有关联的名字
+     *
+     * @return array
+     */
+    function getAllLinksName()
+    {
+        return array_keys($this->links);
+    }
+
+    /**
      * 返回指定名称的关联，如果关联不存在则抛出异常
      *
      * @param string $link_name
@@ -272,6 +292,17 @@ class QDB_Table
     }
 
     /**
+     * 启用所有关联
+     */
+    function enableAllLinks()
+    {
+        foreach ($this->links as $link) {
+            /* @var $link QDB_Table_Link */
+            $link->enable();
+        }
+    }
+
+    /**
      * 禁用指定名称的关联，如果关联不存在则抛出异常
      *
      * @param array|string $links_name
@@ -288,6 +319,17 @@ class QDB_Table
                 // LC_MSG: Specified link "%s" not found.
                 throw new QDB_Table_Exception(__('Specified link "%s" not found.', $name));
             }
+        }
+    }
+
+    /**
+     * 禁用所有关联
+     */
+    function disableAllLinks()
+    {
+        foreach ($this->links as $link) {
+            /* @var $link QDB_Table_Link */
+            $link->disable();
         }
     }
 
@@ -889,6 +931,7 @@ class QDB_Table
                 }
                 $field = $this->parseSQLQfield(array('', $key));
                 if (is_array($value)) {
+                    $value = array_unique($value);
                     $value = array_map($callback, $value);
                     $parts[] = $field . ' IN (' . implode(',', $value) . ')';
                 } else {

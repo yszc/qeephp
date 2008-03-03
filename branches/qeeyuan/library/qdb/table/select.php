@@ -139,6 +139,13 @@ class QDB_Table_Select
     protected $recursion = 1;
 
     /**
+     * 发起递归查询的表数据入口关联
+     *
+     * @var QDB_Table_Link
+     */
+    protected $recursion_link = null;
+
+    /**
      * 构造函数
      *
      * @param QDB_Table $table
@@ -173,12 +180,14 @@ class QDB_Table_Select
      * 设置递归关联查询的层数（默认为1层）
      *
      * @param int $recursion
+     * @param QDB_Table_Link $link
      *
      * @return QDB_Table_Select
      */
-    function recursion($recursion)
+    function recursion($recursion, QDB_Table_Link $link = null)
     {
         $this->recursion = abs($recursion);
+        $this->recursion_link = $link;
         return $this;
     }
 
@@ -432,9 +441,11 @@ class QDB_Table_Select
     /**
      * 执行查询
      *
+     * @param boolean $clean_up 是否清理数据集中的临时字段
+     *
      * @return mixed
      */
-    function query()
+    function query($clean_up = true)
     {
         list($sql, $is_stat, $used_links) = $this->toStringInternal();
 
@@ -453,12 +464,15 @@ class QDB_Table_Select
 
         /* @var $handle QDB_Result_Abstract */
 
-        if (!$is_stat && $this->recursion > 0) {
-            // 对于非统计方式，一律进行关联数据表的查询
-            $used_alias = array_keys($used_links);
+        if ($this->recursion > 0) {
             $refs_value = null;
             $refs = null;
-            $rowset = $handle->fetchAllRefby($used_alias, $refs_value, $refs);
+            $used_alias = array_keys($used_links);
+            $rowset = $handle->fetchAllRefby($used_alias, $refs_value, $refs, $clean_up);
+
+//            QDebug::dump($rowset, '$rowset for table: ' . get_class($this->table));
+//            QDebug::dump($refs_value, '$refs_value for table: ' . get_class($this->table));
+//            QDebug::dump($refs, '$refs for table: ' . get_class($this->table));
 
             // 进行关联查询，并组装数据集
             foreach ($used_links as $mka => $link) {
@@ -468,31 +482,48 @@ class QDB_Table_Select
                 }
 
                 $select = $link->assoc_table->find("[{$link->assoc_key}] IN (?)", $refs_value[$mka])
-                                            ->recursion($this->recursion - 1)
+                                            ->recursion($this->recursion - 1, $link)
                                             ->order($link->on_find_order)
                                             ->select($link->on_find_fields)
                                             ->where($link->on_find_where);
                 if (is_int($link->on_find) || is_array($link->on_find)) {
                     $select->limit($link->on_find);
+                } else {
+                    $select->all();
                 }
-                $assoc_rowset = $select->query();
+
+                $assoc_rowset = $select->query(false);
                 if (is_int($link->on_find) && $link->on_find == 1) {
                     $assoc_rowset = array($assoc_rowset);
                 }
 
+//                $label = '$assoc_rowset for ' . $link->name . ', mka = ' . $mka;
+//                if ($this->recursion_link) {
+//                    $label .= ' from ' . get_class($this->recursion_link);
+//                }
+//                QDebug::dump($assoc_rowset, $label);
+
                 // 组装数据集
-                foreach ($refs_value[$mka] as $v) {
-                    $refs[$mka][$v][$link->mapping_name] = $assoc_rowset;
+                if ($link->one_to_one) {
+                    foreach (array_keys($assoc_rowset) as $offset) {
+                        $v = $assoc_rowset[$offset][$mka];
+                        unset($assoc_rowset[$offset][$mka]);
+                        foreach (array_keys($refs[$mka][$v]) as $i) {
+                            $refs[$mka][$v][$i][$link->mapping_name] = $assoc_rowset[$offset];
+                            unset($refs[$mka][$v][$i][$mka]);
+                        }
+                    }
+                } else {
+                    foreach (array_keys($assoc_rowset) as $offset) {
+                        $v = $assoc_rowset[$offset][$mka];
+                        unset($assoc_rowset[$offset][$mka]);
+                        foreach (array_keys($refs[$mka][$v]) as $i) {
+                            $refs[$mka][$v][$i][$link->mapping_name][] = $assoc_rowset[$offset];
+                            unset($refs[$mka][$v][$i][$mka]);
+                        }
+                    }
                 }
-
-                // $sql = $link->getFindSQL($refs_value[$mka]);
-                // QDebug::dump($sql, 'assoc_' . $link->name .'_sql');
-                // $h = $link->assoc_table->getConn()->execute($sql);
-                // $handle->assemble($h, $refs[$mka], $link->mapping_name, $link->one_to_one, $link->assoc_key_alias);
             }
-
-            unset($refs_value);
-            unset($refs);
 
             if ($this->as_object) {
                 Q::loadClass($this->as_object);
@@ -540,7 +571,7 @@ class QDB_Table_Select
         if (is_object($part)) {
             return $part->toString();
         } else {
-            return $this->table->getConn()->qfields($part);
+            return $this->table->getConn()->qfields($part, $this->table->full_table_name);
         }
     }
 
@@ -556,6 +587,13 @@ class QDB_Table_Select
         $sql = 'SELECT ';
         if ($this->distinct) {
             $sql .= 'DISTINCT ';
+        }
+
+        if ($this->recursion_link) {
+            $dbo = $this->recursion_link->assoc_table->getConn();
+            $sql .= $dbo->qfield($this->recursion_link->assoc_key) .
+                    ' AS ' .
+                    $dbo->qfield($this->recursion_link->main_key_alias) . ', ';
         }
 
         $sql .= $this->toStringPart($this->select);
@@ -596,9 +634,10 @@ class QDB_Table_Select
         if (!$is_stat && $use_links && $this->recursion > 0) {
             // 如果使用了任何统计函数，则不进行关联查询
             foreach ($this->links as $link) {
-                /* @var $link QTable_Link */
+                /* @var $link QDB_Table_Link */
                 if (!$link->enabled || $link->on_find == 'skip') { continue; }
                 $link->init();
+                if ($link->assoc_table === $this->recursion_link) { continue; }
                 $sql .= ', ' . $this->table->getConn()->qfield($link->main_key) . ' AS ' . $link->main_key_alias;
                 $used_links[$link->main_key_alias] = $link;
             }
