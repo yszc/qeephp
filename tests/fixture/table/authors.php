@@ -82,14 +82,14 @@ class Table_Authors extends QDB_Table
         ),
     );
 
-    protected $many_to_many = array(
-        array(
-            'table_class' => 'Table_Books',
-            'mapping_name' => 'books',
-            'mid_table_class' => 'Table_BooksHasAuthors',
-            'mid_on_find_fields' => 'remark',
-            'on_find_fields' => 'title',
-        )
-    );
+//    protected $many_to_many = array(
+//        array(
+//            'table_class' => 'Table_Books',
+//            'mapping_name' => 'books',
+//            'mid_table_class' => 'Table_BooksHasAuthors',
+//            'mid_on_find_fields' => 'remark',
+//            'on_find_fields' => 'title',
+//        )
+//    );
 
 }

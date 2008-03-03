@@ -28,7 +28,7 @@ class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
         parent::__construct();
     }
 
-    function testFindBelongsTo()
+    function tesFindBelongsTo()
     {
         $tableAuthors = Q::getSingleton('Table_Authors');
         /* @var $tableAuthors Table_Authors */
@@ -45,7 +45,14 @@ class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
             'author_id' => $authors['liaoyulei'],
         );
         $id = $tableContents->create($content);
+
+        echo "<strong>testFindBelongsTo -------------------- </strong><br />\n";
+        echo "contents belongs to authors";
+        echo "<br />\n";
+        echo "<br />\n";
+
         $find = $tableContents->find($id)->query();
+        $tableContents->enableAllLinks();
         $tableContents->getConn()->completeTrans(false);
 
         QDebug::dump($find, 'testFindBelongsTo');
@@ -64,13 +71,23 @@ class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
         $tableAuthors = Q::getSingleton('Table_Authors');
         /* @var $tableAuthors Table_Authors */
         $tableAuthors->getConn()->startTrans();
-        $tableAuthors->disableLinks('books');
+        // $tableAuthors->disableLinks('books');
+
+        echo "<strong>testFindHasMany -------------------- </strong><br />\n";
+        echo "author has many contents, comments";
+        echo "<br />\n";
+        echo "contents belongs to author";
+        echo "<br />\n";
+        echo "comments belongs to author, content";
+        echo "<br />\n";
+        echo "<br />\n";
 
         $authors = $this->insertAuthors();
-        $contents = $this->insertContents($authors, 9);
-        $this->insertComments($authors, $contents, 300);
-        $author = $tableAuthors->find($authors['dali'])->recursion(2)->query();
+        $contents = $this->insertContents($authors, 6);
+        $this->insertComments($authors, $contents, 40);
         $tableAuthors->getConn()->completeTrans(true);
+
+        $author = $tableAuthors->find($authors['liaoyulei'])->recursion(2)->query();
 
         QDebug::dump($author, 'testFindHasMany');
 

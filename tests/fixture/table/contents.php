@@ -80,19 +80,19 @@ class Table_Contents extends QDB_Table
             'count_cache'   => 'comments_count',
         ),
 
-        /**
-         * 每个内容有多个评分
-         */
-        array(
-            'table_calss'       => 'Table_Marks',
-            'mapping_name'      => 'marks',
-            /**
-             * 指示用什么字段存储对内容评分的平均值
-             *
-             * 类似的统计功能还有 count_cache, sum_cache、min_cache、max_cache
-             */
-            'avg_cache'         => 'marks_avg',
-        ),
+//        /**
+//         * 每个内容有多个评分
+//         */
+//        array(
+//            'table_class'       => 'Table_Marks',
+//            'mapping_name'      => 'marks',
+//            /**
+//             * 指示用什么字段存储对内容评分的平均值
+//             *
+//             * 类似的统计功能还有 count_cache, sum_cache、min_cache、max_cache
+//             */
+//            'avg_cache'         => 'marks_avg',
+//        ),
     );
 
     /**
@@ -100,17 +100,17 @@ class Table_Contents extends QDB_Table
      *
      * @var array
      */
-    protected $many_to_many = array(
-        /**
-         * 每个内容可以对应多个标签，一个标签也可以对应多个内容
-         */
-        array(
-            'table_class'     => 'Table_Tags',
-            'mapping_name'    => 'tags',
-            /**
-             * 指示用哪一个表数据入口对象处理内容和标签之间的关联关系
-             */
-            'mid_table_class' => 'Table_Contents_Tags',
-        ),
-     );
+//    protected $many_to_many = array(
+//        /**
+//         * 每个内容可以对应多个标签，一个标签也可以对应多个内容
+//         */
+//        array(
+//            'table_class'     => 'Table_Tags',
+//            'mapping_name'    => 'tags',
+//            /**
+//             * 指示用哪一个表数据入口对象处理内容和标签之间的关联关系
+//             */
+//            'mid_table_class' => 'Table_ContentsTags',
+//        ),
+//     );
 }
