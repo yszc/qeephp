@@ -291,20 +291,6 @@ class QDB_Table_Select
     }
 
     /**
-     * 获得查询后的分页信息
-     *
-     * @return array
-     */
-    function getPageInfo()
-    {
-        if (is_null($this->result)) { return array(); }
-        // 统计记录总数
-
-        // 返回分页信息
-
-    }
-
-    /**
      * 指定 GROUP BY 子句
      *
      * @param string $expr
@@ -447,9 +433,9 @@ class QDB_Table_Select
      */
     function query($clean_up = true)
     {
-        list($sql, $is_stat, $used_links) = $this->toStringInternal();
+        list($sql, , $used_links) = $this->toStringInternal();
 
-        QDebug::dump($sql, 'query() - ' . $this->table->table_name);
+//        QDebug::dump($sql, 'query() - ' . $this->table->table_name);
 
         if (!is_array($this->limit)) {
             if (is_null($this->limit)) {

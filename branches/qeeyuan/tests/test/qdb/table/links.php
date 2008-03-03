@@ -28,7 +28,43 @@ class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
         parent::__construct();
     }
 
-    function tesFindBelongsTo()
+    function testCreateHasMany()
+    {
+        $tableAuthors = Q::getSingleton('Table_Authors');
+        /* @var $tableAuthors Table_Authors */
+        $tableContents = Q::getSingleton('Table_Contents');
+        /* @var $tableContents Table_Contents */
+
+        $conn = $tableAuthors->getConn();
+        $conn->startTrans();
+
+        $authors = $this->getAuthors();
+        $map = array();
+        foreach (array_keys($authors) as $offset) {
+            $authors[$offset]['contents'] = $this->getContents();
+            $id = $tableAuthors->create($authors[$offset]);
+            $map[$id] =& $authors[$offset];
+        }
+
+        foreach ($map as $id => $author) {
+            $row = $conn->getRow("SELECT * FROM {$tableAuthors->qtable_name} WHERE author_id = {$id}");
+            $this->assertType('array', $row);
+            $this->assertArrayHasKey('name', $row);
+            $this->assertEquals($author['name'], $row['name']);
+
+            $sql = "SELECT * FROM {$tableContents->qtable_name} WHERE author_id = {$id} ORDER BY content_id";
+            $contents = $conn->getAll($sql);
+            $this->assertEquals(count($author['contents']), count($contents));
+            foreach ($contents as $offset => $content) {
+                $this->assertEquals($author['contents'][$offset]['title'], $content['title']);
+                $this->assertEquals($author['contents'][$offset]['body'], $content['title']);
+            }
+        }
+
+        $conn->completeTrans(false);
+    }
+
+    function testFindBelongsTo()
     {
         $tableAuthors = Q::getSingleton('Table_Authors');
         /* @var $tableAuthors Table_Authors */
@@ -45,11 +81,6 @@ class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
             'author_id' => $authors['liaoyulei'],
         );
         $id = $tableContents->create($content);
-
-        echo "<strong>testFindBelongsTo -------------------- </strong><br />\n";
-        echo "contents belongs to authors";
-        echo "<br />\n";
-        echo "<br />\n";
 
         $find = $tableContents->find($id)->query();
         $tableContents->enableAllLinks();
@@ -73,21 +104,12 @@ class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
         $tableAuthors->getConn()->startTrans();
         // $tableAuthors->disableLinks('books');
 
-        echo "<strong>testFindHasMany -------------------- </strong><br />\n";
-        echo "author has many contents, comments";
-        echo "<br />\n";
-        echo "contents belongs to author";
-        echo "<br />\n";
-        echo "comments belongs to author, content";
-        echo "<br />\n";
-        echo "<br />\n";
-
         $authors = $this->insertAuthors();
-        $contents = $this->insertContents($authors, 6);
-        $this->insertComments($authors, $contents, 40);
+        $contents = $this->insertContents($authors, 3);
+        $this->insertComments($authors, $contents, 20);
         $tableAuthors->getConn()->completeTrans(true);
 
-        $author = $tableAuthors->find($authors['liaoyulei'])->recursion(2)->query();
+        $author = $tableAuthors->find($authors['liaoyulei'])->query();
 
         QDebug::dump($author, 'testFindHasMany');
 
@@ -99,7 +121,9 @@ class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
 
         $link_contents = $tableAuthors->getLink('contents');
         $on_find_fields = Q::normalize($link_contents->on_find_fields);
+
         $this->assertEquals(count($on_find_fields), count($first), "count(\$first) == 1");
+
         if (is_int($link_contents->on_find)) {
             // $this->assertEquals($link_contents->on_find, count($author['contents']), "count(\$author['contents']) == " . $link_contents->on_find);
         }
@@ -129,29 +153,59 @@ class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * 创建内容记录
+     * 创建作者记录的同时创建内容记录
      *
-     * @param array $authors
-     * @param int $nums
+     * @param int $contents_nums
      *
      * @return array
      */
-    protected function insertContents(array $authors, $nums = 20)
+    protected function insertAuthorsWithContents($contents_nums = 5)
     {
-        $tableContents = Q::getSingleton('Table_Contents');
-        /* @var $tableContents Table_Contents */
-        $authors = array_values($authors);
-        $authors_count = count($authors);
+        $tableAuthors = Q::getSingleton('Table_Authors');
+        /* @var $tableAuthors Table_Authors */
 
+        $authors = array(
+            array(
+                'name' => 'liaoyulei',
+                'contents' => $this->getContents(mt_rand(1, $contents_nums)),
+            ),
+            array(
+                'name' => 'dali',
+                'contents' => $this->getContents(mt_rand(1, $contents_nums)),
+            ),
+            array(
+                'name' => 'xiecong',
+                'contents' => $this->getContents(mt_rand(1, $contents_nums)),
+            ),
+        );
+
+        return $tableAuthors->createRowset($authors);
+    }
+
+    protected function getAuthors()
+    {
+        $authors = array(
+            array(
+                'name' => 'liaoyulei',
+            ),
+            array(
+                'name' => 'dali',
+            ),
+            array(
+                'name' => 'xiecong',
+            ),
+        );
+        return $authors;
+    }
+
+    protected function getContents($contents_nums = 10)
+    {
         $contents = array();
-        for ($i = 0; $i < $nums; $i++) {
-            $content = array(
+        for ($i = 0; $i < $contents_nums; $i++) {
+            $contents[] = array(
                 'title' => 'TITLE ' . mt_rand(),
-                'author_id' => $authors[$i % $authors_count],
             );
-            $contents[] = $tableContents->create($content);
         }
-
         return $contents;
     }
 
@@ -184,5 +238,38 @@ class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
         }
 
         return $comments;
+    }
+
+    /**
+     * 创建书籍记录
+     *
+     * @param array $authors
+     * @param int $nums
+     *
+     * @return array
+     */
+    protected function insertBooks(array $authors, $nums = 10)
+    {
+        $tableBooks = Q::getSingleton('Table_Books');
+        /* @var $tableBooks Table_Books */
+        $authors = array_values($authors);
+        $authors_count = count($authors);
+
+        $books = array();
+        for ($i = 0; $i < $nums; $i++) {
+            $c = mt_rand(1, $authors_count);
+            $rand_authors = array();
+            for ($j = 0; $j < $c; $j++) {
+                $rand_authors[] = $authors[mt_rand(0, $j * $j) % $authors_count];
+            }
+            $book = array(
+                'title' => 'BOOK ' . mt_rand(),
+                'intro' => 'INTRO ' . mt_rand(),
+                'authors' => $rand_authors,
+            );
+            $books[] = $tableBooks->create($book);
+        }
+
+        return $books;
     }
 }
