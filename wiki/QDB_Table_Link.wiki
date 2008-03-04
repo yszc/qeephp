@@ -1,4 +1,4 @@
-#summary QTable_Link 封装了数据表关联操作
+#summary QDB_Table_Link 封装了数据表关联操作
 
 = 什么叫做关联 =
 
@@ -16,13 +16,13 @@
 
 = 关联、主表和关联表的概念 =
 
-在 QeePHP 中，关联是指两个数据表之间的逻辑关系，并用一个 QTable_Link 对象封装。
+在 QeePHP 中，关联是指两个数据表之间的逻辑关系，并用一个 QDB_Table_Link 对象封装。
 而主表，则是关联关系中，占据主动地位的一方。而关联表则是被主表所关联的数据表。
 
 例如，“文章”数据表关联到“评论”数据表：
 
 {{{
-QTable_Base 对象            QTable_Base 对象
+ QDB_Table 对象            QDB_Table 对象
        |                           |
        |                           |
   +--------+                  +--------+
@@ -31,7 +31,7 @@ QTable_Base 对象            QTable_Base 对象
      主表        关联关系       关联表
                     |
                     |
-        封装为一个 QTable_Link 对象
+        封装为一个 QDB_Table_Link 对象
 }}}
 
 通常，一个关联关系总是存在一个反向的关联。
@@ -47,7 +47,7 @@ QTable_Base 对象            QTable_Base 对象
 
 = QeePHP 对四种关联的支持 =
 
-QTable_Link 对四种数据表关联提供了全面的支持，包括自动查询关联数据、自动创建关联数据，以及维护关联关系等特征。
+QDB_Table_Link 对四种数据表关联提供了全面的支持，包括自动查询关联数据、自动创建关联数据，以及维护关联关系等特征。
 
 对于所有类型的关联，都支持以下功能：
 
@@ -86,7 +86,7 @@ QTable_Link 对四种数据表关联提供了全面的支持，包括自动查�
 /**
  * Table_Contents 类封装了 contents 表的操作以及与相关表的关联操作
  */
-class Table_Contents extends QTable_Base
+class Table_Contents extends QDB_Table
 {
     /**
      * 不包含全局前缀的数据表名称
