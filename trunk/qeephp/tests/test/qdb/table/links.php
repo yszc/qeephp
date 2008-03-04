@@ -105,9 +105,8 @@ class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
         // $tableAuthors->disableLinks('books');
 
         $authors = $this->insertAuthors();
-        return;
-        $contents = $this->insertContents($authors, 3);
-        $this->insertComments($authors, $contents, 20);
+        $contents = $this->insertContents($authors);
+        $this->insertComments($authors, $contents);
 
         $author = $tableAuthors->find($authors['liaoyulei'])->query();
         $tableAuthors->getConn()->completeTrans(false);
@@ -204,6 +203,25 @@ class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
         return $contents;
     }
 
+    protected function insertContents(array $authors, $nums = 10)
+    {
+        $tableContents = Q::getSingleton('Table_Contents');
+        /* @var $tableContents Table_Contents */
+        $authors = array_values($authors);
+        $authors_count = count($authors);
+
+        $contents = array();
+        for ($i = 0; $i < $nums; $i++) {
+            $content = array(
+                'author_id' => $authors[$i % $authors_count],
+                'title' => 'TITLE ' . mt_rand(),
+            );
+            $contents[] = $tableContents->create($content);
+        }
+
+        return $contents;
+    }
+
     /**
      * 创建评论记录
      *
@@ -213,7 +231,7 @@ class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
      *
      * @return array
      */
-    protected function insertComments(array $authors, array $contents, $nums = 80)
+    protected function insertComments(array $authors, array $contents, $nums = 20)
     {
         $tableComments = Q::getSingleton('Table_Comments');
         /* @var $tableComments Table_Comments */
