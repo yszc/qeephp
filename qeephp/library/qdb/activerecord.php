@@ -4,19 +4,23 @@
 //
 // Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
 //
-// 许可协议，请查看源代码中附带的 LICENSE.txt 文件，
+// 许可协议，请查看源代码中附带的 LICENSE.TXT 文件，
 // 或者访问 http://www.qeephp.org/ 获得详细信息。
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * QDB_ActiveRecord 类实现了 Active Record 模式
+ * 定义 QDB_ActiveRecord_Abstract 抽象类
  *
- * @copyright Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
- * @author 起源科技(www.qeeyuan.com)
- * @package core
+ * @package database
  * @version $Id$
  */
-abstract class QDB_ActiveRecord implements QDB_ActiveRecord_Callbacks, QDB_ActiveRecord_Interface
+
+/**
+ * QDB_ActiveRecord_Abstract 类实现了 Active Record 模式
+ *
+ * @package database
+ */
+abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB_ActiveRecord_Interface
 {
     /**
      * 聚合关系

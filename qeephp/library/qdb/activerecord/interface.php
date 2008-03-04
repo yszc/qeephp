@@ -16,7 +16,7 @@
  */
 
 /**
- * QDB_ActiveRecord_Interface 接口确定了所有 QActiveRecord_Abstract 继承类必须实现的静态方法
+ * QDB_ActiveRecord_Interface 接口确定了所有 QDB_ActiveRecord_Abstract 继承类必须实现的静态方法
  *
  * @package core
  */
