@@ -1,7 +1,6 @@
 <?php
 
-interface QActiveRecord_Behavior_Interface extends QActiveRecord_Callbacks_Interface
+interface QDB_ActiveRecord_Behavior_Interface extends QDB_ActiveRecord_Events
 {
-    static function get_callbacks();
+    static function __callbacks();
 }
-
