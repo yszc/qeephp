@@ -1,6 +1,6 @@
 #summary QDB_Table_Select 封装了复杂的数据库查询操作
 
-= 查询对象 QDB_Table_Select =
+= 查询对象 [QDB_Table_Select] =
 
 查询对象用于从数据库查询符合条件的记录，并返回为数组或者 [QDB_ActiveRecord_Abstract ActiveRecord] 对象实例。
 
