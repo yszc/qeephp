@@ -53,13 +53,13 @@ class QDispatcher
         $c = strtolower(Q::getIni('controller_accessor'));
         $a = strtolower(Q::getIni('action_accessor'));
         $r = array_change_key_case($request, CASE_LOWER);
-        
+
         $this->controller_name = isset($r[$c]) ? $r[$c] : Q::getIni('default_controller');
         $this->action_name = isset($r[$a]) ? $r[$a] : Q::getIni('default_action');
-        
+
         $this->controller_name = strtolower(preg_replace('/[^a-z0-9_]+/i', '', $this->controller_name));
         $this->action_name = strtolower(preg_replace('/[^a-z0-9_]+/i', '', $this->action_name));
-        
+
         $this->acl = Q::getSingleton(Q::getIni('dispatcher_acl_provider'));
     }
 
@@ -90,7 +90,7 @@ class QDispatcher
     {
         Q::setIni('mvc/current_controller_name', $controller_name);
         Q::setIni('mvc/current_action_name', $action_name);
-    	
+
         // 检查是否有权限访问
         if (!$this->checkAuthorized($controller_name, $action_name)) {
             return call_user_func_array(Q::getIni('on_access_denied'), array($controller_name, $action_name));
@@ -101,9 +101,9 @@ class QDispatcher
         Q::loadClass($class_name);
         $controller = new $class_name();
         /* @var $controller QController_Abstract */
-        
-        Q::reg($controller);
-        Q::reg($controller, 'current_controller');
+
+        Q::register($controller);
+        Q::register($controller, 'current_controller');
 
         return $controller->execute($action_name);
     }

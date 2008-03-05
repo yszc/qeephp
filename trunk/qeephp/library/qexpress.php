@@ -26,7 +26,7 @@ require dirname(__FILE__) . DIRECTORY_SEPARATOR . 'q.php';
 define('Q_EXPRESS', true);
 
 if (!defined('Q_RUN_MODE')) {
-	define('Q_RUN_MODE', 'debug');
+    define('Q_RUN_MODE', 'debug');
 }
 
 switch (Q_RUN_MODE) {
@@ -34,7 +34,7 @@ case 'deploy':
     Q::setIni(Q::loadFile('deploy_mode_config.php', false, Q_DIR . DS . '_config'));
     break;
 case 'test':
-	require Q_DIR . DS . 'qdebug.php';
+    require Q_DIR . DS . 'qdebug.php';
     Q::setIni(Q::loadFile('test_mode_config.php', false, Q_DIR . DS . '_config'));
     break;
 case 'debug':
@@ -79,8 +79,8 @@ class QExpress
         $dispatcher_class = Q::getIni('dispatcher');
         Q::loadClass($dispatcher_class);
         $dispatcher = new $dispatcher_class($_GET);
-        Q::reg($dispatcher, 'current_dispatcher');
-        Q::reg($dispatcher, $dispatcher_class);
+        Q::register($dispatcher, 'current_dispatcher');
+        Q::register($dispatcher, $dispatcher_class);
         return $dispatcher->dispatching();
     }
 
