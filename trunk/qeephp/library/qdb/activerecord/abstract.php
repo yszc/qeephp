@@ -25,18 +25,17 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     /**
      * 聚合关系
      */
-    const has_one       = 0x02; // 一对一
-    const has_many      = 0x04; // 一对多
-    const belongs_to    = 0x08; // 从属
-    const many_to_many  = 0x10; // 多对多
+    const HAS_ONE       = 'has_one'; // 一对一
+    const HAS_MANY      = 'has_many'; // 一对多
+    const BELONGS_TO    = 'belongs_to'; // 从属
+    const MANY_TO_MANY  = 'many_to_many'; // 多对多
 
     /**
      * 属性的标志
      */
-    const aggregation   = 0x001; // 聚合
-    const readonly      = 0x002; // 只读属性
-    const read_method   = 0x100; // 读方法
-    const write_method  = 0x200; // 写方法
+    const READONLY      = 'readonly'; // 只读属性
+    const SETTER        = 'setter'; // 属性的 setter
+    const GETTER        = 'getter'; // 属性的 getter
 
     /**
      * 当前对象的类名
