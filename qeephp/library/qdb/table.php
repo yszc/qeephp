@@ -28,7 +28,21 @@ class QDB_Table
     const HAS_ONE       = 'has_one';
     const HAS_MANY      = 'has_many';
     const BELONGS_TO    = 'belongs_to';
-    const MANY_TO_MANY = 'many_to_many';
+    const MANY_TO_MANY  = 'many_to_many';
+
+    /**
+     * 处理关联时用到的常量
+     */
+    const SKIP          = 'skip';
+    const CASCADE       = 'cascade';
+    const SET_NULL      = 'set_null';
+    const SET_VALUE     = 'set_value';
+    const SAVE          = 'save';
+    const CREATE        = 'create';
+    const UPDATE        = 'update';
+    const REPLACE       = 'replace';
+    const ONLY_CREATE   = 'only_create';
+    const ONLY_UPDATE   = 'only_update';
 
     /**
      * 数据表的 schema
