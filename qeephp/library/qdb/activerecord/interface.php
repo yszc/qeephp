@@ -32,7 +32,7 @@ interface QDB_ActiveRecord_Interface
     static function __define();
 
     /**
-     * 开启一个查询
+     * 开启一个查询，查找符合条件的对象或对象集合
      *
      * @static
      *
@@ -41,16 +41,24 @@ interface QDB_ActiveRecord_Interface
     static function find();
 
     /**
-     * 删除符合条件的记录
+     * 删除符合条件的对象，返回成功删除的对象的数量
      *
      * @static
+     *
+     * @param mixed $where
+     *
+     * @return int
      */
-    static function delete();
+    static function deleteWhere($where);
 
     /**
-     * 实例化所有符合条件的对象，并调用这些对象的 destroy() 方法
+     * 实例化所有符合条件的对象，并调用这些对象的 destroy() 方法，返回成功删除的对象的数量
      *
      * @static
+     *
+     * @param mixed $where
+     *
+     * @return int
      */
-    static function destroy();
+    static function destroyWhere($where);
 }

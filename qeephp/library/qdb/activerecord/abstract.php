@@ -31,18 +31,12 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     const many_to_many  = 0x10; // 多对多
 
     /**
-     * 属性的读写权限
+     * 属性的标志
      */
-    const readonly      = 0x40;  // 只读
+    const aggregation   = 0x001; // 聚合
+    const readonly      = 0x002; // 只读属性
     const read_method   = 0x100; // 读方法
     const write_method  = 0x200; // 写方法
-
-    /**
-     * 要自动载入的对象行为插件
-     *
-     * @var array|string
-     */
-    protected $behaviors = null;
 
     /**
      * 当前对象的类名
@@ -101,7 +95,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     function __construct(array $data = null)
     {
         $this->__class = get_class($this);
-        self::__initDefine($this->__class);
+        self::__init($this->__class);
 
         if (is_array($data)) {
             $this->attach($data);
@@ -115,7 +109,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     /**
      * 在数据库中创建对象
      */
-    function create()
+    protected function create()
     {
         $table = self::$__defines[$this->__class]['table'];
         /* @var $table QDB_Table */
@@ -128,7 +122,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     /**
      * 更新对象到数据库
      */
-    function update()
+    protected function update()
     {
         $table = self::$__defines[$this->__class]['table'];
         /* @var $table QDB_Table */
@@ -140,12 +134,14 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
 
     /**
      * 保存对象到数据库
+     *
+     * @param boolean $force_create 是否强制创建新记录
      */
-    function save()
+    function save($force_create = false)
     {
         $this->__doCallbacks(self::before_save);
         $id = $this->id();
-        if (empty($id)) {
+        if (empty($id) || $force_create) {
             $this->create();
         } else {
             $this->update();
@@ -227,7 +223,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     }
 
     /**
-     * 返回该对象使用的表数据入口
+     * 返回该对象使用的表数据入口对象
      *
      * @return QDB_Table
      */
@@ -324,7 +320,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     protected static function __find($class, array $args)
     {
-        self::__initDefine($class);
+        self::__init($class);
         $select = new QDB_ActiveRecord_Select($class, self::$__defines[$class]['table'], self::$__defines[$class]['attribs']);
         if (!empty($args)) {
             call_user_func_array(array($select, 'where'), $args);
@@ -346,11 +342,11 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     }
 
     /**
-     * 初始化指定 ActiveRecord 继承类的定义
+     * 初始化指定 QDB_ActiveRecord_Abstract 继承类的定义
      *
      * @param string $class
      */
-    private static function __initDefine($class)
+    private static function __init($class)
     {
         if (isset(self::$__defines[$class])) { return; }
         $class_define = call_user_func(array($class, 'define'));
@@ -446,4 +442,3 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         }
     }
 }
-

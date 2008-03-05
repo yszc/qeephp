@@ -377,6 +377,8 @@ abstract class Q
      * @param object $obj 要注册的对象
      * @param string $name 注册的名字
      * @param boolean $persistent 是否将对象放入持久化存储区
+     *
+     * @return object
      */
     static function register($obj, $name = null, $persistent = false)
     {

@@ -62,7 +62,7 @@ class QView_Abstract
             return null;
         }
         $engine = Q::getSingleton($view_class);
-        return Q::reg($engine, 'default_view_engine');
+        return Q::register($engine, 'default_view_engine');
     }
 
     function get_viewdata()
