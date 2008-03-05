@@ -176,6 +176,9 @@ class Member extends QDB_ActiveRecord_Abstract
                 'friends' => array(
                     'class' => 'Member',
                     'type' => self::many_to_many,
+                    // restrict 用于限定关联的 crud 操作必须符合指定条件
+                    // %MID_TABLE% 等用“%”括起来的字符串是预定义宏
+                    'restrict' => '[%MID_TABLE%.owner_id]' => '[%MAIN_TABLE%.member_id]',
                 ),
             ),
         );
