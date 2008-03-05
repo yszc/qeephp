@@ -25,24 +25,25 @@ class QDB_Table
     /**
      * 关联关系
      */
-    const HAS_ONE       = 'has_one';
-    const HAS_MANY      = 'has_many';
-    const BELONGS_TO    = 'belongs_to';
-    const MANY_TO_MANY  = 'many_to_many';
+    const has_one       = 'has_one';
+    const has_many      = 'has_many';
+    const belongs_to    = 'belongs_to';
+    const many_to_many  = 'many_to_many';
 
     /**
      * 处理关联时用到的常量
      */
-    const SKIP          = 'skip';
-    const CASCADE       = 'cascade';
-    const SET_NULL      = 'set_null';
-    const SET_VALUE     = 'set_value';
-    const SAVE          = 'save';
-    const CREATE        = 'create';
-    const UPDATE        = 'update';
-    const REPLACE       = 'replace';
-    const ONLY_CREATE   = 'only_create';
-    const ONLY_UPDATE   = 'only_update';
+    const all           = 'all';
+    const skip          = 'skip';
+    const cascade       = 'cascade';
+    const set_null      = 'set_null';
+    const set_value     = 'set_value';
+    const save          = 'save';
+    const create        = 'create';
+    const update        = 'update';
+    const replace       = 'replace';
+    const only_create   = 'only_create';
+    const only_update   = 'only_update';
 
     /**
      * 数据表的 schema
@@ -205,16 +206,16 @@ class QDB_Table
     {
         $this->removeAllLinks();
         if (is_array($this->has_one)) {
-            $this->createLinks($this->has_one, self::HAS_ONE);
+            $this->createLinks($this->has_one, self::has_one);
         }
         if (is_array($this->belongs_to)) {
-            $this->createLinks($this->belongs_to, self::BELONGS_TO);
+            $this->createLinks($this->belongs_to, self::belongs_to);
         }
         if (is_array($this->has_many)) {
-            $this->createLinks($this->has_many, self::HAS_MANY);
+            $this->createLinks($this->has_many, self::has_many);
         }
         if (is_array($this->many_to_many)) {
-            $this->createLinks($this->many_to_many, self::MANY_TO_MANY);
+            $this->createLinks($this->many_to_many, self::many_to_many);
         }
     }
 

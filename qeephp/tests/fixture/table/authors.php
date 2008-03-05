@@ -53,12 +53,12 @@ class Table_Authors extends QDB_Table
             /**
              * 指示在删除作者记录时，如何处理关联的内容记录
              */
-            'on_delete' => 'delete',
+            'on_delete' => self::cascade,
 
             /**
              * 指示在保存作者记录时，是否保存关联的内容记录
              */
-            'on_save' => 'skip',
+            'on_save' => self::skip,
         ),
 
         /**
@@ -73,12 +73,12 @@ class Table_Authors extends QDB_Table
             /**
              * 指示在删除作者记录时，如何处理关联的评论记录
              */
-            'on_delete'      => 'fill',
+            'on_delete'      => self::set_value,
 
             /**
              * 要填充的值
              */
-            'on_delete_fill' => 0,
+            'on_delete_set_value' => 0,
         ),
     );
 

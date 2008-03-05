@@ -145,7 +145,7 @@ class QDB_Table_Link
      *
      * @var string|int|array
      */
-    public $on_find = 'all';
+    public $on_find = QDB_Table::all;
 
     /**
      * 查询关联表时使用的查询条件
@@ -177,7 +177,7 @@ class QDB_Table_Link
      *
      * @var string|boolean
      */
-    public $on_delete = 'skip';
+    public $on_delete = QDB_Table::skip;
 
     /**
      * 如果 on_delete 为 set_value，则通过 on_delete_set_value 指定要填充的值。on_delete_set_value 的默认值为 null
@@ -202,7 +202,7 @@ class QDB_Table_Link
      *
      * @var string
      */
-    public $on_save = 'skip';
+    public $on_save = QDB_Table::skip;
 
     /**
      * 指示连接两个数据集的行时，是一对一连接还是一对多连接
@@ -395,7 +395,7 @@ class QDB_Table_Link
          * 如果 mid_table_name 有效，则可以通过 mid_table_???? 等一系列参数指示构造关联表数据入口时的选项。
          *
          */
-        if ($this->type == QDB_Table::MANY_TO_MANY) {
+        if ($this->type == QDB_Table::many_to_many) {
             if (!empty($p['mid_table_obj'])) {
                 $this->mid_table = $p['mid_table_obj'];
             } elseif (!empty($p['mid_table_class'])) {
@@ -420,35 +420,35 @@ class QDB_Table_Link
          * 根据关联类型设置各项默认值
          */
         switch ($this->type) {
-        case QDB_Table::HAS_ONE:
-        case QDB_Table::HAS_MANY:
+        case QDB_Table::has_one:
+        case QDB_Table::has_many:
             $this->main_key  = isset($p['main_key'])  ? $p['main_key']  : $this->main_table->pk;
             $this->assoc_key = isset($p['assoc_key']) ? $p['assoc_key'] : $this->main_table->pk;
-            $this->on_delete = isset($p['on_delete']) ? $p['on_delete'] : 'cascade';
-            $this->on_save   = isset($p['on_save'])   ? $p['on_save']   : 'save';
-            $this->one_to_one = $this->type == QDB_Table::HAS_ONE;
+            $this->on_delete = isset($p['on_delete']) ? $p['on_delete'] : QDB_Table::cascade;
+            $this->on_save   = isset($p['on_save'])   ? $p['on_save']   : QDB_Table::save;
+            $this->one_to_one = $this->type == QDB_Table::has_one;
             break;
-        case QDB_Table::BELONGS_TO:
+        case QDB_Table::belongs_to:
             $this->main_key  = isset($p['main_key'])  ? $p['main_key']  : $this->assoc_table->pk;
             $this->assoc_key = isset($p['assoc_key']) ? $p['assoc_key'] : $this->assoc_table->pk;
-            $this->on_delete = isset($p['on_delete']) ? $p['on_delete'] : 'skip';
-            $this->on_save   = isset($p['on_save'])   ? $p['on_save']   : 'skip';
+            $this->on_delete = isset($p['on_delete']) ? $p['on_delete'] : QDB_Table::SKIP;
+            $this->on_save   = isset($p['on_save'])   ? $p['on_save']   : QDB_Table::SKIP;
             $this->one_to_one = true;
             break;
-        case QDB_Table::MANY_TO_MANY:
+        case QDB_Table::many_to_many:
             $this->main_key      = isset($p['main_key'])      ? $p['main_key']      : $this->main_table->pk;
             $this->assoc_key     = isset($p['assoc_key'])     ? $p['assoc_key']     : $this->assoc_table->pk;
             $this->mid_main_key  = isset($p['mid_main_key'])  ? $p['mid_main_key']  : $this->main_table->pk;
             $this->mid_assoc_key = isset($p['mid_assoc_key']) ? $p['mid_assoc_key'] : $this->assoc_table->pk;
             $this->mid_on_find_fields = isset($p['mid_on_find_fields']) ? $p['mid_on_find_fields'] : null;
             $this->mid_on_find_prefix = isset($p['mid_on_find_prefix']) ? $p['mid_on_find_prefix'] : 'mid_';
-            $this->on_delete     = isset($p['on_delete'])     ? $p['on_delete']     : 'skip';
-            $this->on_save       = isset($p['on_save'])       ? $p['on_save']       : 'skip';
+            $this->on_delete     = isset($p['on_delete'])     ? $p['on_delete']     : QDB_Table::skip;
+            $this->on_save       = isset($p['on_save'])       ? $p['on_save']       : QDB_Table::skip;
             $this->one_to_one = false;
         }
         $this->main_key_alias = isset($p['main_key_alias']) ? $p['main_key_alias'] : 'm_k_a_' . self::$alias_index;
         $this->assoc_key_alias = isset($p['assoc_key_alias']) ? $p['assoc_key_alias'] : 'a_k_a_' . self::$alias_index;
-        $this->on_find = isset($p['on_find']) ? $p['on_find'] : 'all';
+        $this->on_find = isset($p['on_find']) ? $p['on_find'] : QDB_Table::all;
         $this->on_find_where = isset($p['on_find_where']) ? $p['on_find_where'] : null;
         $this->on_find_fields = isset($p['on_find_fields']) ? $p['on_find_fields'] : '*';
         $this->on_find_order = isset($p['on_find_order']) ? $p['on_find_order'] : null;
@@ -470,16 +470,16 @@ class QDB_Table_Link
      */
     function saveAssocData(array $link_data, $assoc_key_value, $recursion)
     {
-        if ($this->on_save === false || $this->on_save == 'skip') { return; }
+        if ($this->on_save === false || $this->on_save == QDB_Table::skip) { return; }
         switch ($this->type) {
-        case QDB_Table::BELONGS_TO:
-        case QDB_Table::HAS_ONE:
+        case QDB_Table::belongs_to:
+        case QDB_Table::has_one:
             $this->saveOneToOne($link_data, $assoc_key_value, $recursion);
             break;
-        case QDB_Table::HAS_MANY:
+        case QDB_Table::has_many:
             $this->saveOneToMany($link_data, $assoc_key_value, $recursion);
             break;
-        case QDB_Table::MANY_TO_MANY:
+        case QDB_Table::many_to_many:
             $this->saveManyToMany($link_data, $assoc_key_value, $recursion);
             break;
         }
@@ -524,12 +524,6 @@ class QDB_Table_Link
      */
     protected function saveManyToMany($link_data, $assoc_key_value, $recursion)
     {
-        $link_data = array(
-           array('tag_id' => 1, 'name' => 'php'),
-           array('tag_id' => 2, 'name' => 'c++'),
-           array('tag_id' => 3, 'name' => 'delphi'),
-        );
-
         $mid_rowset = array();
         $akvs = array();
 

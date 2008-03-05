@@ -25,32 +25,38 @@ interface QDB_ActiveRecord_Events
     /**
      * 预定义的事件
      */
-    const after_find                  = 0xf101; // 查询后
-    const after_initialize            = 0xf102; // 初始化后
+    const after_find                  = 'after_find';                   // 查询后
+    const after_initialize            = 'after_initialize';             // 初始化后
 
-    const before_save                 = 0xf201; // 保存之前
-    const after_save                  = 0xf202; // 保存之后
+    const before_save                 = 'before_save';                  // 保存之前
+    const after_save                  = 'after_save';                   // 保存之后
 
-    const before_create               = 0xf203; // 创建之前
-    const after_create                = 0xf204; // 创建之后
+    const before_create               = 'before_create';                // 创建之前
+    const after_create                = 'after_create';                 // 创建之后
 
-    const before_update               = 0xf205; // 更新之前
-    const after_update                = 0xf206; // 更新之后
+    const before_update               = 'before_update';                // 更新之前
+    const after_update                = 'after_update';                 // 更新之后
 
-    const before_validation           = 0xf301; // 验证之前
-    const after_validation            = 0xf302; // 验证之后
+    const before_validation           = 'before_validation';            // 验证之前
+    const after_validation            = 'after_validation';             // 验证之后
 
-    const before_validation_on_create = 0xf303; // 创建记录验证之前
-    const after_validation_on_create  = 0xf304; // 创建记录验证之后
+    const before_validation_on_create = 'before_validation_on_create';  // 创建记录验证之前
+    const after_validation_on_create  = 'after_validation_on_create';   // 创建记录验证之后
 
-    const before_validation_on_update = 0xf305; // 更新记录验证之前
-    const after_validation_on_update  = 0xf306; // 更新记录验证之后
+    const before_validation_on_update = 'before_validation_on_update';  // 更新记录验证之前
+    const after_validation_on_update  = 'after_validation_on_update';   // 更新记录验证之后
 
-    const before_destroy              = 0xf401; // 销毁之前
-    const after_destroy               = 0xf402; // 销毁之后
+    const before_destroy              = 'before_destroy';               // 销毁之前
+    const after_destroy               = 'after_destroy';                // 销毁之后
 
     /**
      * 其他类型 callback
      */
-    const custom_callback             = 0xff01; // 行为插件自定义方法
+    const custom_callback             = 'custom_callback';              // 行为插件自定义方法
+
+    /**
+     * 属性方法
+     */
+    const getter                      = 'getter';                       // 读属性
+    const setter                      = 'setter';                       // 写属性
 }
