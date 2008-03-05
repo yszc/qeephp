@@ -535,7 +535,6 @@ class QDB_Table
         // TODO: update() 实现对复合主键的处理
         $this->fillFieldsWithCurrentTime($row, $this->updated_time_fields);
         $sql = $this->dbo->getUpdateSQL($row, $this->pk, $this->full_table_name, $this->schema);
-        QDebug::dump($sql, '$sql - update()');
         unset($row[$this->pk]);
         $this->dbo->execute($sql, $row);
         return $this->dbo->affectedRows();
@@ -553,7 +552,7 @@ class QDB_Table
     {
         $update_count = 0;
         foreach (array_keys($rowset) as $offset) {
-            $update_count += (int)$this->update($rowset[$offset]);
+            $update_count += (int)$this->update($rowset[$offset], $recursion);
         }
         return $update_count;
     }
@@ -939,10 +938,11 @@ class QDB_Table
      *
      * @param mixed $where
      * @param array $args
+     * @param boolean|int $ignore_args
      *
      * @return array
      */
-    function parseSQLInternal($where, array $args = null)
+    function parseSQLInternal($where, array $args = null, $ignore_args = false)
     {
         if (empty($where)) { return array(null, null, null); }
         if (is_null($args)) {
@@ -953,9 +953,9 @@ class QDB_Table
         }
 
         if (is_array($where)) {
-            return $this->parseSQLArray($where, $args);
+            return $this->parseSQLArray($where, $args, $ignore_args);
         } else {
-            return $this->parseSQLString($where, $args);
+            return $this->parseSQLString($where, $args, $ignore_args);
         }
     }
 
@@ -964,30 +964,27 @@ class QDB_Table
      *
      * @param array $where
      * @param array $args
+     * @param boolean|int $ignore_args
      *
      * @return array|string
      */
-    protected function parseSQLArray(array $where, array $args = null)
+    protected function parseSQLArray(array $where, array $args = null, $ignore_args = false)
     {
-        /**
-         * 模式2：
-         * where(array('user_id' => $user_id))
-         * where(array('user_id' => $user_id, 'level_ix' => 1))
-         * where(array('(', 'user_id' => $user_id, 'OR', 'level_ix' => $level_ix, ')'))
-         * where(array('user_id' => array($id1, $id2, $id3)))
-         */
-
         $parts = array();
         $callback = array($this->dbo, 'qstr');
         $next_op = '';
-        $args_count = 0;
 
         foreach ($where as $key => $value) {
             if (is_int($key)) {
-                // 递归调用，进一步分析 SQL
-                list($part, , $count) = $this->parseSQLInternal($value, $args, $args_count);
+                if ($ignore_args !== false && $ignore_args > 0) {
+                    $args = array_slice($args, $ignore_args);
+                }
+
+                list($part, , $args_count) = $this->parseSQLInternal($value, $args);
                 if (empty($part)) { continue; }
-                $args_count += $count;
+                if ($args_count > 0) {
+                    $ignore_args += $args_count;
+                }
                 $parts[] = $part;
                 if ($value == ')') {
                     $next_op = 'AND';
@@ -1025,19 +1022,6 @@ class QDB_Table
      */
     protected function parseSQLString($where, array $args = null, $ignore_args = false)
     {
-        /**
-         * 模式1：
-         * where('user_id = ?', array($user_id))
-         * where('user_id = :user_id', array('user_id' => $user_id))
-         * where('user_id in (?)', array(array($id1, $id2, $id3)))
-         * where('user_id = :user_id', array('user_id' => $user_id))
-         * where('user_id IN (:users_id)', array('users_id' => array(1, 2, 3)))
-         */
-
-        /**
-         * 从查询条件中，需要分析出字段名，以及涉及到的关联表
-         *
-         */
         $matches = array();
         preg_match_all('/\[[a-z][a-z0-9_\.]*\]/i', $where, $matches, PREG_OFFSET_CAPTURE);
         $matches = reset($matches);

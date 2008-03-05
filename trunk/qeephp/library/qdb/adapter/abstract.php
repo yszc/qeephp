@@ -363,13 +363,13 @@ abstract class QDB_Adapter_Abstract
             }
             $parts_count = count($parts);
             if ($ignore_args === false && count($params) != $parts_count - 1) {
-                throw new QTable_Exception(__('Invalid parameters for "%s"', $sql));
+                throw new QDB_Exception(__('Invalid parameters for "%s"', $sql), '', 0);
             }
 
             $str = $parts[0];
             $offset = 1;
             if ($ignore_args !== false && $ignore_args > 0) {
-                $params = array_slice($params, $ignore_args, $parts_count - 1);
+                $params = array_slice($params, $ignore_args);
             }
             foreach ($params as $arg_value) {
                 if (!isset($parts[$offset])) { break; }
