@@ -37,7 +37,7 @@ class Test_QDB_Table_Links extends PHPUnit_Framework_TestCase
 
         $conn = $tableAuthors->getConn();
         $conn->startTrans();
-        $tableAuthors->getLink('contents')->init()->on_save = 'save';
+        $tableAuthors->getLink('contents')->init()->on_save = QDB_Table::SAVE;
 
         $authors = $this->getAuthors();
         $map = array();

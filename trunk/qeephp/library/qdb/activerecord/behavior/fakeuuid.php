@@ -1,49 +1,92 @@
 <?php
+/////////////////////////////////////////////////////////////////////////////
+// QeePHP Framework
+//
+// Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
+//
+// 许可协议，请查看源代码中附带的 LICENSE.TXT 文件，
+// 或者访问 http://www.qeephp.org/ 获得详细信息。
+/////////////////////////////////////////////////////////////////////////////
 
-class Behavior_Fakeuuid implements QActiveRecord_Behavior_Interface
+/**
+ * 定义 Behavior_Fakuuid 类
+ *
+ * @package database
+ * @version $Id$
+ */
+
+/**
+ * Behavior_Fakeuuid 实现了“伪”UUID算法
+ *
+ * @package database
+ */
+class Behavior_Fakeuuid implements QDB_ActiveRecord_Behavior_Interface
 {
     /**
-     * 种子的编码
+     * 种子
      *
      * @var array
      */
-    protected $seed;
+    public $seed = 'tlzypjwamdsgcuxqkhiboernfv';
 
     /**
-     * 进制
+     * 种子长度
      *
      * @var int
      */
-    protected $base;
+    public $base;
 
+    /**
+     * 编码后的种子
+     *
+     * @var array
+     */
+    protected $code = array();
+
+    /**
+     * 该方法返回行为插件定义的回调事件以及扩展的方法
+     *
+     * @return array
+     */
+    function __callbacks()
+    {
+        return array(
+            array(self::before_create, 'beforeCreate'),
+        );
+    }
 
     /**
      * 构造函数
      */
-    protected function __construct()
+    function __construct()
     {
-        $seed = 'tlzypjwamdsgcuxqkhiboernfv';
-        $this->base = strlen($seed);
+        $this->base = strlen($this->seed);
         for ($i = 0; $i < $this->base; $i++) {
-            $this->seed[$i] = substr($seed, $i, 1);
+            $this->code[$i] = substr($this->seed, $i, 1);
         }
     }
 
-    static function get_callbacks()
+    /**
+     * 在数据库中创建 ActiveRecord 对象前调用
+     *
+     * @param QDB_ActiveRecord_Abstract $obj
+     * @param array $props
+     */
+    function beforeCreate(QDB_ActiveRecord_Abstract $obj, array & $props)
     {
-        $obj = new Behavior_Fakeuuid();
-        return array(
-            array(self::before_create, array($obj, 'before_create')),
-        );
+        $idname = $obj->idname();
+        $obj->{$idname} = $this->encodeID($obj->getTable()->nextID());
     }
 
-    function before_create(QActiveRecord_Abstract $obj, array & $props)
-    {
-        $id = $obj->get_table()->next_id();
-        $props['member_id'] = $this->encode_id($id);
-    }
-
-    function encode_id($number, $len = 8)
+    /**
+     * 将一个整数转换为对应的字符串表现形式
+     *
+     * @param int $number
+     * @param int $len
+     *
+     * @return string
+     */
+    function encodeID($number, $len = 8)
     {
         $number = intval($number);
         $offset = 0;
@@ -52,13 +95,12 @@ class Behavior_Fakeuuid implements QActiveRecord_Behavior_Interface
         while ($len) {
             $pos = $number % $this->base;
             $pos = ($pos + $first + $offset) % $this->base;
-            $encode .= $this->seed[$pos];
+            $encode .= $this->code[$pos];
             $number = intval($number / $this->base);
             $offset++;
             $len--;
         }
-        $encode .= $this->seed[$first];
+        $encode .= $this->code[$first];
         return $encode;
     }
 }
-

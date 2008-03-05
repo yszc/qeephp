@@ -23,21 +23,6 @@
 abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB_ActiveRecord_Interface
 {
     /**
-     * 聚合关系
-     */
-    const HAS_ONE       = 'has_one'; // 一对一
-    const HAS_MANY      = 'has_many'; // 一对多
-    const BELONGS_TO    = 'belongs_to'; // 从属
-    const MANY_TO_MANY  = 'many_to_many'; // 多对多
-
-    /**
-     * 属性的标志
-     */
-    const READONLY      = 'readonly'; // 只读属性
-    const SETTER        = 'setter'; // 属性的 setter
-    const GETTER        = 'getter'; // 属性的 getter
-
-    /**
      * 当前对象的类名
      *
      * @var string
@@ -80,11 +65,18 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     private static $__methods = array();
 
     /**
+     * 行为插件对象的实例
+     *
+     * @var array
+     */
+    private static $__behaviors = array();
+
+    /**
      * 所有用到的 ActiveRecord 对象的定义
      *
      * @var array
      */
-    private static $__defines;
+    private static $__defines = array();
 
     /**
      * 构造函数
@@ -101,34 +93,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         } else {
             $this->attach(array());
         }
-        $this->__bindBehaviors();
         $this->__doCallbacks(self::after_initialize);
-    }
-
-    /**
-     * 在数据库中创建对象
-     */
-    protected function create()
-    {
-        $table = self::$__defines[$this->__class]['table'];
-        /* @var $table QDB_Table */
-        $this->validate('create');
-        $this->__doCallbacks(self::before_create);
-        $table->create($this->to_array());
-        $this->__doCallbacks(self::after_create);
-    }
-
-    /**
-     * 更新对象到数据库
-     */
-    protected function update()
-    {
-        $table = self::$__defines[$this->__class]['table'];
-        /* @var $table QDB_Table */
-        $this->validate('update');
-        $this->__doCallbacks(self::before_update);
-        $table->update($this->to_array());
-        $this->__doCallbacks(self::after_update);
     }
 
     /**
@@ -187,6 +152,16 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     {
         $pk = self::$__defines[$this->__class]['pk'];
         return $this->{$pk};
+    }
+
+    /**
+     * 获得对象的ID属性名（对象在数据库中的主键字段名）
+     *
+     * @return string
+     */
+    function idname()
+    {
+        return self::$__defines[$this->__class]['pk'];
     }
 
     /**
@@ -310,6 +285,32 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     }
 
     /**
+     * 在数据库中创建对象
+     */
+    protected function create()
+    {
+        $table = self::$__defines[$this->__class]['table'];
+        /* @var $table QDB_Table */
+        $this->validate('create');
+        $this->__doCallbacks(self::before_create);
+        $table->create($this->to_array());
+        $this->__doCallbacks(self::after_create);
+    }
+
+    /**
+     * 更新对象到数据库
+     */
+    protected function update()
+    {
+        $table = self::$__defines[$this->__class]['table'];
+        /* @var $table QDB_Table */
+        $this->validate('update');
+        $this->__doCallbacks(self::before_update);
+        $table->update($this->to_array());
+        $this->__doCallbacks(self::after_update);
+    }
+
+    /**
      * 开启一个查询
      *
      * @param string $class
@@ -350,43 +351,109 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         if (isset(self::$__defines[$class])) { return; }
         $class_define = call_user_func(array($class, 'define'));
 
+        // 绑定行为插件
+        self::$__callbacks[$class] = array();
+        self::$__methods[$class] = array();
+
+        $behaviors = isset($class_define['behaviors']) ? Q::normalize($class_define['behaviors']) : array();
+        $extend_setter = array();
+        $extend_getter = array();
+        foreach ($behaviors as $behavior) {
+            $class = 'Behavior_' . ucfirst(strtolower($behavior));
+            Q::loadClass($class, null, 'behavior');
+            $behavior_obj = new $class($class);
+            /* @var $behavior_obj QDB_ActiveRecord_Behavior_Interface */
+            $callbacks = $behavior_obj->__callbacks();
+            self::$__behaviors[$class] = $behavior_obj;
+
+            foreach ($callbacks as $call) {
+                list($type, $method) = $call;
+                switch ($type) {
+                case self::custom_callback:
+                    if (is_array($method)) {
+                        // array($class, $method) 形式的 callback
+                        self::$__methods[$class][$method[1]] = $method;
+                    } else {
+                        self::$__methods[$class][$method] = $method;
+                    }
+                    break;
+                case self::setter:
+                    $extend_setter[$method] = 'set' . ucfirst($method);
+                    break;
+                case self::getter:
+                    $extend_getter[$method] = 'get' . ucfirst($method);
+                    break;
+                default:
+                    self::$__callbacks[$class][$type][] = $method;
+                }
+            }
+        }
+
+        // 构造表数据入口
         if (!isset($class_define['table_class'])) {
             if (!isset($class_define['table_name'])) {
                 $arr = explode('_', $class);
                 $class_define['table_name'] = strtolower($arr[count($arr) - 1]);
             }
-            $class_define['table'] = new QTable_Base(array('table_name' => $class_define['table_name']));
+            $class_define['table'] = new QDB_Table(array('table_name' => $class_define['table_name']));
         } else {
             $class_define['table'] = Q::getSingleton($class_define['table_class']);
         }
         $class_define['pk'] = $class_define['table']->pk;
 
+
+        // 确定字段属性
         $meta = $class_define['table']->columns();
         $attribs = array();
-        if (isset($class_define['fields'])) {
-            foreach ($class_define['fields'] as $field => $flags) {
-                if (is_array($flags)) {
-                    if (isset($flags[1])) {
-                        list($mapping, $flags) = $flags;
-                    } else {
-                        die('invlid');
-                    }
+        if (isset($class_define['fields']) && is_array($class_define['fields'])) {
+            foreach ($class_define['fields'] as $field => $options) {
+                $define = array('public' => true, 'readonly' => false, 'assoc' => false);
+
+                if (!is_array($options)) {
+                    // 假定为别名
+                    $define['alias'] = $options;
                 } else {
-                    $mapping = null;
+                    $define['readonly'] = isset($options['readonly']) ? (bool)$options['readonly'] : false;
+                    if (isset($options['setter']) || isset($extend_setter[$field])) {
+                        $define['public'] = false;
+                        $define['setter'] = isset($options['setter']) ? $options['setter'] : $extend_setter[$field];
+                    }
+                    if (isset($options['getter']) || isset($extend_getter[$field])) {
+                        $define['public'] = false;
+                        $define['getter'] = isset($options['getter']) ? $options['getter'] : $extend_getter[$field];
+                    }
+                    if (isset($options['alias'])) {
+                        $define['alias'] = $options['alias'];
+                    } else {
+                        $define['alias'] = $field;
+                    }
+
+                    if (isset($options['has_one'])) {
+                        $define['assoc'] = 'has_one';
+                        $define['class'] = $options['has_one'];
+                    }
+                    if (isset($options['has_many'])) {
+                        $define['assoc'] = 'has_many';
+                        $define['class'] = $options['has_many'];
+                    }
+                    if (isset($options['belongs_to'])) {
+                        $define['assoc'] = 'belongs_to';
+                        $define['class'] = $options['belongs_to'];
+                    }
+                    if (isset($options['many_to_many'])) {
+                        $define['assoc'] = 'many_to_many';
+                        $define['class'] = $options['many_to_many'];
+                    }
+                    if ($options['assoc']) {
+                        unset($options['readonly']);
+                        unset($options['alias']);
+                        unset($options['setter']);
+                        unset($options['getter']);
+                        $define['assoc_options'] = $options;
+                    }
                 }
 
-                $define = array(
-                    'public'    => !($flags & self::hidden),
-                    'readonly'  => $flags & self::readonly,
-                );
-
-                $flags = $flags & (self::has_one | self::has_many | self::belongs_to | self::many_to_many);
-                if ($flags) {
-                    $define['model'] = $mapping;
-                    $define['relation'] = $flags;
-                }
-                if ($flags & self::read_method)
-
+                // 根据 META 确定属性的默认值
                 if (isset($meta[$field]) && $meta[$field]['has_default']) {
                     $define['default'] = $meta[$field]['default'];
                 } else {
@@ -396,11 +463,14 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
             }
         }
 
+        // 将没有指定的字段也设置为对象属性
         foreach ($meta as $key => $field) {
             if (!isset($attribs[$key])) {
                 $attribs[$key] = array(
                     'public'    => true,
                     'readonly'  => false,
+                    'alias'     => $key,
+                    'assoc'     => false,
                     'default'   => ($field['has_default']) ? $field['default'] : null,
                 );
             }
@@ -409,35 +479,5 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         unset($class_define['fields']);
 
         self::$__defines[$class] = $class_define;
-    }
-
-    /**
-     * 为指定的 ActiveRecord 类绑定行为插件
-     */
-    private function __bindBehaviors()
-    {
-        if (isset(self::$__callbacks[$this->__class])) { return; }
-
-        self::$__callbacks[$this->__class] = array();
-        self::$__methods[$this->__class] = array();
-
-        $behaviors = normalize($this->_behaviors);
-        foreach ($behaviors as $behavior) {
-            $class = 'Behavior_' . ucfirst(strtolower($behavior));
-            Q::loadClass($class, 'behavior');
-            $hooks = call_user_func(array($class, 'hooks'));
-
-            foreach ($hooks as $hook) {
-                list($type, $method) = $hook;
-                if ($type == QActiveRecord_Behavior_Interface::custom_method) {
-                    self::$__methods[$this->__class][$method[0]] = $method;
-                } else {
-                    if (!isset(self::$__callbacks[$this->__class][$type])) {
-                        self::$__callbacks[$this->__class][$type] = array();
-                    }
-                    self::$__callbacks[$this->__class][$type][] = $method;
-                }
-            }
-        }
     }
 }

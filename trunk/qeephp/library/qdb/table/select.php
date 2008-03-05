@@ -621,7 +621,7 @@ class QDB_Table_Select
             // 如果使用了任何统计函数，则不进行关联查询
             foreach ($this->links as $link) {
                 /* @var $link QDB_Table_Link */
-                if (!$link->enabled || $link->on_find == 'skip') { continue; }
+                if (!$link->enabled || $link->on_find == QDB_Table::skip) { continue; }
                 $link->init();
                 if ($link->assoc_table === $this->recursion_link) { continue; }
                 $sql .= ', ' . $this->table->getConn()->qfield($link->main_key) . ' AS ' . $link->main_key_alias;
