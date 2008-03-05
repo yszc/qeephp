@@ -51,7 +51,7 @@ class Behavior_Fakeuuid implements QDB_ActiveRecord_Behavior_Interface
     function __callbacks()
     {
         return array(
-            array(self::before_create, 'beforeCreate'),
+            array(self::before_create, array($this, 'beforeCreate')),
         );
     }
 
@@ -86,7 +86,7 @@ class Behavior_Fakeuuid implements QDB_ActiveRecord_Behavior_Interface
      *
      * @return string
      */
-    function encodeID($number, $len = 8)
+    protected function encodeID($number, $len = 8)
     {
         $number = intval($number);
         $offset = 0;

@@ -45,9 +45,9 @@ class Behavior_Acluser implements QDB_ActiveRecord_Behavior_Interface
              */
             array(self::setter, 'password'),
             // 新对象保存到数据库前调用
-            array(self::before_create,   'beforeCreate'),
+            array(self::before_create,   array($this, 'beforeCreate')),
             // 为 ActiveRecord 对象增加一个 checkPassword() 方法
-            array(self::custom_callback, array(__CLASS__, 'checkPassword')),
+            array(self::custom_callback, array($this, 'checkPassword')),
         );
     }
 
@@ -91,7 +91,7 @@ class Behavior_Acluser implements QDB_ActiveRecord_Behavior_Interface
      *
      * @return boolean
      */
-    static function checkPassword(QDB_ActiveRecord_Abstract $obj, array & $props, $password)
+    function checkPassword(QDB_ActiveRecord_Abstract $obj, array & $props, $password)
     {
         switch ($this->encode_type) {
         case 'md5':

@@ -216,7 +216,12 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     function __get($varname)
     {
         if (!isset(self::$__defines[$this->__class]['attribs'][$varname])) {
-            throw new QException(__('Property "%s" not defined.', $varname));
+            // LC_MSG: Property "%s" not defined.
+            throw new QDB_ActiveRecord_Exception(__('Property "%s" not defined.', $varname));
+        }
+        $attr = self::$__defines[$this->__class]['attribs'][$varname];
+        if (isset($attr['getter'])) {
+            return call_user_func($attr['getter'], $varname);
         }
         return $this->__props[$varname];
     }
@@ -229,38 +234,45 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     function __set($varname, $value)
     {
-        if (!isset(self::$__defines[$this->__class][$varname])) {
+        if (!isset(self::$__defines[$this->__class]['attribs'][$varname])) {
             $this->{$varname} = $value;
             return;
         }
-
-        $define = self::$__defines[$this->__class][$varname];
-        if ($define['readonly']) {
+        $attr = self::$__defines[$this->__class]['attribs'][$varname];
+        if ($attr['readonly']) {
+            // LC_MSG: Property "%s" is readonly.
             throw new QException(__('Property "%s" is readonly.', $varname));
         }
+        if (isset($attr['setter'])) {
+            call_user_func($attr['setter'], $value);
+            return;
+        }
+        if (!$attr['assoc']) {
+            $this->__props[$varname] = $value;
+            return;
+        }
 
-        if (isset($define['model'])) {
-            if ($define['relation'] & (self::has_many | self::many_to_many)) {
-                // 聚合的对象，要求 $value 必须是一个包含特定类型对象的数组
-                if (!is_array($value)) {
-                    $msg = 'Property "%s" type mismatch. expected is "array", actual is "%s".';
-                    throw new QActiveRecord_Exception(__($msg, $varname, gettype($value)));
-                }
-                foreach (array_kesy($value) as $key) {
-                    if (!is_object($value[$key]) || !($value[$key] instanceof $define['model'])) {
-                        $msg = 'Property "%s[]" type mismatch. expected is "%s", actual is "%s".';
-                        throw new QActiveRecord_Exception(__($msg, $varname, $define['model'], gettype($value[$key])));
-                    }
-                }
-                $this->__props[$varname] = $value;
-            } else {
-                if (!is_object($value) || !($value instanceof $define['model'])) {
-                    $msg = 'Property "%s" type mismatch. expected is "%s", actual is "%s".';
-                    throw new QActiveRecord_Exception(__($msg, $varname, $define['model'], gettype($value)));
-                }
-                $this->__props[$varname] = $value;
+        if ($attr['assoc'] == 'has_many' || $attr['assoc'] == 'many_to_many') {
+            // 聚合的对象，要求 $value 必须是一个包含特定类型对象的数组
+            if (!is_array($value)) {
+                // LC_MSG: Property "%s" type mismatch. expected is "array", actual is "%s".
+                $msg = 'Property "%s" type mismatch. expected is "array", actual is "%s".';
+                throw new QDB_ActiveRecord_Exception(__($msg, $varname, gettype($value)));
             }
+            foreach (array_kesy($value) as $key) {
+                if (!is_object($value[$key]) || !($value[$key] instanceof $attr['class'])) {
+                    // LC_MSG: Property "%s[]" type mismatch. expected is "%s", actual is "%s".
+                    $msg = 'Property "%s[]" type mismatch. expected is "%s", actual is "%s".';
+                    throw new QDB_ActiveRecord_Exception(__($msg, $varname, $attr['model'], gettype($value[$key])));
+                }
+            }
+            $this->__props[$varname] = $value;
         } else {
+            if (!is_object($value) || !($value instanceof $attr['class'])) {
+                // LC_MSG: Property "%s" type mismatch. expected is "%s", actual is "%s".
+                $msg = 'Property "%s" type mismatch. expected is "%s", actual is "%s".';
+                throw new QActiveRecord_Exception(__($msg, $varname, $attr['class'], gettype($value)));
+            }
             $this->__props[$varname] = $value;
         }
     }
@@ -280,7 +292,8 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
             array_unshift($args, $this);
             return call_user_func_array(self::$__methods[$this->__class][$method], $args);
         } else {
-            throw new QActiveRecord_Exception(__('Call to undefined method "%s::%s()"', $this->__class, $method));
+            // LC_MSG: Call to undefined method "%s::%s()".
+            throw new QDB_ActiveRecord_Exception(__('Call to undefined method "%s::%s()".', $this->__class, $method));
         }
     }
 
@@ -316,16 +329,18 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      * @param string $class
      * @param array $args
      *
-     * @return ActiveRecord_Select
+     * @return QDB_ActiveRecord_Select
      */
     protected static function __find($class, array $args)
     {
         self::__init($class);
         $select = new QDB_ActiveRecord_Select($class, self::$__defines[$class]['table'], self::$__defines[$class]['attribs']);
+        if (!empty(self::$__callbacks[$class][self::after_find])) {
+            $select->bindCallbacks(self::$__callbacks[$class][self::after_find]);
+        }
         if (!empty($args)) {
             call_user_func_array(array($select, 'where'), $args);
         }
-        // $select->set_callbacks(self::$__callbacks[$this->__class][self::after_find]);
         return $select;
     }
 
@@ -336,8 +351,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     {
         if (!isset(self::$__callbacks[$this->__class][$type])) { return; }
         foreach (self::$__callbacks[$this->__class][$type] as $callback) {
-            $ret = call_user_func_array($callback, array($this, $this->__all_props));
-            if ($ret === false) { break; }
+            call_user_func_array($callback, array($this, $this->__all_props));
         }
     }
 
@@ -359,29 +373,29 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         $extend_setter = array();
         $extend_getter = array();
         foreach ($behaviors as $behavior) {
-            $class = 'Behavior_' . ucfirst(strtolower($behavior));
-            Q::loadClass($class, null, 'behavior');
-            $behavior_obj = new $class($class);
+            $behavior_class = 'Behavior_' . ucfirst(strtolower($behavior));
+            Q::loadClass($behavior_class, null, 'behavior');
+            $behavior_obj = new $behavior_class($class);
             /* @var $behavior_obj QDB_ActiveRecord_Behavior_Interface */
             $callbacks = $behavior_obj->__callbacks();
-            self::$__behaviors[$class] = $behavior_obj;
+            self::$__behaviors[$behavior] = $behavior_obj;
 
             foreach ($callbacks as $call) {
                 list($type, $method) = $call;
                 switch ($type) {
                 case self::custom_callback:
                     if (is_array($method)) {
-                        // array($class, $method) 形式的 callback
+                        // array($obj/$class, $method) 形式的 callback
                         self::$__methods[$class][$method[1]] = $method;
                     } else {
                         self::$__methods[$class][$method] = $method;
                     }
                     break;
                 case self::setter:
-                    $extend_setter[$method] = 'set' . ucfirst($method);
+                    $extend_setter[$method] = array($behavior_obj, 'set' . ucfirst($method));
                     break;
                 case self::getter:
-                    $extend_getter[$method] = 'get' . ucfirst($method);
+                    $extend_getter[$method] = array($behavior_obj, 'get' . ucfirst($method));
                     break;
                 default:
                     self::$__callbacks[$class][$type][] = $method;
