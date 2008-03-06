@@ -30,20 +30,10 @@ abstract class QGenerator_Abstract
     protected $config;
 
     /**
-     * 当前处理的模块
-     *
-     * @var string
-     */
-    private $module;
-
-    /**
      * 构造函数
-     *
-     * @param string $module
      */
-    function __construct($module = 'default')
+    function __construct()
     {
-        $this->module = $module;
         $this->config = load_boot_config($module);
     }
 
@@ -53,11 +43,6 @@ abstract class QGenerator_Abstract
      * @param array $opts
      */
     abstract function execute(array $opts);
-
-    protected function module()
-    {
-        return $this->module;
-    }
 
     /**
      * 将以“_”下划线分割的字符串转换成骆驼表示法（除第一个单词外，每个单词的第一个字母大写）
