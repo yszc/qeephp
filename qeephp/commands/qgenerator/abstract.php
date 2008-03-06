@@ -22,10 +22,26 @@
  */
 abstract class QGenerator_Abstract
 {
+    /**
+     * 应用程序的配置
+     *
+     * @var array
+     */
     protected $config;
+
+    /**
+     * 当前处理的模块
+     *
+     * @var string
+     */
     private $module;
 
-    function __construct($module)
+    /**
+     * 构造函数
+     *
+     * @param string $module
+     */
+    function __construct($module = 'default')
     {
         $this->module = $module;
         $this->config = load_boot_config($module);
