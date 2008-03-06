@@ -50,6 +50,12 @@ class QGenerator_Runner_Cli extends QGenerator_Runner_Abstract
     function run()
     {
         $params = $this->argv;
+
+        if (empty($params)) {
+            $this->help();
+            exit(-1);
+        }
+
         $type = reset($params);
         array_shift($params);
 
@@ -57,8 +63,9 @@ class QGenerator_Runner_Cli extends QGenerator_Runner_Abstract
             $generator = $this->getGenerator($type);
             $generator->execute($params);
         } catch (QGenerator_Exception $ex) {
-            $ex->dump();
-            echo "\n\n";
+            echo "\nERROR: ";
+            echo $ex->getMessage();
+            echo "\n";
             $this->help();
             exit(-1);
         }
@@ -87,7 +94,5 @@ EOT;
             echo "    scripts/generate {$type} {$help[$type]}\n";
         }
         echo "\n";
-
-        exit(-1);
     }
 }

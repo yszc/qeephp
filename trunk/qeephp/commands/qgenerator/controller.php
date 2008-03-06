@@ -17,10 +17,6 @@
  * @version $Id: Controller.php 63 2008-01-21 13:17:36Z dualface $
  */
 
-// {{{ includes
-require_once dirname(__FILE__) . '/abstract.php';
-// }}}
-
 /**
  * Generator_Controller 创建控制器代码文件
  *
@@ -28,9 +24,9 @@ require_once dirname(__FILE__) . '/abstract.php';
  * @author 起源科技 (www.qeeyuan.com)
  * @version 1.0
  */
-class Generator_Controller extends Generator_Abstract
+class QGenerator_Controller extends QGenerator_Abstract
 {
-    function execute($module, array $opts)
+    function execute(array $opts)
     {
         dump($opts);
     }
