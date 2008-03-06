@@ -83,11 +83,11 @@ function load_boot_config($reload = false)
     // 载入配置文件，并替换配置文件中的宏
     $replace = array('%ROOT_DIR%' => ROOT_DIR);
     $files = array(
-        ROOT_DIR . '/config/environment.yaml'               => 'global',
-        ROOT_DIR . '/config/database.yaml'                  => 'dsn_pool',
-        ROOT_DIR . '/config/routes.yaml'                    => 'routes',
-        ROOT_DIR . '/config/acl.yaml'                       => 'global_act',
-        ROOT_DIR . '/config/environments/' . RUN_MODE . '.yaml' => 'global',
+        ROOT_DIR . '/config/environment.yaml.php'                   => 'global',
+        ROOT_DIR . '/config/database.yaml.php'                      => 'dsn_pool',
+        ROOT_DIR . '/config/routes.yaml.php'                        => 'routes',
+        ROOT_DIR . '/config/acl.yaml.php'                           => 'global_act',
+        ROOT_DIR . '/config/environments/' . RUN_MODE . '.yaml.php' => 'global',
     );
 
     $config = array();
