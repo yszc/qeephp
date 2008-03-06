@@ -25,16 +25,16 @@ class QDB
     /**
      * 参数占位符类型
      */
-    const PARAM_QM          = '?'; // 问号作为参数占位符
-    const PARAM_CL_NAMED    = ':'; // 冒号开始的命名参数
-    const PARAM_DL_SEQUENCE = '$'; // $符号开始的序列
-    const PARAM_AT_NAMED    = '@'; // @开始的命名参数
+    const param_qm          = '?'; // 问号作为参数占位符
+    const param_cl_named    = ':'; // 冒号开始的命名参数
+    const param_dl_sequence = '$'; // $符号开始的序列
+    const param_at_named    = '@'; // @开始的命名参数
 
     /**
      * 可用的查询结果集返回形式
      */
-    const FETCH_MODE_ARRAY  = 1; // 返回的每一个记录就是一个索引数组
-    const FETCH_MODE_ASSOC  = 2; // 返回的每一个记录就是一个以字段名作为键名的数组
+    const fetch_mode_array  = 1; // 返回的每一个记录就是一个索引数组
+    const fetch_mode_assoc  = 2; // 返回的每一个记录就是一个以字段名作为键名的数组
 
     /**
      * 开发者必须通过该方法获得数据库访问对象实例

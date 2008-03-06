@@ -921,82 +921,94 @@ class QDB_Table
     /**
      * 分析查询条件和参数
      *
-     * @param array|string $where
+     * @param array|string $sql
      *
      * @return string
      */
-    function parseSQL($where)
+    function parseSQL($sql)
     {
         $args = func_get_args();
         array_shift($args);
-        list($string, ) = $this->parseSQLInternal($where, $args);
-        return $string;
+        $ret = $this->parseSQLInternal($sql, $args);
+        return $ret[0];
     }
 
     /**
-     * 内部使用的 parseSQL()
+     * 分析查询条件和参数内部版本
      *
-     * @param mixed $where
+     * 与 parseSQL() 的区别在于 parseSQLInternal() 用第二参数来传递所有的占位符参数。
+     * 并且 parseSQLInternal() 的返回结果是一个数组，
+     * 分别由处理后的 SQL 语句、从 SQL 语句中分析出来的关联名称、分析用到的参数个数组成。
+     *
+     * list($sql, $used_links, $args_count) = parseSQLInternal(...)
+     *
+     * @param mixed $sql
      * @param array $args
-     * @param boolean|int $ignore_args
      *
      * @return array
      */
-    function parseSQLInternal($where, array $args = null, $ignore_args = false)
+    function parseSQLInternal($sql, array $args = null)
     {
-        if (empty($where)) { return array(null, null, null); }
+        if (empty($sql)) { return array(null, null, null); }
         if (is_null($args)) {
             $args = array();
         }
-        if (is_int($where)) {
-            return array("{$this->qpk} = {$where}", array(), null);
+        if (is_int($sql)) {
+            return array("{$this->qpk} = {$sql}", array(), null);
         }
 
-        if (is_array($where)) {
-            return $this->parseSQLArray($where, $args, $ignore_args);
+        if (is_array($sql)) {
+            return $this->parseSQLArray($sql, $args);
         } else {
-            return $this->parseSQLString($where, $args, $ignore_args);
+            return $this->parseSQLString($sql, $args);
         }
     }
 
     /**
      * 按照模式2对查询条件进行分析
      *
-     * @param array $where
+     * @param array $sql
      * @param array $args
-     * @param boolean|int $ignore_args
      *
      * @return array|string
      */
-    protected function parseSQLArray(array $where, array $args = null, $ignore_args = false)
+    protected function parseSQLArray(array $arr, array $args = null)
     {
         $parts = array();
         $callback = array($this->dbo, 'qstr');
         $next_op = '';
+        $args_count = 0;
+        $used_links = array();
 
-        foreach ($where as $key => $value) {
+        foreach ($arr as $key => $value) {
             if (is_int($key)) {
-                if ($ignore_args !== false && $ignore_args > 0) {
-                    $args = array_slice($args, $ignore_args);
-                }
-
-                list($part, , $args_count) = $this->parseSQLInternal($value, $args);
-                if (empty($part)) { continue; }
-                if ($args_count > 0) {
-                    $ignore_args += $args_count;
-                }
-                $parts[] = $part;
+                /**
+                 * 如果键名是整数，则判断键值是否是 “)”。
+                 * 对于其他值，则假定为需要再分析的 SQL。
+                 * 因此再次调用 parseSQLInternal() 分析。
+                 */
                 if ($value == ')') {
                     $next_op = 'AND';
+                    $sql = ')';
                 } else {
                     $next_op = '';
+                    list($sql, , $args_count) = $this->parseSQLInternal($value, $args);
+                    if (empty($sql)) { continue; }
+                    if ($args_count > 0) {
+                        $args = array_slice($args, $args_count);
+                    }
                 }
+                $parts[] = $sql;
             } else {
+                /**
+                 * 如果键名是字符串，则假定为字段名
+                 */
                 if ($next_op != '') {
                     $parts[] = $next_op;
                 }
-                $field = $this->parseSQLQfield(array('', $key));
+                $field = $this->parseSQLQfield($key);
                 if (is_array($value)) {
+                    // 如果 $value 是数组，则假定为 IN (??, ??) 表达式
                     $value = array_unique($value);
                     $value = array_map($callback, $value);
                     $parts[] = $field . ' IN (' . implode(',', $value) . ')';
@@ -1008,7 +1020,7 @@ class QDB_Table
             }
         }
 
-        return array(implode(' ', $parts), array(), null);
+        return array(implode(' ', $parts), $used_links, $args_count);
     }
 
     /**
@@ -1016,11 +1028,10 @@ class QDB_Table
      *
      * @param string $where
      * @param array $args
-     * @param boolean|int $ignore_args
      *
      * @return array|string
      */
-    protected function parseSQLString($where, array $args = null, $ignore_args = false)
+    protected function parseSQLString($where, array $args = null)
     {
         $matches = array();
         preg_match_all('/\[[a-z][a-z0-9_\.]*\]/i', $where, $matches, PREG_OFFSET_CAPTURE);
@@ -1070,11 +1081,11 @@ class QDB_Table
         $args_count = null;
         if (strpos($where, '?') !== false) {
             // 使用 ? 作为占位符的情况
-            $ret = $this->dbo->qinto($where, $args, QDB::PARAM_QM, $ignore_args);
+            $ret = $this->dbo->qinto($where, $args, QDB::param_qm);
         } elseif (strpos($where, ':') !== false) {
             // 使用 : 开头的命名参数占位符
             $args = reset($args);
-            $ret = $this->dbo->qinto($where, $args, QDB::PARAM_CL_NAMED, $ignore_args);
+            $ret = $this->dbo->qinto($where, $args, QDB::param_cl_named);
         } else {
             $ret = $where;
         }
@@ -1089,13 +1100,13 @@ class QDB_Table
     /**
      * 将字段名替换为转义后的完全限定名
      *
-     * @param array $matches
+     * @param array $field
      *
      * @return string
      */
-    private function parseSQLQfield($matches)
+    private function parseSQLQfield($field)
     {
-        $p = explode('.', $matches[1]);
+        $p = explode('.', $field);
         switch (count($p)) {
         case 3:
             list($schema, $table, $field) = $p;
