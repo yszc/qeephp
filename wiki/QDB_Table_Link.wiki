@@ -225,7 +225,7 @@ mapping_name 同时定义了关联的名称。因此在调用表数据入口对�
 指示是否读取关联的记录
 
 || true 或 'all'   || 读取所有关联记录 ||
-|| false 或 self::SKIP || 跳过，不读取内容记录 ||
+|| false 或 'skip' || 跳过，不读取内容记录 ||
 || 整数            || 仅读取指定个数的内容记录，例如 on_find = 5 表示仅读取每个作者的 5 个内容记录 ||
 || 数组            || 包含读取起始位置和要读取的个数，例如 array($offset, $nums) ||
 
@@ -247,32 +247,32 @@ mapping_name 同时定义了关联的名称。因此在调用表数据入口对�
 
 指示在删除主表记录时，如何处理关联的记录：
 
-|| true 或 self::CASCADE || 删除所有的关联记录 ||
-|| self::SET_NULL        || 将关联记录的外键字段设置为 NULL ||
-|| self::SET_VALUE       || 将关联记录的外键字段设置为指定的值 ||
-|| false 或 self::SKIP   || 不处理关联记录 ||
+|| true 或 'cascade' || 删除所有的关联记录 ||
+|| 'set_null'        || 将关联记录的外键字段设置为 NULL ||
+|| 'set_value'       || 将关联记录的外键字段设置为指定的值 ||
+|| false 或 'skip'   || 不处理关联记录 ||
 
-对于 belongs to 和 many to many 关联，on_delete 的默认值是 self::SKIP；
-对于 has many 和 has one 关联，默认值则是 self::CASCADE。
+对于 belongs to 和 many to many 关联，on_delete 的默认值是 'skip'；
+对于 has many 和 has one 关联，默认值则是 'cascade'。
 
 *on_delete_set_value*
 
-如果 on_delete 为 self::SET_VALUE，则通过 on_delete_set_value 指定要填充的值。on_delete_set_value 的默认值为 null。
+如果 on_delete 为 'set_value'，则通过 on_delete_set_value 指定要填充的值。on_delete_set_value 的默认值为 null。
 
 *on_save*
 
 指示是否保存关联的记录：
 
-|| true 或 self::SAVE  || 根据关联记录是否具有主键值来决定是创建记录还是更新现有记录 ||
-|| self::CREATE        || 强制创建新记录 ||
-|| self::UPDATE        || 强制更新记录 ||
-|| self::REPLACE       || 使用数据库的 replace 操作来尝试替换记录 ||
-|| false 或 self::SKIP || 不处理关联记录 ||
-|| self::ONLY_CREATE   || 仅仅保存需要创建的记录（根据是否具备主键值判断） ||
-|| self::ONLY_UPDATE   || 仅仅保存需要更新的记录（根据是否具备主键值判断） ||
+|| true 或 'save'  || 根据关联记录是否具有主键值来决定是创建记录还是更新现有记录 ||
+|| 'create'        || 强制创建新记录 ||
+|| 'update'        || 强制更新记录 ||
+|| 'replace'       || 使用数据库的 replace 操作来尝试替换记录 ||
+|| false 或 'skip' || 不处理关联记录 ||
+|| 'only_create'   || 仅仅保存需要创建的记录（根据是否具备主键值判断） ||
+|| 'only_update'   || 仅仅保存需要更新的记录（根据是否具备主键值判断） ||
 
-对于 belongs to 和 many to many 关联，on_save 的默认值是 self::SKIP；
-对于 has many 和 has one 关联，on_save 的默认值是 self::SAVE。
+对于 belongs to 和 many to many 关联，on_save 的默认值是 'skip'；
+对于 has many 和 has one 关联，on_save 的默认值是 'save'。
 
 === 仅用于 many to many 关联的选项 ===
 
