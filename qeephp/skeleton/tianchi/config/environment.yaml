@@ -84,10 +84,10 @@ default_act:
 #
 # 如果在一个域名下同时运行多个应用程序，
 # 请务必为每一个应用程序使用自己独一无二的键名
-acl_session_key:        ACL_USERDATA
+acl_session_key:        acl_userdata
 
 # 指示 ACL 组件用什么键名在 session 中保存用户角色信息
-acl_roles_key:          ACL_ROLES
+acl_roles_key:          acl_roles
 
 
 #############################
