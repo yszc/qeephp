@@ -1,30 +1,26 @@
 <?php
 /////////////////////////////////////////////////////////////////////////////
-// FleaPHP Framework
+// QeePHP Framework
 //
 // Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
 //
-// 许可协议，请查看源代码中附带的 LICENSE.txt 文件，
-// 或者访问 http://www.fleaphp.org/ 获得详细信息。
+// 许可协议，请查看源代码中附带的 LICENSE.TXT 文件，
+// 或者访问 http://www.qeephp.org/ 获得详细信息。
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 Generator_Abstract 类
+ * 定义 QGenerator_Abstract 类
  *
- * @copyright Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
- * @author 起源科技 (www.qeeyuan.com)
- * @package Scripts
+ * @package commands
  * @version $Id$
  */
 
 /**
- * Generator_Abstract 是所有生成器的基础类
+ * QGenerator_Abstract 是所有生成器的基础类
  *
- * @package Scripts
- * @author 起源科技 (www.qeeyuan.com)
- * @version 1.0
+ * @package commands
  */
-abstract class Generator_Abstract
+abstract class QGenerator_Abstract
 {
     protected $config;
     private $module;
