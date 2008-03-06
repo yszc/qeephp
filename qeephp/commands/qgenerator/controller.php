@@ -14,7 +14,7 @@
  * @copyright Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
  * @author 起源科技 (www.qeeyuan.com)
  * @package Tool
- * @version $Id$
+ * @version $Id: Controller.php 63 2008-01-21 13:17:36Z dualface $
  */
 
 // {{{ includes
