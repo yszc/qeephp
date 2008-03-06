@@ -95,8 +95,8 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
     function qstr($value)
     {
         if (is_int($value)) { return $value; }
-        if (is_bool($value)) { return $value ? $this->TRUE_VALUE : $this->FALSE_VALUE; }
-        if (is_null($value)) { return $this->NULL_VALUE; }
+        if (is_bool($value)) { return $value ? $this->true_value : $this->false_value; }
+        if (is_null($value)) { return $this->null_value; }
         return "'" . mysql_real_escape_string($value, $this->conn) . "'";
     }
 
@@ -192,7 +192,7 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
     function execute($sql, $inputarr = null)
     {
         $this->query_count++;
-        if ($this->LOG_QUERY) {
+        if ($this->log_query) {
             $this->log[] = $sql;
         }
         if (is_array($inputarr)) {
@@ -234,11 +234,11 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
 
     function startTrans()
     {
-        if (!$this->TRANSACTION_ENABLED) { return false; }
+        if (!$this->transaction_enabled) { return false; }
         if ($this->trans_count == 0) {
             $this->execute('START TRANSACTION');
             $this->has_failed_query = false;
-        } elseif ($this->trans_count && $this->SAVEPOINT_ENABLED) {
+        } elseif ($this->trans_count && $this->savepoint_enabled) {
             $savepoint = 'savepoint_' . $this->trans_count;
             $this->execute("SAVEPOINT `{$savepoint}`");
             array_push($this->savepoints_stack, $savepoint);
@@ -256,7 +256,7 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
             } else {
                 $this->execute('ROLLBACK');
             }
-        } elseif ($this->SAVEPOINT_ENABLED) {
+        } elseif ($this->savepoint_enabled) {
             $savepoint = array_pop($this->savepoints_stack);
             if ($this->has_failed_query || $commit_on_no_errors == false) {
                 $this->execute("ROLLBACK TO SAVEPOINT `{$savepoint}`");
@@ -312,7 +312,7 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
         if (!$rs) { return false; }
         /* @var $rs QDB_Result_Abstract */
         $retarr = array();
-        $rs->fetchMode = QDB::FETCH_MODE_ARRAY;
+        $rs->fetchMode = QDB::fetch_mode_array;
         while (($row = $rs->fetchRow())) {
             $field = array();
             $field['name'] = $row['Field'];

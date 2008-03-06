@@ -62,7 +62,7 @@ abstract class QDB_Adapter_Abstract
      *
      * @var const
      */
-    protected $fetch_mode = QDB::FETCH_MODE_ASSOC;
+    protected $fetch_mode = QDB::fetch_mode_assoc;
 
     /**
      * 数据库连接句柄
@@ -116,69 +116,69 @@ abstract class QDB_Adapter_Abstract
     /**
      * 用于描绘 true、false 和 null 的数据库值
      */
-    protected $TRUE_VALUE       = 1;
-    protected $FALSE_VALUE      = 0;
-    protected $NULL_VALUE       = 'NULL';
+    protected $true_value       = 1;
+    protected $false_value      = 0;
+    protected $null_value       = 'NULL';
 
     /**
      * 数据库接受的日期格式
      */
-    protected $TIMESTAMP_FORMAT = 'Y-m-d H:i:s';
+    protected $timestamp_format = 'Y-m-d H:i:s';
 
     /**
      * 指示驱动是否支持原生的参数绑定
      *
      * @var boolean
      */
-    protected $BIND_ENABLED = true;
+    protected $bind_enabled = true;
     /**
      * 指示使用何种样式的参数占位符
      *
      * @var string
      */
-    protected $PARAM_STYLE  = QDB::PARAM_QM;
+    protected $param_style  = QDB::param_qm;
 
     /**
      * 指示数据库是否有自增字段功能
      *
      * @var boolean
      */
-    protected $HAS_INSERT_ID = true;
+    protected $has_insert_id = true;
 
     /**
      * 指示数据库是否能获得更新、删除操作影响的记录行数量
      *
      * @var boolean
      */
-    protected $AFFECTED_ROWS_ENABLED = true;
+    protected $affected_rows_enabled = true;
 
     /**
      * 指示数据库是否支持事务
      *
      * @var boolean
      */
-    protected $TRANSACTION_ENABLED = true;
+    protected $transaction_enabled = true;
 
     /**
      * 指示数据库是否支持事务中的 SAVEPOINT 功能
      *
      * @var boolean
      */
-    protected $SAVEPOINT_ENABLED = false;
+    protected $savepoint_enabled = false;
 
     /**
      * 指示是否将查询语句放入 log 数组
      *
      * @var boolean
      */
-    protected $LOG_QUERY = false;
+    protected $log_query = false;
 
     /**
      * 指示是否将查询结果中的字段名转换为全小写
      *
      * @var boolean
      */
-    protected $RESULT_FIELD_NAME_LOWER = false;
+    protected $result_field_name_lower = false;
 
     /**
      * 构造函数
@@ -349,21 +349,21 @@ abstract class QDB_Adapter_Abstract
     function qinto($sql, array $params = null, $param_style = null, $ignore_args = false)
     {
         if (is_null($param_style)) {
-            $param_style = $this->PARAM_STYLE;
+            $param_style = $this->param_style;
         }
 
         $callback = array($this, 'qstr');
         switch ($param_style) {
-        case QDB::PARAM_QM:
-        case QDB::PARAM_DL_SEQUENCE:
-            if ($param_style == QDB::PARAM_QM) {
+        case QDB::param_qm:
+        case QDB::param_dl_sequence:
+            if ($param_style == QDB::param_qm) {
                 $parts = explode('?', $sql);
             } else {
                 $parts = preg_split('/\$[0-9]+/', $sql);
             }
             $parts_count = count($parts);
             if ($ignore_args === false && count($params) != $parts_count - 1) {
-                throw new QDB_Exception(__('Invalid parameters for "%s"', $sql), '', 0);
+                throw new QDB_Exception($sql, __('Invalid parameters for "%s"', $sql), 0);
             }
 
             $str = $parts[0];
@@ -388,9 +388,9 @@ abstract class QDB_Adapter_Abstract
                 return $str;
             }
 
-        case QDB::PARAM_CL_NAMED:
-        case QDB::PARAM_AT_NAMED:
-            $split = ($param_style == QDB::PARAM_CL_NAMED) ? ':' : '@';
+        case QDB::param_cl_named:
+        case QDB::param_at_named:
+            $split = ($param_style == QDB::param_cl_named) ? ':' : '@';
             $parts = preg_split('/(' . $split . '[a-z0-9_\-]+)/i', $sql, -1, PREG_SPLIT_DELIM_CAPTURE);
             $max = count($parts);
             if ($ignore_args === false && count($params) * 2 + 1 != $max) {
@@ -729,7 +729,7 @@ abstract class QDB_Adapter_Abstract
      */
     function dbTimestamp($timestamp)
     {
-        return date($this->TIMESTAMP_FORMAT, $timestamp);
+        return date($this->timestamp_format, $timestamp);
     }
 
     /**
@@ -945,7 +945,7 @@ abstract class QDB_Adapter_Abstract
      */
     function paramStyle()
     {
-        return $this->PARAM_STYLE;
+        return $this->param_style;
     }
 
     /**
@@ -966,15 +966,15 @@ abstract class QDB_Adapter_Abstract
         $fields = array_change_key_case(array_flip($fields), CASE_LOWER);
         foreach (array_keys($inputarr) as $offset => $key) {
             if (!isset($fields[strtolower($key)])) { continue; }
-            switch($this->PARAM_STYLE) {
-            case QDB::PARAM_QM:
+            switch($this->param_style) {
+            case QDB::param_qm:
                 $holders[] = '?';
                 break;
-            case QDB::PARAM_DL_SEQUENCE:
+            case QDB::param_dl_sequence:
                 $holders[] = '$' . ($offset + 1);
                 break;
             default:
-                $holders[] = $this->PARAM_STYLE . $key;
+                $holders[] = $this->param_style . $key;
             }
             $values[$key] = $inputarr[$key];
         }
@@ -1000,15 +1000,15 @@ abstract class QDB_Adapter_Abstract
         foreach (array_keys($inputarr) as $offset => $key) {
             if (!isset($fields[strtolower($key)])) { continue; }
             $qkey = $this->qfield($key);
-            switch($this->PARAM_STYLE) {
-            case QDB::PARAM_QM:
-                $pairs[] = "{$qkey}={$this->PARAM_STYLE}";
+            switch($this->param_style) {
+            case QDB::param_qm:
+                $pairs[] = "{$qkey}={$this->param_style}";
                 break;
-            case QDB::PARAM_DL_SEQUENCE:
+            case QDB::param_dl_sequence:
                 $pairs[] = "{$qkey}=\$" . ($offset + 1);
                 break;
             default:
-                $pairs[] = "{$qkey}={$this->PARAM_STYLE}{$key}";
+                $pairs[] = "{$qkey}={$this->param_style}{$key}";
             }
             $values[$key] = $inputarr[$key];
         }
