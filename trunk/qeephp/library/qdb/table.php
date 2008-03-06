@@ -31,21 +31,6 @@ class QDB_Table
     const many_to_many  = 'many_to_many';
 
     /**
-     * 处理关联时用到的常量
-     */
-    const all           = 'all';
-    const skip          = 'skip';
-    const cascade       = 'cascade';
-    const set_null      = 'set_null';
-    const set_value     = 'set_value';
-    const save          = 'save';
-    const create        = 'create';
-    const update        = 'update';
-    const replace       = 'replace';
-    const only_create   = 'only_create';
-    const only_update   = 'only_update';
-
-    /**
      * 数据表的 schema
      *
      * @var string
@@ -950,11 +935,11 @@ class QDB_Table
     function parseSQLInternal($sql, array $args = null)
     {
         if (empty($sql)) { return array(null, null, null); }
-        if (is_null($args)) {
-            $args = array();
-        }
         if (is_int($sql)) {
             return array("{$this->qpk} = {$sql}", array(), null);
+        }
+        if (is_null($args)) {
+            $args = array();
         }
 
         if (is_array($sql)) {
@@ -1079,13 +1064,14 @@ class QDB_Table
 
         // 分析查询条件中的参数占位符
         $args_count = null;
+
         if (strpos($where, '?') !== false) {
             // 使用 ? 作为占位符的情况
-            $ret = $this->dbo->qinto($where, $args, QDB::param_qm);
+            $ret = $this->dbo->qinto($where, $args, QDB::param_qm, true);
         } elseif (strpos($where, ':') !== false) {
             // 使用 : 开头的命名参数占位符
-            $args = reset($args);
-            $ret = $this->dbo->qinto($where, $args, QDB::param_cl_named);
+            if (!empty($args)) { $args = reset($args); }
+            $ret = $this->dbo->qinto($where, $args, QDB::param_cl_named, true);
         } else {
             $ret = $where;
         }

@@ -29,7 +29,7 @@ class QDB_Exception extends QException
      */
     public $sql;
 
-    function __construct($sql, $error, $errcode)
+    function __construct($sql, $error, $errcode = 0)
     {
         $this->sql = $sql;
         parent::__construct($error, $errcode);
