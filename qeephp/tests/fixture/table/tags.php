@@ -30,7 +30,7 @@ class Table_Tags extends QDB_Table
             'table_class' => 'Table_Contents',
             'mapping_name' => 'contents',
             'mid_table_name' => 'contents_has_tags',
-            'on_find' => self::SKIP,
+            'on_find' => 'skip',
         ),
     );
 

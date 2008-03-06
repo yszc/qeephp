@@ -134,7 +134,8 @@ abstract class QDB_Select_Abstract
         if (!is_array($links)) { $links = array(); }
         $this->links = $links;
         if (!is_null($where)) {
-            $this->where[] = $this->table->parseSQLInternal($where, $args);
+            list($sql, ) = $this->table->parseSQLInternal($where, $args);
+            $this->where[] = $sql;
         }
     }
 
@@ -325,7 +326,7 @@ abstract class QDB_Select_Abstract
      */
     function query($clean_up = true)
     {
-        list($sql, , $used_links) = $this->toStringInternal();
+        list($sql, $used_links) = $this->toStringInternal();
 
         if (!is_array($this->limit)) {
             if (is_null($this->limit)) {
@@ -468,7 +469,7 @@ abstract class QDB_Select_Abstract
         if ($use_links && $this->recursion > 0) {
             foreach ($this->links as $link) {
                 /* @var $link QDB_Table_Link */
-                if (!$link->enabled || $link->on_find == QDB_Table::skip) { continue; }
+                if (!$link->enabled || $link->on_find == 'skip') { continue; }
                 $link->init();
                 if ($link->assoc_table === $this->recursion_link) { continue; }
                 $sql .= ', ' . $this->table->getConn()->qfield($link->main_key) . ' AS ' . $link->main_key_alias;
@@ -482,7 +483,8 @@ abstract class QDB_Select_Abstract
 
         $c = array();
         foreach ($this->where as $where) {
-            $c[] = '(' . $this->table->parseSQL($where) . ')';
+            if (empty($where)) { continue; }
+            $c[] = "({$where})";
         }
         if (!empty($c)) {
             $sql .= ' WHERE ' . implode(' AND ', $c);

@@ -342,11 +342,11 @@ abstract class QDB_Adapter_Abstract
      * @param string $sql
      * @param array $params
      * @param enum $param_style
-     * @param boolean|int $ignore_args
+     * @param boolean $return_args_count
      *
      * @return string
      */
-    function qinto($sql, array $params = null, $param_style = null, $ignore_args = false)
+    function qinto($sql, array $params = null, $param_style = null, $return_args_count = false)
     {
         if (is_null($param_style)) {
             $param_style = $this->param_style;
@@ -361,16 +361,8 @@ abstract class QDB_Adapter_Abstract
             } else {
                 $parts = preg_split('/\$[0-9]+/', $sql);
             }
-            $parts_count = count($parts);
-            if ($ignore_args === false && count($params) != $parts_count - 1) {
-                throw new QDB_Exception($sql, __('Invalid parameters for "%s"', $sql), 0);
-            }
-
             $str = $parts[0];
             $offset = 1;
-            if ($ignore_args !== false && $ignore_args > 0) {
-                $params = array_slice($params, $ignore_args);
-            }
             foreach ($params as $arg_value) {
                 if (!isset($parts[$offset])) { break; }
                 if (is_array($arg_value)) {
@@ -382,8 +374,8 @@ abstract class QDB_Adapter_Abstract
                 }
                 $offset++;
             }
-            if ($ignore_args !== false) {
-                return array($str, $parts_count - 1);
+            if ($return_args_count) {
+                return array($str, count($parts) - 1);
             } else {
                 return $str;
             }
@@ -393,15 +385,12 @@ abstract class QDB_Adapter_Abstract
             $split = ($param_style == QDB::param_cl_named) ? ':' : '@';
             $parts = preg_split('/(' . $split . '[a-z0-9_\-]+)/i', $sql, -1, PREG_SPLIT_DELIM_CAPTURE);
             $max = count($parts);
-            if ($ignore_args === false && count($params) * 2 + 1 != $max) {
-                throw new QDB_Exception($sql, __('Invalid parameters for "%s"', $sql), 0);
-            }
             $str = $parts[0];
 
             for ($offset = 1; $offset < $max; $offset += 2) {
                 $arg_name = substr($parts[$offset], 1);
                 if (!isset($params[$arg_name])) {
-                    throw new QDB_Exception($sql, __('Invalid parameter "%s" for "%s"', $arg_name, $sql));
+                    throw new QDB_Exception($sql, __('Invalid parameter "%s" for "%s"', $arg_name, $sql), 0);
                 }
                 if (is_array($params[$arg_name])) {
                     $arg_value = array_map($callback, $params[$arg_name]);
@@ -410,8 +399,8 @@ abstract class QDB_Adapter_Abstract
                     $str .= $this->qstr($params[$arg_name]) . $parts[$offset + 1];
                 }
             }
-            if ($ignore_args !== false) {
-                return array($str, $max - 1);
+            if ($return_args_count) {
+                return array($str, intval($max / 2) - 1);
             } else {
                 return $str;
             }
