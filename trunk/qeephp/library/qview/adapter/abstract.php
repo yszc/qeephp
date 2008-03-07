@@ -1,17 +1,34 @@
 <?php
+/////////////////////////////////////////////////////////////////////////////
+// QeePHP Framework
+//
+// Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
+//
+// 许可协议，请查看源代码中附带的 LICENSE.TXT 文件，
+// 或者访问 http://www.qeephp.org/ 获得详细信息。
+/////////////////////////////////////////////////////////////////////////////
 
-class QView_Abstract
+/**
+ * 定义 QView_Adapter_Abstract 类
+ *
+ * @package mvc
+ * @version $Id$
+ */
+
+/**
+ * QView_Adapter_Abstract 是所有模板引擎适配器的基础类
+ *
+ * @package mvc
+ */
+abstract class QView_Adapter_Abstract
 {
+    public
+
+
+
     protected $viewname;
     protected $viewdata;
     protected $callbacks;
-
-    function __construct($viewname, array $viewdata = null, array $callbacks = null)
-    {
-        $this->viewname = $viewname;
-        $this->viewdata = is_array($viewdata) ? $viewdata : array();
-        $this->callbacks = $callbacks;
-    }
 
     function execute()
     {

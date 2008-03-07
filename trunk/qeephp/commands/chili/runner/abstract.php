@@ -96,12 +96,12 @@ abstract class Chili_Runner_Abstract
             if (substr($file, 0, 1) == '.') { continue; }
             $path = $source . $file;
             if (is_dir($path)) {
-                echo 'Creation directory: ', $target . $file;
+                echo 'create [', $target . $file . ']';
                 mkdir($target . $file);
                 echo "\n";
                 $this->copydir($path, $target . $file);
             } else {
-                echo 'Copying file [', $target . $file, ']...';
+                echo 'create ', $target . $file;
 
                 $content = file_get_contents($path);
                 $content = str_replace($this->content_search, $this->content_replace, $content);

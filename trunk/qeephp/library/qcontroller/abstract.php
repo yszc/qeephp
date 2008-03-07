@@ -63,7 +63,7 @@ abstract class QController_Abstract
      * 执行指定的动作
      *
      * @param string $action_name
-     * 
+     *
      * @return mixed
      */
     function execute($action_name = null)
@@ -80,7 +80,7 @@ abstract class QController_Abstract
             $this->afterExecute($this->action_name);
             return $ret;
         } else {
-            throw new QController_Exception('Controller method "%s::%s()" is missing.', 
+            throw new QController_Exception('Controller method "%s::%s()" is missing.',
                       $this->controller_name, $this->action_name);
         }
     }
@@ -181,16 +181,14 @@ abstract class QController_Abstract
      *
      * @return QView_Abstract
      */
-    protected function getView($viewname, array $viewdata = null)
+    protected function getView($viewname = null, array $viewdata = null)
     {
-        $className = Q::getIni('view_engine');
-        Q::loadClass('view_engine');
-        $engine = new $className($viewname, $viewdata);
-        /* @var $engine QView_Adapter_Abstract */
-        $engine->addCallback(array($this, 'renderCallback'));
-        return $engine;
+        if (empty($viewname)) {
+            $viewname = $this->controller_name . '_' . $this->action_name;
+        }
+        return new QResponse_View($this, $viewname, $viewdata);
     }
-    
+
     /**
      * 判断 HTTP 请求是否是 POST 方法
      *

@@ -9,33 +9,32 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 QView_Redirect 类
+ * 定义 QResponse_Redirect 类
  *
- * @package View
+ * @package mvc
  * @version $Id$
  */
 
 /**
- * QVide_Redirect 类实现了对浏览器的重定向操作
+ * QResponse_Redirect 类封装了一个浏览器重定向操作
  *
- * @package View
- * @author 起源科技 (www.qeeyuan.com)
+ * @package mvc
  */
-class QView_Redirect
+class QResponse_Redirect
 {
     /**
-     * 要重定向的 URL
+     * 重定向 URL
      *
      * @var string
      */
-    protected $url;
+    public $url;
 
     /**
-     * 重定向页面前的等待
+     * 重定向延时（秒）
      *
      * @var int
      */
-    protected $delay;
+    public $delay;
 
     /**
      * 构造函数
@@ -50,9 +49,9 @@ class QView_Redirect
     }
 
     /**
-     * 执行重定向
+     * 执行
      */
-    function execute()
+    function run()
     {
         $delay = (int)$this->delay;
         $url = $this->url;
@@ -70,4 +69,3 @@ EOT;
         exit;
     }
 }
-

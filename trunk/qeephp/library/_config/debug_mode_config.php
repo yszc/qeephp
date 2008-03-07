@@ -105,7 +105,7 @@ return array(
     /**
      * 要使用的模板引擎，'PHP' 表示使用 PHP 语言本身作模板引擎
      */
-    'view_engine'               => 'QView_Simple',
+    'view_adapter'               => 'QView_Adapter_Gingko',
 
     /**
      * 模板引擎要使用的配置信息

@@ -32,9 +32,9 @@ define('QEEPHP_INST_DIR', '%QEEPHP_INST_DIR%');
 /**
  * 定义缓存配置文件要使用的缓存服务
  *
- * 默认使用 QCache_PHP 来缓存配置文件。
+ * 默认使用 QCache_File 来缓存配置文件。
  */
-define('CONFIG_CACHE_BACKEND', 'QCache_PHP');
+define('CONFIG_CACHE_BACKEND', 'QCache_File');
 
 /**
  * 载入 QeePHP 框架
@@ -46,6 +46,9 @@ require QEEPHP_INST_DIR . '/library/qexpress.php';
 
 // 定义应用程序根目录
 define('ROOT_DIR', dirname(dirname(__FILE__)));
+
+// 导入应用程序目录，以便 Q::loadClass() 能够加载类定义文件
+Q::import(ROOT_DIR . DS . 'app');
 
 /**
  * load_boot_config() 函数用于载入应用程序的配置文件
@@ -109,3 +112,6 @@ function load_boot_config($reload = false)
     Q::setCache($cacheid, $config, $policy, CONFIG_CACHE_BACKEND);
     return $config;
 }
+
+// 载入配置
+Q::setIni(load_boot_config());
