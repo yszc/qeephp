@@ -24,11 +24,11 @@
 abstract class QController_Abstract
 {
     /**
-     * 当前控制器要使用的组件
+     * 当前控制器要使用的助手
      *
      * @var array|string
      */
-    protected $components = '';
+    protected $helper = '';
 
     /**
      * 封装请求的对象
@@ -43,7 +43,7 @@ abstract class QController_Abstract
     function __construct(QRequest $request)
     {
         $this->request = $request;
-        $this->components = array_flip(Q::normalize($this->components));
+        $this->helper = array_flip(Q::normalize($this->helper));
     }
 
     /**
@@ -67,7 +67,7 @@ abstract class QController_Abstract
     }
 
     /**
-     * 魔法方法，用于自动加载 components
+     * 魔法方法，用于自动加载 helper
      *
      * @param string $varname
      *
@@ -75,14 +75,15 @@ abstract class QController_Abstract
      */
     function __get($varname)
     {
-        if (isset($this->components[$varname])) {
-            $className = 'Component_' . ucfirst($varname);
+        if (isset($this->helper[$varname])) {
+            $class_name = 'Helper_' . ucfirst($varname);
         } else {
+            // LC_MSG: Property "%s" not defined.
             throw new QException(__('Property "%s" not defined.', $varname));
         }
 
-        Q::loadClass($className, null, 'Controller_');
-        $this->{$varname} = new $className($this);
+        Q::loadClass($class_name, null, 'Controller_');
+        $this->{$varname} = new $class_name($this);
         return $this->{$varname};
     }
 

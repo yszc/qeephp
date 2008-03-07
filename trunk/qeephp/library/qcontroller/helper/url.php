@@ -101,11 +101,11 @@ class Helper_Url
         }
 
         // 确定控制器和动作的名字
-        $controllerName = empty($controller_name) ? 
-            strtolower(Q::getIni('default_controller')) : 
+        $controllerName = empty($controller_name) ?
+            strtolower(Q::getIni('default_controller')) :
             strtolower($controller_name);
-        $actionName = empty($action_name) ? 
-            strtolower(Q::getIni('default_action')) : 
+        $actionName = empty($action_name) ?
+            strtolower(Q::getIni('default_action')) :
             strtolower($action_name);
 
         $url = '';
@@ -140,113 +140,6 @@ class Helper_Url
         if ($anchor) { $url .= '#' . $anchor; }
 
         return $url;
-    }
-
-    /**
-     * 获得当前请求的 URL 地址
-     *
-     * 感谢 tsingson 提供该函数，用于修正 QeePHP 原有 url() 函数不能适应 CGI 模式的问题。
-     *
-     * @param boolean $query_mode 是否将 URL 查询参数附加在返回结果中
-     *
-     * @return string
-     */
-    function detectURIBase($query_mode = false)
-    {
-        $url_parts = array();
-
-        // Try to get the request URL
-        if (!empty($_SERVER['SCRIPT_NAME'])) {
-            $arr = parse_url($_SERVER['SCRIPT_NAME']);
-            $url_parts['path'] = $arr['path'];
-        } elseif (!empty($_SERVER['REQUEST_URI'])) {
-            $_SERVER['REQUEST_URI'] = str_replace(array('"',"'",'<','>'), array('%22','%27','%3C','%3E'), $_SERVER['REQUEST_URI']);
-            $p = strpos($_SERVER['REQUEST_URI'], ':');
-            if ($p > 0 && substr($_SERVER['REQUEST_URI'], $p + 1, 2) != '//') {
-                $url_parts = array('path' => $_SERVER['REQUEST_URI']);
-            } else {
-                $url_parts = parse_url($_SERVER['REQUEST_URI']);
-            }
-            if (isset($url_parts['path']) && isset($_SERVER['PATH_INFO'])) {
-                $url_parts['path'] = substr(urldecode($url_parts['path']), 0, - strlen($_SERVER['PATH_INFO']));
-            }
-        }
-
-        // Fill in the empty values
-        if (empty($url_parts['scheme'])) {
-            if (!empty($_SERVER['HTTP_SCHEME'])) {
-                $url_parts['scheme'] = $_SERVER['HTTP_SCHEME'];
-            } else {
-                $url_parts['scheme'] = (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) != 'off') ? 'https' : 'http';
-            }
-        }
-
-        if (empty($url_parts['host'])) {
-            if (!empty($_SERVER['HTTP_X_FORWARDED_HOST'])) {
-                $p = strpos($_SERVER['HTTP_X_FORWARDED_HOST'], ':');
-                if ($p > 0) {
-                    $url_parts['host'] = substr($_SERVER['HTTP_X_FORWARDED_HOST'], 0, $p);
-                    $url_parts['port'] = substr($_SERVER['HTTP_X_FORWARDED_HOST'], $p + 1);
-                } else {
-                    $url_parts['host'] = $_SERVER['HTTP_X_FORWARDED_HOST'];
-                }
-            } else if (!empty($_SERVER['HTTP_HOST'])) {
-                $p = strpos($_SERVER['HTTP_HOST'], ':');
-                if ($p > 0) {
-                    $url_parts['host'] = substr($_SERVER['HTTP_HOST'], 0, $p);
-                    $url_parts['port'] = substr($_SERVER['HTTP_HOST'], $p + 1);
-                } else {
-                    $url_parts['host'] = $_SERVER['HTTP_HOST'];
-                }
-            } else if (!empty($_SERVER['SERVER_NAME'])) {
-                $url_parts['host'] = $_SERVER['SERVER_NAME'];
-            }
-        }
-
-        if (empty($url_parts['port']) && !empty($_SERVER['SERVER_PORT'])) {
-            $url_parts['port'] = $_SERVER['SERVER_PORT'];
-        }
-
-        if (empty($url_parts['path'])) {
-            if (!empty($_SERVER['PATH_INFO'])) {
-                $sPath = parse_url($_SERVER['PATH_INFO']);
-            } else {
-                $sPath = parse_url($_SERVER['PHP_SELF']);
-            }
-            $url_parts['path'] = str_replace(array('"',"'",'<','>'), array('%22','%27','%3C','%3E'), $sPath['path']);
-            unset($sPath);
-        }
-
-        // Build the URL: Start with scheme, user and pass
-        $url_build = $url_parts['scheme'].'://';
-        if (!empty($url_parts['user'])) {
-            $url_build .= $url_parts['user'];
-            if (!empty($url_parts['pass'])) {
-                $url_build .= ':'.$url_parts['pass'];
-            }
-            $url_build .= '@';
-        }
-
-        // Add the host
-        $url_build .= $url_parts['host'];
-
-        // Add the port if needed
-        if (!empty($url_parts['port']) &&
-            (($url_parts['scheme'] == 'http' && $url_parts['port'] != 80)
-            || ($url_parts['scheme'] == 'https' && $url_parts['port'] != 443)))
-        {
-            $url_build .= ':'.$url_parts['port'];
-        }
-
-        $url_build .= $url_parts['path'];
-
-        // Add the path and the query string
-        if ($query_mode && isset($url_parts['query'])) {
-            $url_build .= $url_parts['query'];
-        }
-
-        unset($url_parts);
-        return $url_build;
     }
 
     /**
