@@ -77,7 +77,7 @@ class QExpress
 
         // 载入调度器并转发请求到控制器
         $dispatcher_class = Q::getIni('dispatcher');
-        $dispatcher = new $dispatcher_class(new QRequest());
+        $dispatcher = new $dispatcher_class(QRequest::instance());
         Q::register($dispatcher, 'current_dispatcher');
         Q::register($dispatcher, $dispatcher_class);
         return $dispatcher->dispatching();

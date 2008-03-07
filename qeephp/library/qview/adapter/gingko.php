@@ -79,7 +79,7 @@ class QView_Adapter_Gingko extends QView_Adapter_Abstract
         ob_start();
         self::_fetch($filename, $this->vars);
         $content = ob_get_clean();
-        return $this->filter($content, self::after_render);
+        return $this->filter($content);
     }
 
     /**
