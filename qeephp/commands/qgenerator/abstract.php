@@ -34,7 +34,7 @@ abstract class QGenerator_Abstract
      */
     function __construct()
     {
-        $this->config = load_boot_config($module);
+        $this->config = load_boot_config();
     }
 
     /**
@@ -69,7 +69,7 @@ abstract class QGenerator_Abstract
      */
     protected function existsClassFile($class)
     {
-        $dir = ROOT_DIR . '/app/' . $this->module;
+        $dir = ROOT_DIR . DS . 'app';
         $filename = str_replace('_', DIRECTORY_SEPARATOR, $class) . '.php';
         $path = $dir . DIRECTORY_SEPARATOR . strtolower($filename);
         if (file_exists($path)) {
@@ -87,12 +87,11 @@ abstract class QGenerator_Abstract
      */
     protected function createClassFile($class, $content)
     {
-        $dir = ROOT_DIR . '/app/' . $this->module;
+        $dir = ROOT_DIR . DS . 'app';
         $filename = str_replace('_', DIRECTORY_SEPARATOR, $class) . '.php';
         $path = $dir . DIRECTORY_SEPARATOR . strtolower($filename);
         $dir = dirname($path);
-        Q::load_ext('filedir');
-        mkdirs($dir);
+        if (!file_exists($dir)) { mkdir($dir); }
         if (file_put_contents($path, $content)) {
             echo "Create file '{$path}' successed.\n";
             return true;
@@ -127,6 +126,6 @@ abstract class QGenerator_Abstract
     {
         $__template = dirname(__FILE__) . '/templates/template_' . $__template . '.php';
         extract($viewdata);
-        return include($__template);
+        return include $__template;
     }
 }
