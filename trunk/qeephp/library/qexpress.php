@@ -77,8 +77,7 @@ class QExpress
 
         // 载入调度器并转发请求到控制器
         $dispatcher_class = Q::getIni('dispatcher');
-        Q::loadClass($dispatcher_class);
-        $dispatcher = new $dispatcher_class($_GET);
+        $dispatcher = new $dispatcher_class(new QRequest());
         Q::register($dispatcher, 'current_dispatcher');
         Q::register($dispatcher, $dispatcher_class);
         return $dispatcher->dispatching();
@@ -112,20 +111,7 @@ class QExpress
             Q::setIni('internal_cache_dir', Q_DIR . DS . '_cache');
         }
 
-        // 过滤 magic_quotes
-        if (get_magic_quotes_gpc()) {
-            $in = array(& $_GET, & $_POST, & $_COOKIE, & $_REQUEST);
-            while (list($k,$v) = each($in)) {
-                foreach ($v as $key => $val) {
-                    if (!is_array($val)) {
-                        $in[$k][$key] = stripslashes($val);
-                        continue;
-                    }
-                    $in[] =& $in[$k][$key];
-                }
-            }
-            unset($in);
-        }
+        // 禁用 magic quotes runtime
         set_magic_quotes_runtime(0);
 
         if (Q::getIni('session_provider')) {

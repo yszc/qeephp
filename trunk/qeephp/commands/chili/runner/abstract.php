@@ -95,19 +95,16 @@ abstract class Chili_Runner_Abstract
         while (($file = readdir($h)) !== false) {
             if (substr($file, 0, 1) == '.') { continue; }
             $path = $source . $file;
+            echo '  create ', $target . $file;
+            echo "\n";
             if (is_dir($path)) {
-                echo 'create [', $target . $file . ']';
                 mkdir($target . $file);
-                echo "\n";
                 $this->copydir($path, $target . $file);
             } else {
-                echo 'create ', $target . $file;
-
                 $content = file_get_contents($path);
                 $content = str_replace($this->content_search, $this->content_replace, $content);
                 file_put_contents($target . $file, $content);
                 unset($content);
-                echo "\n";
             }
         }
         closedir($h);

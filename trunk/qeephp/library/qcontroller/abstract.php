@@ -31,31 +31,18 @@ abstract class QController_Abstract
     protected $components = '';
 
     /**
-     * 当前控制的名字，用于 $this->url() 方法
+     * 封装请求的对象
      *
-     * @var string
+     * @var QRequest
      */
-    private $controller_name = null;
-
-    /**
-     * 当前调用的动作名
-     *
-     * @var string
-     */
-    private $action_name = null;
-
-    /**
-     * 当前使用的调度器的名字
-     *
-     * @var QDispatcher
-     */
-    private $dispatcher = null;
+    protected $request;
 
     /**
      * 构造函数
      */
-    function __construct()
+    function __construct(QRequest $request)
     {
+        $this->request = $request;
         $this->components = array_flip(Q::normalize($this->components));
     }
 
@@ -66,22 +53,16 @@ abstract class QController_Abstract
      *
      * @return mixed
      */
-    function execute($action_name = null)
+    function execute($action_name)
     {
-        $this->controller_name = Q::getIni('mvc/current_controller_name');
-        if (!empty($action_name)) {
-            Q::setIni('mvc/current_action_name', $action_name);
-        }
-        $this->action_name = Q::getIni('mvc/current_action_name');
-        $action_method = 'action' . ucfirst(strtolower($this->action_name));
+        $action_method = 'action' . ucfirst(strtolower($action_name));
         if (method_exists($this, $action_method)) {
-            $this->beforeExecute($this->action_name);
+            $this->beforeExecute($action_name);
             $ret = $this->{$action_method}();
-            $this->afterExecute($this->action_name);
-            return $ret;
+            return $this->afterExecute($action_name, $ret);
         } else {
-            throw new QController_Exception('Controller method "%s::%s()" is missing.',
-                      $this->controller_name, $this->action_name);
+            throw new QController_Exception(__('Controller method "%s::%s()" is missing.',
+                                            $this->getControllerName(), $action_name));
         }
     }
 
@@ -112,47 +93,7 @@ abstract class QController_Abstract
      */
     function getDispatcher()
     {
-        if (empty($this->dispatcher)) {
-            $this->dispatcher = Q::registry('current_dispatcher');
-        }
-        return $this->dispatcher;
-    }
-
-    /**
-     * 获得当前控制器的名字
-     *
-     * @return string
-     */
-    function getControllerName()
-    {
-        if (empty($this->controller_name)) {
-            $this->controller_name = Q::getIni('mvc/current_controller_name');
-        }
-        return $this->controller_name;
-    }
-
-    /**
-     * 获得当前执行动作的名字
-     *
-     * @return string
-     */
-    function getActionName()
-    {
-        if (empty($this->action_name)) {
-            $this->action_name = Q::getIni('mvc/current_action_name');
-        }
-        return $this->action_name;
-    }
-
-    /**
-     * 渲染视图输出前调用
-     *
-     * @param array $viewdata
-     * @param QView_Adapter_Abstract $engine
-     * @param string $viewname
-     */
-    function renderCallback(array & $viewdata, QView_Adapter_Abstract $engine, $viewname)
-    {
+        return Q::registry('current_dispatcher');
     }
 
     /**
@@ -162,51 +103,19 @@ abstract class QController_Abstract
      */
     protected function beforeExecute($action_name)
     {
+        return true;
     }
 
     /**
      * 执行控制器动作之后调用
      *
      * @param string $action_name
-     */
-    protected function afterExecute($action_name)
-    {
-    }
-
-    /**
-     * 返回视图对象
+     * @param mixed $ret
      *
-     * @param string $viewname
-     * @param array $viewdata
-     *
-     * @return QView_Abstract
+     * @return mixed
      */
-    protected function getView($viewname = null, array $viewdata = null)
+    protected function afterExecute($action_name, $ret)
     {
-        if (empty($viewname)) {
-            $viewname = $this->controller_name . '_' . $this->action_name;
-        }
-        return new QResponse_View($this, $viewname, $viewdata);
-    }
-
-    /**
-     * 判断 HTTP 请求是否是 POST 方法
-     *
-     * @return boolean
-     */
-    protected function isPOST()
-    {
-        return strtolower($_SERVER['REQUEST_METHOD']) == 'post';
-    }
-
-    /**
-     * 判断 HTTP 请求是否是通过 XMLHttp 发起的
-     *
-     * @return boolean
-     */
-    protected function isAJAX()
-    {
-        $r = isset($_SERVER['HTTP_X_REQUESTED_WITH']) ? $_SERVER['HTTP_X_REQUESTED_WITH'] : '';
-        return strtolower($r) == 'xmlhttprequest';
+        return $ret;
     }
 }

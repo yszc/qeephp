@@ -22,73 +22,98 @@
  */
 abstract class QView_Adapter_Abstract
 {
-    public
+    /**
+     * 过滤器类型
+     */
+    const before_render     = 'before_render';
+    const after_render      = 'after_render';
 
+    /**
+     * 过滤器集合
+     *
+     * @var QCol
+     */
+    public $filters;
 
-
+    /**
+     * 视图名称
+     *
+     * @var string
+     */
     protected $viewname;
-    protected $viewdata;
-    protected $callbacks;
 
-    function execute()
+    /**
+     * 构造函数
+     *
+     * @param string $viewname
+     */
+    function __construct($viewname = null)
     {
-        $engine = $this->get_engine();
+        $this->viewname = $viewname;
+        $this->filters = new QColl('QFilter_Interface');
 
-        if (is_array($this->callbacks)) {
-            foreach ($this->callbacks as $callback) {
-                call_user_func_array($callback, array(& $this->viewdata, $engine, $this->viewname));
+        $view_config = Q::getIni('view_config');
+        foreach ($view_config as $key => $value) {
+            if (isset($this->{$key})) {
+                $this->{$key} = $value;
             }
         }
+    }
 
-        if (is_null($engine)) {
-            $dir = Q::getIni('templates_dir');
-            if (!empty($dir)) {
-                $this->viewname = $dir . DIRECTORY_SEPARATOR . $this->viewname;
-            }
-            if (is_array($data)) {
-                extract($data);
-            }
-            include $this->viewname;
-        } else {
-            if (is_array($this->viewdata)) {
-                $engine->assign($this->viewdata);
-            }
-            $engine->display($this->viewname);
+    /**
+     * 指定模板引擎要使用的数据
+     *
+     * @param mixed $data
+     * @param mixed $value
+     */
+    abstract function assign($data, $value = null);
+
+    /**
+     * 选择视图
+     *
+     * @param string $viewname
+     */
+    function selectView($viewname)
+    {
+        $this->viewname = $viewname;
+    }
+
+    /**
+     * 渲染指定的视图，并输出渲染结果
+     *
+     * @param string $viewname
+     */
+    abstract function display($viewname = null);
+
+    /**
+     * 渲染指定的视图，并返回渲染结果
+     *
+     * @param string $viewname
+     *
+     * @return string
+     */
+    abstract function fetch($viewname);
+
+    /**
+     * 清除已经设置的所有数据
+     */
+    abstract function clear();
+
+    /**
+     * 对内容执行过滤器
+     *
+     * @param string $content
+     * @param enum $filter_type
+     *
+     * @return string
+     */
+    function filter($content, $filter_type)
+    {
+        if (empty($this->filters[$filter_type])) { return $content; }
+        foreach ($this->filters[$filter_type] as $filter) {
+            /* @var $filter QFilter_Interface */
+            $filter->apply($content);
         }
-    }
-
-    function add_callback($callback)
-    {
-        if (!is_array($this->callbacks)) {
-            $this->callbacks = array();
-        }
-        $this->callbacks[] = $callback;
-    }
-
-    function clean_callbacks()
-    {
-        $this->callbacks = array();
-    }
-
-    function get_engine($view_class = null)
-    {
-        if (is_null($view_class)) {
-            $view_class = Q::getIni('view_engine');
-        }
-        if (strtolower($view_class) == 'php') {
-            return null;
-        }
-        $engine = Q::getSingleton($view_class);
-        return Q::register($engine, 'default_view_engine');
-    }
-
-    function get_viewdata()
-    {
-        return $this->viewdata;
-    }
-
-    function get_viewname()
-    {
-        return $this->viewname;
+        return $content;
     }
 }

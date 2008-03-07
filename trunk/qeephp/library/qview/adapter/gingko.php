@@ -15,52 +15,30 @@
  * @version $Id$
  */
 
+// {{{ includes
+Q::loadFile('general.php', true, Q_DIR . '/qview/helper');
+// }}}
+
 /**
  * QView_Adapter_Gingko 是 QeePHP 内置的一个模板引擎
  *
  * @package mvc
  */
-class QView_Adapter_Gingko implements QView_Adapter_Interface
+class QView_Adapter_Gingko extends QView_Adapter_Abstract
 {
     /**
      * 模板文件所在路径
      *
      * @var string
      */
-    public $template_dir = '';
+    protected $template_dir = '';
 
     /**
      * 模板变量
      *
      * @var array
      */
-    protected $vars;
-
-    /**
-     * 过滤器
-     *
-     * @var array
-     */
-    protected $filters = array();
-
-    /**
-     * 视图名称
-     *
-     * @var string
-     */
-    protected $viewname;
-
-    function __construct($viewname = null)
-    {
-        $this->viewname = $viewname;
-
-        $view_config = Q::getIni('view_config');
-        foreach ($view_config as $key => $value) {
-            if (isset($this->{$key})) {
-                $this->{$key} = $value;
-            }
-        }
-    }
+    protected $vars = array();
 
     /**
      * 指定模板引擎要使用的数据
@@ -75,15 +53,6 @@ class QView_Adapter_Gingko implements QView_Adapter_Interface
         } else {
             $this->vars[$data] = $value;
         }
-    }
-    /**
-     * 选择视图
-     *
-     * @param string $viewname
-     */
-    function selectView($viewname)
-    {
-        $this->viewname = $viewname;
     }
 
     /**
@@ -107,10 +76,8 @@ class QView_Adapter_Gingko implements QView_Adapter_Interface
     {
         $viewname = str_replace('_', DS, $viewname);
         $filename = rtrim($this->template_dir, '/\\') . DS . $viewname . '.html';
-
-        extract($this->vars);
         ob_start();
-        require $filename;
+        self::_fetch($filename, $this->vars);
         $content = ob_get_clean();
         return $this->filter($content, self::after_render);
     }
@@ -123,22 +90,9 @@ class QView_Adapter_Gingko implements QView_Adapter_Interface
         $this->vars = array();
     }
 
-    /**
-     * 对内容执行过滤器
-     *
-     * @param string $content
-     * @param enum $filter_type
-     *
-     * @return string
-     */
-    function filter($content, $filter_type)
+    static function _fetch($filename, array $viewdata)
     {
-        if (empty($this->filters[$filter_type])) { return $content; }
-        foreach ($this->filters[$filter_type] as $filter_class) {
-            $filter = new $filter_class();
-            /* @var $filter QView_Filter_Abstract */
-            $filter->run($content);
-        }
-        return $content;
+        extract($viewdata);
+        require $filename;
     }
 }
