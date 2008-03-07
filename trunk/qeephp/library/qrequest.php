@@ -265,6 +265,9 @@ class QRequest
      */
     function getBaseUri()
     {
+        static $baseuri = null;
+
+        if ($baseuri) { return $baseuri; }
         $filename = basename($_SERVER['SCRIPT_FILENAME']);
 
         if (basename($_SERVER['SCRIPT_NAME']) === $filename) {
@@ -294,12 +297,14 @@ class QRequest
 
         if (0 === strpos($request_uri, $url)) {
             // full $url matches
+            $baseuri = $url;
             return $url;
         }
 
         if (0 === strpos($request_uri, dirname($url))) {
             // directory portion of $url matches
-            return rtrim(dirname($url), '/');
+            $baseuri = rtrim(dirname($url), '/');
+            return $baseuri;
         }
 
         if (!strpos($request_uri, basename($url))) {
@@ -316,7 +321,8 @@ class QRequest
             $url = substr($request_uri, 0, $pos + strlen($url));
         }
 
-        return rtrim($url, '/');
+        $baseuri = rtrim($url, '/');
+        return $baseuri;
     }
 
     /**

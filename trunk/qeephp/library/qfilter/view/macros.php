@@ -27,9 +27,18 @@ class QFilter_View_Macros implements QFilter_Interface
      *
      * @var array
      */
-    static $search = array(
-        '<macro: public_root />',
+    protected $search = array(
+        '%MACRO:PUBLIC_ROOT%',
+        '%MACRO:BASE_URI%',
+        '%MACRO:REQUEST_URI%',
     );
+
+    /**
+     * 宏的替换值
+     *
+     * @var array
+     */
+    protected $replace = array();
 
     /**
      * 请求对象
@@ -41,6 +50,9 @@ class QFilter_View_Macros implements QFilter_Interface
     function __construct()
     {
         $this->request = QRequest::instance();
+        $this->replace[] = dirname($this->request->getBaseUri()) . '/';
+        $this->replace[] = $this->request->getBaseUri();
+        $this->replace[] = $this->request->getRequestUri();
     }
 
     /**
@@ -52,6 +64,6 @@ class QFilter_View_Macros implements QFilter_Interface
      */
     function apply($content)
     {
-        return str_replace('<macro: public_root />', $this->request->getRequestUri(), $content);
+        return str_replace($this->search, $this->replace, $content);
     }
 }
