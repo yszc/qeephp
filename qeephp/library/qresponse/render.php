@@ -9,18 +9,18 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 QResponse_View 类
+ * 定义 QResponse_Render 类
  *
  * @package mvc
  * @version $Id$
  */
 
 /**
- * QResponse_View 封装了对模板引擎的调用
+ * QResponse_Render 渲染输出数据
  *
  * @package mvc
  */
-class QResponse_View
+class QResponse_Render
 {
     /**
      * 要传递到视图的数据
@@ -36,23 +36,14 @@ class QResponse_View
      */
     public $viewname;
 
-    /*
-     * 控制器
-     *
-     * @var QController_Abstract
-     */
-    public $controller;
-
     /**
      * 构造函数
      *
-     * @param QController_Abstract $controller
      * @param string $viewname
      * @param array $data
      */
-    function __construct(QController_Abstract $controller, $viewname, array $data = null)
+    function __construct($viewname, array $data = null)
     {
-        $this->controller = $controller;
         $this->viewname = $viewname;
         $this->data = $data;
     }
@@ -65,7 +56,9 @@ class QResponse_View
         $class_name = Q::getIni('view_adapter');
         Q::loadClass($class_name);
         $adapter = new $class_name();
-        /* @var $adapter QView_Adapter_Interface */
+        /* @var $adapter QView_Adapter_Abstract */
+
+        $adapter->filters[] = new QFilter_View_Macros();
         $adapter->assign($this->data);
         $adapter->display($this->viewname);
     }

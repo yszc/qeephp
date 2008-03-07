@@ -23,18 +23,11 @@
 class QDispatcher
 {
     /**
-     * 当前请求的控制器名字
+     * 封装请求信息的 QRequest 对象
      *
-     * @var string
+     * @var QRequest
      */
-    protected $controller_name;
-
-    /**
-     * 当前请求的动作名字
-     *
-     * @var string
-     */
-    protected $action_name;
+    protected $request;
 
     /**
      * 用于提供验证服务的对象实例
@@ -46,20 +39,11 @@ class QDispatcher
     /**
      * 构造函数
      *
-     * @param array $request
+     * @param QRequest $request
      */
-    function __construct(array $request)
+    function __construct(QRequest $request)
     {
-        $c = strtolower(Q::getIni('controller_accessor'));
-        $a = strtolower(Q::getIni('action_accessor'));
-        $r = array_change_key_case($request, CASE_LOWER);
-
-        $this->controller_name = isset($r[$c]) ? $r[$c] : Q::getIni('default_controller');
-        $this->action_name = isset($r[$a]) ? $r[$a] : Q::getIni('default_action');
-
-        $this->controller_name = strtolower(preg_replace('/[^a-z0-9_]+/i', '', $this->controller_name));
-        $this->action_name = strtolower(preg_replace('/[^a-z0-9_]+/i', '', $this->action_name));
-
+        $this->request = $request;
         $this->acl = Q::getSingleton(Q::getIni('dispatcher_acl_provider'));
     }
 
@@ -70,12 +54,7 @@ class QDispatcher
      */
     function dispatching()
     {
-        $ret = $this->executeAction($this->controller_name, $this->action_name);
-        if (is_object($ret) && method_exists($ret, 'execute')) {
-            return $ret->execute();
-        } else {
-            return $ret;
-        }
+        $this->executeAction($this->request->getControllerName(), $this->request->getActionName());
     }
 
     /**
@@ -88,9 +67,6 @@ class QDispatcher
      */
     function executeAction($controller_name, $action_name)
     {
-        Q::setIni('mvc/current_controller_name', $controller_name);
-        Q::setIni('mvc/current_action_name', $action_name);
-
         // 检查是否有权限访问
         if (!$this->checkAuthorized($controller_name, $action_name)) {
             return call_user_func_array(Q::getIni('on_access_denied'), array($controller_name, $action_name));
@@ -99,15 +75,21 @@ class QDispatcher
         // 初始化控制器
         $class_name = 'Controller_' . ucfirst($controller_name);
         Q::loadClass($class_name);
-        $controller = new $class_name();
+        $controller = new $class_name($this->request);
         /* @var $controller QController_Abstract */
+        $ret = $controller->execute($action_name);
 
-        Q::register($controller);
-        Q::register($controller, 'current_controller');
-
-        $response = $controller->execute($action_name);
-        /* @var $response QResponse_Interface */
-        $response->run();
+        if (is_object($ret) && ($ret instanceof QResponse_Interface)) {
+            return $ret->run();
+        } elseif (is_array($ret)) {
+            // 假定为输出数据
+            $viewname = $controller_name . '_' . $action_name;
+            $response = new QResponse_Render($viewname, $ret);
+            return $response->run();
+        } else {
+            echo $ret;
+            return null;
+        }
     }
 
     /**

@@ -12,6 +12,8 @@ class Controller_Default extends QController_Abstract
      */
     function actionIndex()
     {
-        return $this->getView();
+        return array(
+            'text' => '<Hello, PHPer!>',
+        );
     }
 }

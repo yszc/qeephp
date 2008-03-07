@@ -20,7 +20,7 @@
  *
  * @package mvc
  */
-class QResponse_Redirect
+class QResponse_Redirect implements QResponse_Interface
 {
     /**
      * 重定向 URL
