@@ -53,7 +53,11 @@ default_timezone:       Asia/Shanghai
 #############################
 
 # 要使用的模板引擎，PHP 表示使用 PHP 语言本身作模板引擎
-view_engine:            QView_Adapter_Gingko
+view_adapter:           QView_Adapter_Gingko
+
+# 模板引擎所需的配置
+view_config:
+    template_dir:       %ROOT_DIR%/app/view
 
 # QWebControls 扩展控件的保存目录
 webcontrols_ext_dir:

@@ -574,7 +574,7 @@ abstract class Q
             throw new QException(__('File "%s" not found.', $filename));
         }
 
-        self::loadFile(Q_DIR . DS . '_vendor' . DS . 'spyc.php', true);
+        self::loadFile('spyc.php', true, Q_DIR . DS . '_vendor');
         $yaml = Spyc::YAMLLoad($filename);
 
         if (is_null($callback)) {
@@ -586,6 +586,18 @@ abstract class Q
             self::setCache('yaml:' . $filename, $yaml, $policy, $backend);
         }
         return $yaml;
+    }
+    // }}}
+
+    // {{{ dumpAllIni()
+    /**
+     * 返回所有的设置值
+     *
+     * @return array
+     */
+    static function dumpAllIni()
+    {
+        return self::$config;
     }
     // }}}
 }

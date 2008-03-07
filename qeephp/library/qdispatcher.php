@@ -105,7 +105,9 @@ class QDispatcher
         Q::register($controller);
         Q::register($controller, 'current_controller');
 
-        return $controller->execute($action_name);
+        $response = $controller->execute($action_name);
+        /* @var $response QResponse_Interface */
+        $response->run();
     }
 
     /**

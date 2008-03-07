@@ -3,5 +3,5 @@
 global $g_boot_time;
 $g_boot_time = microtime(true);
 
-require dirname(__FILE__) . '/../app/boot.php';
+require dirname(__FILE__) . '/../config/boot.php';
 QExpress::runMVC();

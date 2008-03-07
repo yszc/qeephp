@@ -7,10 +7,11 @@
 #
 # 访问规则示例
 #
-nonexistent: # 控制器名称
+
+# 控制器名称
+nonexistent:
   # 对该控制器需要的访问权限
   allow: acl_everyone
-
   # actions 表示对控制器的个别动作进行权限控制
   actions:
     first:
