@@ -28,7 +28,7 @@ abstract class QController_Abstract
      *
      * @var array|string
      */
-    protected $helper = '';
+    protected $helpers = '';
 
     /**
      * 封装请求的对象
@@ -43,7 +43,7 @@ abstract class QController_Abstract
     function __construct(QRequest $request)
     {
         $this->request = $request;
-        $this->helper = array_flip(Q::normalize($this->helper));
+        $this->helpers = array_flip(Q::normalize($this->helpers));
     }
 
     /**
@@ -75,7 +75,7 @@ abstract class QController_Abstract
      */
     function __get($varname)
     {
-        if (isset($this->helper[$varname])) {
+        if (isset($this->helpers[$varname])) {
             $class_name = 'Helper_' . ucfirst($varname);
         } else {
             // LC_MSG: Property "%s" not defined.

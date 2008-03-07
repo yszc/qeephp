@@ -8,7 +8,7 @@ class <?php echo $class_name; ?> extends QController_Abstract
      *
      * @var array|string
      */
-    protected $helper = '';
+    protected $helpers = '';
 
     /**
      * default action
