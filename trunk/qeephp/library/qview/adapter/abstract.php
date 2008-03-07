@@ -23,12 +23,6 @@
 abstract class QView_Adapter_Abstract
 {
     /**
-     * 过滤器类型
-     */
-    const before_render     = 'before_render';
-    const after_render      = 'after_render';
-
-    /**
      * 过滤器集合
      *
      * @var QCol
@@ -103,16 +97,14 @@ abstract class QView_Adapter_Abstract
      * 对内容执行过滤器
      *
      * @param string $content
-     * @param enum $filter_type
      *
      * @return string
      */
-    function filter($content, $filter_type)
+    function filter($content)
     {
-        if (empty($this->filters[$filter_type])) { return $content; }
-        foreach ($this->filters[$filter_type] as $filter) {
+        foreach ($this->filters as $filter) {
             /* @var $filter QFilter_Interface */
-            $filter->apply($content);
+            $content = $filter->apply($content);
         }
         return $content;
     }

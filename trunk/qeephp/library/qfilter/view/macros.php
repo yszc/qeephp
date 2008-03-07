@@ -32,6 +32,18 @@ class QFilter_View_Macros implements QFilter_Interface
     );
 
     /**
+     * 请求对象
+     *
+     * @var QRequest
+     */
+    protected $request;
+
+    function __construct()
+    {
+        $this->request = QRequest::instance();
+    }
+
+    /**
      * 对特定内容应用过滤器
      *
      * @param string $content
@@ -40,6 +52,6 @@ class QFilter_View_Macros implements QFilter_Interface
      */
     function apply($content)
     {
-        // return str_replace(self::$search, $replace, $content);
+        return str_replace('<macro: public_root />', $this->request->getRequestUri(), $content);
     }
 }

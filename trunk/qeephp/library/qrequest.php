@@ -48,7 +48,7 @@ class QRequest
     /**
      * 构造函数
      */
-    function __construct()
+    protected function __construct()
     {
         if (get_magic_quotes_gpc()) {
             $in = array(& $_GET, & $_POST, & $_COOKIE, & $_REQUEST);
@@ -85,6 +85,20 @@ class QRequest
 
         $this->controller_name = strtolower(preg_replace('/[^a-z0-9_]+/i', '', $this->controller_name));
         $this->action_name = strtolower(preg_replace('/[^a-z0-9_]+/i', '', $this->action_name));
+    }
+
+    /**
+     * 获得 QRequest 的唯一实例
+     *
+     * @return QRequest
+     */
+    static function instance()
+    {
+        static $instance = null;
+        if (!$instance) {
+            $instance = new QRequest();
+        }
+        return $instance;
     }
 
     /**
