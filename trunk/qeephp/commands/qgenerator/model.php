@@ -1,108 +1,109 @@
 <?php
 /////////////////////////////////////////////////////////////////////////////
-// FleaPHP Framework
+// QeePHP Framework
 //
 // Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
 //
-// 许可协议，请查看源代码中附带的 LICENSE.txt 文件，
-// 或者访问 http://www.fleaphp.org/ 获得详细信息。
+// 许可协议，请查看源代码中附带的 LICENSE.TXT 文件，
+// 或者访问 http://www.qeephp.org/ 获得详细信息。
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 Generator_Model 类
+ * 定义 QGenerator_Model 类
  *
- * @copyright Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
- * @author 起源科技 (www.qeeyuan.com)
- * @package Scripts
- * @version $Id: Model.php 63 2008-01-21 13:17:36Z dualface $
+ * @package generator
+ * @version $Id$
  */
-
-// {{{ includes
-require_once dirname(__FILE__) . '/abstract.php';
-// }}}
 
 /**
- * Generator_Model 根据应用程序的数据库设置创建需要的 ActiveRecord 对象定义文件
+ * QGenerator_Model 创建 ActiveRecord 对象代码
  *
- * @package Scripts
- * @author 起源科技 (www.qeeyuan.com)
- * @version 1.0
+ * @package generator
  */
-class Generator_Model extends Generator_Abstract
+class QGenerator_Model extends QGenerator_Abstract
 {
+    /**
+     * 执行代码生成器
+     *
+     * @param array $opts
+     *
+     * @return mixed
+     */
     function execute(array $opts)
     {
-        $modelName = array_shift($opts);
+        $model_name = array_shift($opts);
         $table_name = array_shift($opts);
-        $modelClass = 'Model_' . ucfirst($modelName);
-        if ($filename = $this->existsClassFile($modelClass)) {
-            echo "Class '{$modelClass}' declare file '{$filename}' exists.\n";
-            return -1;
+        if (empty($model_name) || empty($table_name)) { return false; }
+
+        $class_name = 'Model_' . ucfirst($this->camelName($model_name));
+        if ($filename = $this->existsClassFile($class_name)) {
+            echo "Class '{$class_name}' declare file '{$filename}' exists.\n";
+            return false;
         }
 
-        /**
-         * 首先判断需要的表数据入口对象是否存在
-         */
-        $tableClass = 'Table_' . ucfirst($this->camelName($table_name));
-        if ($filename = $this->existsClassFile($tableClass)) {
-            echo "Class '{$tableClass}' declare file '{$filename}' exists.\n";
-        } else {
-            /**
-             * 创建需要的表数据入口对象
-             */
-            require_once dirname(__FILE__) . '/table.php';
-            $generator = new Generator_Table($this->module());
-            $generator->execute(array($table_name));
-        }
-
-        $content = $this->getCode($modelClass, $tableClass, $table_name);
+        $content = $this->getCode($model_name, $table_name, $class_name);
         if ($content !== -1 && !empty($content)) {
-            return $this->createClassFile($modelClass, $content);
+            return $this->createClassFile($class_name, $content);
         } else {
-            return -1;
+            return false;
         }
+
     }
 
-    function getCode($modelClass, $tableClass, $table_name)
+    /**
+     * 生成代码
+     *
+     * @param string $model_name
+     * @param string $table_name
+     * @param string $class_name
+     *
+     * @return string
+     */
+    function getCode($model_name, $table_name, $class_name)
     {
-        static $typeMap = array(
-            'C' => 'string',
-            'X' => 'string',
-            'B' => 'string',
-            'N' => 'float',
-            'D' => 'string',
-            'T' => 'int',
-            'L' => 'boolean',
-            'I' => 'int',
-            'R' => 'int',
-        );
+        if (substr($table_name, 0, 6) == 'Table_') {
+            // 如果指定的是表数据入口类名，则载入该表数据入口
+            $table_class = $table_name;
+            unset($table_name);
+            try {
+                Q::loadClass($table_class);
+            } catch (Exception $ex) {
+                echo $ex->__toString();
+                return false;
+            }
 
-        $propertiesMapping = array();
-        $len = 0;
-        $idname = null;
+            $table = new $table_class();
+            /* @var $table QDB_Table */
+            $meta = $table->columns();
+            $table_name = $table->table_name;
+            $pk = Q::normalize($table->pk);
+        } else {
+            $table_class = null;
+            // 尝试读取数据表的信息
+            $dbo = QDB::getConn();
+            $dbo->connect();
+            $tables = $dbo->metaTables();
+            if (!in_array($table_name, $tables)) {
+                echo "Database table '{$table_name}' not exists.\n";
+                return -1;
+            }
 
-        $dbo = QDBO_Abstract::get_dbo($this->config['dsn']);
-        $dbo->connect();
-        $meta = $dbo->meta_columns($table_name);
-
-        foreach ($meta as $field) {
-            $prop = $this->camelName($field['name']);
-            $len = strlen($prop) > $len ? strlen($prop) : $len;
-            $field['phpType'] = $typeMap[$field['simpleType']];
-            $propertiesMapping[$prop] = $field;
-            if ($field['simpleType'] == 'R') {
-                $idname = $prop;
+            $meta = $dbo->metaColumns($table_name);
+            $pk = array();
+            foreach ($meta as $field) {
+                if ($field['pk']) {
+                    $pk[] = $field['name'];
+                }
             }
         }
 
         $viewdata = array(
-            'modelClass' => $modelClass,
-            'tableClass' => $tableClass,
-            'mapping'    => $propertiesMapping,
-            'len'        => $len,
-            'idname'     => $idname,
+            'table_name' => $table_name,
+            'class_name' => $class_name,
+            'table_class' => $table_class,
+            'meta' => $meta,
+            'pk' => $pk,
         );
-
         return $this->parseTemplate('model', $viewdata);
     }
 }

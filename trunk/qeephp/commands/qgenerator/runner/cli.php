@@ -61,7 +61,9 @@ class QGenerator_Runner_Cli extends QGenerator_Runner_Abstract
 
         try {
             $generator = $this->getGenerator($type);
-            $generator->execute($params);
+            if ($generator->execute($params) === false) {
+                $this->help();
+            }
         } catch (QGenerator_Exception $ex) {
             echo "\nERROR: ";
             echo $ex->getMessage();
@@ -85,9 +87,9 @@ example:
 EOT;
 
         $help = array(
-            'controller' => '<controller name> [-m module name]',
-            'table'      => '<database table name> [table class name] [-m module name]',
-            'model'      => '<class name> <database table name|table class name> [-m module name]',
+            'controller' => '<controller name>',
+            'table'      => '<database table name> [table class name]',
+            'model'      => '<class name> <database table name|table class name>',
         );
 
         foreach ($this->generators_list as $type) {
