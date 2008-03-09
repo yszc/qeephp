@@ -77,19 +77,20 @@ class QDispatcher
         Q::loadClass($class_name);
         $controller = new $class_name($this->request);
         /* @var $controller QController_Abstract */
-        $ret = $controller->execute($action_name);
+        $data = $controller->execute($action_name);
 
-        if (is_object($ret) && ($ret instanceof QResponse_Interface)) {
-            return $ret->run();
-        } elseif (is_array($ret)) {
-            // 假定为输出数据
-            $viewname = $controller_name . '_' . $action_name;
-            $response = new QResponse_Render($viewname, $ret);
-            return $response->run();
-        } else {
-            echo $ret;
-            return null;
+        if (is_object($data) && ($data instanceof QResponse_Interface)) {
+            return $data->run();
         }
+
+        $viewname = $controller_name . '_' . $action_name;
+        $response = new QResponse_Render($viewname);
+        if (is_array($data)) {
+            $response->assign($data);
+        } else {
+            $response->assign(array('data' => $data));
+        }
+        return $response->run();
     }
 
     /**

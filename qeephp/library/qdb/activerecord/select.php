@@ -42,7 +42,7 @@ class QDB_ActiveRecord_Select
     protected $params;
 
     /**
-     * @var QTable_Base
+     * @var QDB_Table
      */
     protected $table;
 
@@ -50,10 +50,10 @@ class QDB_ActiveRecord_Select
      * 构造函数
      *
      * @param string $class
-     * @param QTable_Base $table
+     * @param QDB_Table $table
      * @param array $attribs
      */
-    function __construct($class, QTable_Base $table, array $attribs)
+    function __construct($class, QDB_Table $table, array $attribs)
     {
         $this->class = $class;
         $this->table = $table;

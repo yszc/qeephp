@@ -298,12 +298,12 @@ class QRequest
         if (0 === strpos($request_uri, $url)) {
             // full $url matches
             $baseuri = $url;
-            return $url;
+            return $baseuri;
         }
 
         if (0 === strpos($request_uri, dirname($url))) {
             // directory portion of $url matches
-            $baseuri = rtrim(dirname($url), '/');
+            $baseuri = rtrim(dirname($url), '/') . '/';
             return $baseuri;
         }
 
@@ -321,8 +321,27 @@ class QRequest
             $url = substr($request_uri, 0, $pos + strlen($url));
         }
 
-        $baseuri = rtrim($url, '/');
+        $baseuri = rtrim($url, '/') . '/';
         return $baseuri;
+    }
+
+    /**
+     * 返回请求 URL 中的基础路径（不包含脚本名称）
+     *
+     * @return string
+     */
+    function getBaseDir()
+    {
+        static $public_root = null;
+
+        if ($public_root) { return $public_root; }
+        $baseuri = $this->getBaseUri();
+        if (substr($baseuri, -1, 1) == '/') {
+            $public_root = $baseuri;
+        } else {
+            $public_root = dirname($baseuri) . '/';
+        }
+        return $public_root;
     }
 
     /**

@@ -27,7 +27,7 @@ class QResponse_Render
      *
      * @var array
      */
-    public $data;
+    public $data = array();
 
     /**
      * 要渲染的视图的名称
@@ -45,7 +45,24 @@ class QResponse_Render
     function __construct($viewname, array $data = null)
     {
         $this->viewname = $viewname;
-        $this->data = $data;
+        if (is_array($data)) {
+            $this->data = $data;
+        }
+    }
+
+    /**
+     * 指定要渲染的数据
+     *
+     * @param mixed $data
+     * @param mixed $value
+     */
+    function assign($data, $value = null)
+    {
+        if (is_array($data)) {
+            $this->data = array_merge($this->data, $data);
+        } else {
+            $this->data[$data] = $value;
+        }
     }
 
     /**

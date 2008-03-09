@@ -41,7 +41,7 @@ class <?php echo $class_name; ?> extends QDB_ActiveRecord_Abstract
      *
      * @return int
      */
-    static function destroyWhere()
+    static function destroyWhere($where)
     {
         $args = func_get_args();
         array_shift($args);

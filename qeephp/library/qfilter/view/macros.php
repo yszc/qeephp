@@ -50,7 +50,7 @@ class QFilter_View_Macros implements QFilter_Interface
     function __construct()
     {
         $this->request = QRequest::instance();
-        $this->replace[] = dirname($this->request->getBaseUri()) . '/';
+        $this->replace[] = $this->request->getBaseDir();
         $this->replace[] = $this->request->getBaseUri();
         $this->replace[] = $this->request->getRequestUri();
     }

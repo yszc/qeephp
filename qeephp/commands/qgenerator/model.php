@@ -35,13 +35,14 @@ class QGenerator_Model extends QGenerator_Abstract
         $table_name = array_shift($opts);
         if (empty($model_name) || empty($table_name)) { return false; }
 
-        $class_name = 'Model_' . ucfirst($this->camelName($model_name));
-        if ($filename = $this->existsClassFile($class_name)) {
+        // $class_name = 'Model_' . ucfirst($this->camelName($model_name));
+        $class_name = ucfirst($this->camelName($model_name));
+        if (($filename = $this->existsClassFile($class_name))) {
             echo "Class '{$class_name}' declare file '{$filename}' exists.\n";
             return false;
         }
 
-        $content = $this->getCode($model_name, $table_name, $class_name);
+        $content = $this->getCode($table_name, $class_name);
         if ($content !== -1 && !empty($content)) {
             return $this->createClassFile($class_name, $content);
         } else {
@@ -53,13 +54,12 @@ class QGenerator_Model extends QGenerator_Abstract
     /**
      * 生成代码
      *
-     * @param string $model_name
      * @param string $table_name
      * @param string $class_name
      *
      * @return string
      */
-    function getCode($model_name, $table_name, $class_name)
+    function getCode($table_name, $class_name)
     {
         if (substr($table_name, 0, 6) == 'Table_') {
             // 如果指定的是表数据入口类名，则载入该表数据入口

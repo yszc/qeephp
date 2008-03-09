@@ -201,13 +201,13 @@ abstract class Q
      * loadClass() 会首先尝试从开发者指定的搜索路径中查找类的定义文件。
      * 搜索路径可以用 Q::import() 添加。
      *
-     * 如果 $suffix 参数不为空，则会在搜索类定义文件路径中添加 $suffix 指定的目录名。
+     * 如果 $prefix 参数不为空，则会在搜索类定义文件路径中添加 $prefix 指定的目录名。
      *
      * @param string $className 要载入的类名字
      * @param string|array $dirs
-     * @param string $suffix
+     * @param string $prefix
      */
-    static function loadClass($class_name, $dirs = null, $suffix = null)
+    static function loadClass($class_name, $dirs = null, $prefix = null)
     {
         if (class_exists($class_name, false) || interface_exists($class_name, false)) {
             return;
@@ -215,29 +215,28 @@ abstract class Q
 
         $class_name = strtolower($class_name);
         $filename = str_replace('_', DS, $class_name);
-        if (!is_null($suffix)) {
-            $suffix = trim($suffix, '\\/');
-            $suffix = DS . $suffix;
+        if (!is_null($prefix)) {
+            $filename = trim($prefix, '\\/') . DS . $filename;
         }
 
         if ($filename != $class_name) {
             $dirname = dirname($filename);
-            if (is_null($dirs)) {
-                $dirs = array();
-                foreach (self::$class_path as $dir) {
-                    if ($dir == '.') {
-                        $dirs[] = $dirname . $suffix;
-                    } else {
-                        $dir = rtrim($dir, '\\/');
-                        $dirs[] = $dir . DS . $dirname . $suffix;
-                    }
-                }
-            } else {
-                if (is_string($dirs)) {
+            if (!is_array($dirs)) {
+                if (empty($dirs)) {
+                    $dirs = array();
+                } else {
                     $dirs = explode(PATH_SEPARATOR, $dirs);
                 }
-                foreach ($dirs as $offset => $dir) {
-                    $dirs[$offset] = $dir . DS . $dirname . $suffix;
+            }
+            foreach ($dirs as $offset => $dir) {
+                $dirs[$offset] = $dir . DS . $dirname;
+            }
+            foreach (self::$class_path as $dir) {
+                if ($dir == '.') {
+                    $dirs[] = $dirname;
+                } else {
+                    $dir = rtrim($dir, '\\/');
+                    $dirs[] = $dir . DS . $dirname;
                 }
             }
             $filename = basename($filename) . '.php';
