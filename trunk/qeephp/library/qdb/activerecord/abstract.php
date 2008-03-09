@@ -191,7 +191,11 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
                 $this->__all_props[$field] =& $this->__props[$field];
             } else {
                 $this->{$field} = $row[$field];
-                $this->__all_props[$field]= & $this->{$field};
+                if (isset($this->{$field})) {
+                    $this->__all_props[$field] =& $this->{$field};
+                } else {
+                    $this->__all_props[$field] =& $this->__props[$field];
+                }
             }
         }
     }
@@ -363,7 +367,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     private static function __init($class)
     {
         if (isset(self::$__defines[$class])) { return; }
-        $class_define = call_user_func(array($class, 'define'));
+        $class_define = call_user_func(array($class, '__define'));
 
         // 绑定行为插件
         self::$__callbacks[$class] = array();
@@ -374,7 +378,8 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         $extend_getter = array();
         foreach ($behaviors as $behavior) {
             $behavior_class = 'Behavior_' . ucfirst(strtolower($behavior));
-            Q::loadClass($behavior_class, null, 'behavior');
+            $dirs = array(Q_DIR . DS . 'qdb' . DS . 'activerecord');
+            Q::loadClass($behavior_class, $dirs);
             $behavior_obj = new $behavior_class($class);
             /* @var $behavior_obj QDB_ActiveRecord_Behavior_Interface */
             $callbacks = $behavior_obj->__callbacks();
@@ -414,7 +419,6 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
             $class_define['table'] = Q::getSingleton($class_define['table_class']);
         }
         $class_define['pk'] = $class_define['table']->pk;
-
 
         // 确定字段属性
         $meta = $class_define['table']->columns();
@@ -458,7 +462,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
                         $define['assoc'] = 'many_to_many';
                         $define['class'] = $options['many_to_many'];
                     }
-                    if ($options['assoc']) {
+                    if ($define['assoc']) {
                         unset($options['readonly']);
                         unset($options['alias']);
                         unset($options['setter']);

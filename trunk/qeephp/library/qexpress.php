@@ -80,6 +80,7 @@ class QExpress
         $dispatcher = new $dispatcher_class(QRequest::instance());
         Q::register($dispatcher, 'current_dispatcher');
         Q::register($dispatcher, $dispatcher_class);
+
         return $dispatcher->dispatching();
     }
 
