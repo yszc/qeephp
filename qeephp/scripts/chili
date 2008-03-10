@@ -1,0 +1,4 @@
+#!/bin/sh
+path=`pwd`
+sdir=$(cd "$(dirname "$0")"; pwd)
+php ${sdir}/../commands/chili.php $path $*
