@@ -422,7 +422,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
 
         // 确定字段属性
         $meta = $class_define['table']->columns();
-        $attribs = array();
+        $attribs = array('__links' => array());
         if (isset($class_define['fields']) && is_array($class_define['fields'])) {
             foreach ($class_define['fields'] as $field => $options) {
                 $define = array('public' => true, 'readonly' => false, 'assoc' => false);
@@ -468,6 +468,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
                         unset($options['setter']);
                         unset($options['getter']);
                         $define['assoc_options'] = $options;
+                        $attribs['__links'][] = $define;
                     }
                 }
 

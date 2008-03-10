@@ -147,6 +147,13 @@ class QDB_Table_Select extends QDB_Select_Abstract
         return $this;
     }
 
+    /**
+     * 生成 SQL 语句时的内部处理
+     *
+     * @param string $sql
+     *
+     * @return string
+     */
     protected function toStringInternalCallback($sql)
     {
         if ($this->count) {

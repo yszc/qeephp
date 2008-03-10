@@ -854,6 +854,15 @@ class QDB_Table
         $this->cache_id = $this->dbo->getID() . '/' . $this->qtable_name;
         $this->prepareMETA();
 
+        if (empty($this->pk)) {
+            $this->pk = array();
+            foreach (self::$tables_meta[$this->cache_id] as $field) {
+                if ($field['pk']) {
+                    $this->pk[] = $field['name'];
+                }
+            }
+        }
+
         // 处理主键字段
         $pk = Q::normalize($this->pk);
         $this->pk_count = count($pk);

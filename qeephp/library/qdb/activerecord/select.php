@@ -20,7 +20,7 @@
  *
  * @package database
  */
-class QDB_ActiveRecord_Select
+class QDB_ActiveRecord_Select extends QDB_Select_Abstract
 {
     /**
      * @var string
@@ -55,122 +55,61 @@ class QDB_ActiveRecord_Select
      */
     function __construct($class, QDB_Table $table, array $attribs)
     {
+        parent::__construct($table);
         $this->class = $class;
         $this->table = $table;
+        $this->table->connect();
         $this->attribs = $attribs;
-        $this->reset();
-    }
 
-    /**
-     * 添加查询条件
-     *
-     * @param mixed $where
-     *
-     * @return QDB_ActiveRecord_Select
-     */
-    function where($where)
-    {
-        if (func_num_args() > 1) {
-            $vals = func_get_arg(1);
-            $where = $this->table->get_dbo()->qinto($where, $vals);
+        // 根据对象聚合创建关联
+        foreach ($attribs['__links'] as $define) {
+            $mapping_name = $define['alias'];
+            if ($this->table->existsLink($mapping_name)) { continue; }
+            $class_define = call_user_func(array($define['class'], '__define'));
+            if (!empty($class_define['table_class'])) {
+                $table = Q::getSingleton($class_define['table_class']);
+            } else {
+                $id = 'model_table_' . strtolower($class_define['table_name']);
+                if (Q::isRegistered($id)) {
+                    $table = Q::registry($id);
+                } else {
+                    $table = new QDB_Table(array('table_name' => $class_define['table_name']));
+                    Q::register($table, $id);
+                }
+            }
+            $link = array(
+                'table_obj' => $table,
+                'mapping_name' => $define['alias'],
+            );
+            $this->table->createLinks($link, $define['assoc']);
+            $this->table->getLink($define['alias'])->init();
+            QDebug::dump($this->table->getLink($define['alias']));
         }
-        if (!empty($this->params['where'])) {
-            $this->params['where'][] = "AND ({$where})";
-        } else {
-            $this->params['where'][] = "({$where})";
-        }
-        return $this;
-    }
-
-    /**
-     * 设置查询的排序方式
-     *
-     * @param mixed $order
-     *
-     * @return QDB_ActiveRecord_Select
-     */
-    function order($order)
-    {
-        $this->params['order'] = $order;
-        return $this;
-    }
-
-    /**
-     * 查询所有符合条件的记录
-     *
-     * @return QDB_ActiveRecord_Select
-     */
-    function all()
-    {
-        $this->params['limit'] = null;
-        return $this;
-    }
-
-    /**
-     * 限制查询结果总数
-     *
-     * @param int $count
-     * @param int $offset
-     *
-     * @return QDB_ActiveRecord_Select
-     */
-    function limit($count, $offset = 0)
-    {
-        $this->params['limit'] = array($count, $offset);
-        return $this;
-    }
-
-    /**
-     * 统计符合条件的记录数
-     *
-     * @return QDB_ActiveRecord_Select
-     */
-    function count()
-    {
-        $this->params['count'] = true;
-        return $this;
     }
 
     /**
      * 执行查询
      *
+     * @param boolean $clean_up 是否清理数据集中的临时字段
+     *
      * @return mixed
      */
-    function query()
+    function query($clean_up = true)
     {
-        $params = $this->params;
-        $where = implode(' ', $this->params['where']);
-        unset($params['where']);
-
-        $data = $this->table->find($where, $params)->query();
-        if (is_array($data)) {
-            if ($this->params['limit'] == 1) {
-                return new $this->class($data);
-            } else {
-                $objects = array();
-                foreach ($data as $row) {
-                    $objects[] = new $this->class($row);
-                }
-                return $objects;
-            }
-        } else {
-            return $data;
-        }
+        $data = parent::query($clean_up);
+        return $data;
     }
 
     /**
-     * 重置所有查询选项
+     * 继承类应该重写此方法，以便对 SQL 构造过程进行控制
      *
-     * @return QDB_ActiveRecord_Select
+     * @param string $sql
+     *
+     * @return $sql
      */
-    function reset()
+    protected function toStringInternalCallback($sql)
     {
-        $this->params = array(
-            'limit' => 1,
-            'count' => false,
-            'order' => null,
-            'where' => array(),
-        );
-        return $this;
+        return $sql;
     }
+
 }

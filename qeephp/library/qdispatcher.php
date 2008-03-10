@@ -99,16 +99,17 @@ class QDispatcher
         }
 
         $data = $controller->view;
-        if (!is_null($data)) {
+        if (is_array($data)) {
             $viewname = $controller_name . '_' . $action_name;
             $response = new QResponse_Render($viewname, $data);
             $response->module = $module;
             $response->namespace = $namespace;
             $response->controller = $controller;
             return $response->run();
-        } else {
-            return null;
+        } elseif (!is_null($data)) {
+            echo $data;
         }
+        return null;
     }
 
     /**
