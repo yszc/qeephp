@@ -46,6 +46,20 @@ class QRequest
     protected $action_name;
 
     /**
+     * 请求包含的模块名
+     *
+     * @var string
+     */
+    protected $module_name;
+
+    /**
+     * 请求包含的命名空间
+     *
+     * @var string
+     */
+    protected $namespace;
+
+    /**
      * 构造函数
      */
     protected function __construct()
@@ -65,26 +79,43 @@ class QRequest
         }
 
         $keys = array_keys($_REQUEST);
-        $keys = array_combine($keys, $keys);
-        $keys = array_change_key_case($keys);
+        if (!empty($keys)) {
+            $keys = array_combine($keys, $keys);
+            $keys = array_change_key_case($keys);
+        }
 
-        $c = strtolower(Q::getIni('controller_accessor'));
-        $a = strtolower(Q::getIni('action_accessor'));
-
-        if (isset($keys[$c])) {
-            $this->controller_name = $_REQUEST[$keys[$c]];
+        $k = strtolower(Q::getIni('controller_accessor'));
+        if (isset($keys[$k])) {
+            $this->controller_name = $_REQUEST[$keys[$k]];
         } else {
             $this->controller_name = Q::getIni('default_controller');
         }
 
-        if (isset($keys[$a])) {
-            $this->action_name = $_REQUEST[$keys[$a]];
+        $k = strtolower(Q::getIni('action_accessor'));
+        if (isset($keys[$k])) {
+            $this->action_name = $_REQUEST[$keys[$k]];
         } else {
             $this->action_name = Q::getIni('default_action');
         }
 
+        $k = strtolower(Q::getIni('module_accessor'));
+        if (isset($keys[$k])) {
+            $this->module_name = $_REQUEST[$keys[$k]];
+        } else {
+            $this->module_name = Q::getIni('default_module');
+        }
+
+        $k = strtolower(Q::getIni('namespace_accessor'));
+        if (isset($keys[$k])) {
+            $this->namespace = $_REQUEST[$keys[$k]];
+        } else {
+            $this->namespace = Q::getIni('default_namespace');
+        }
+
         $this->controller_name = strtolower(preg_replace('/[^a-z0-9_]+/i', '', $this->controller_name));
         $this->action_name = strtolower(preg_replace('/[^a-z0-9_]+/i', '', $this->action_name));
+        $this->module_name = strtolower(preg_replace('/[^a-z0-9_]+/i', '', $this->module_name));
+        $this->namespace = strtolower(preg_replace('/[^a-z0-9_]+/i', '', $this->namespace));
     }
 
     /**
@@ -120,6 +151,12 @@ class QRequest
         return null;
     }
 
+    /**
+     * 魔法方法，禁止设置请求参数
+     *
+     * @param string $key
+     * @param mixed $value
+     */
     function __set($key, $value)
     {
         // LC_MSG: Setting values in superglobals not allowed.
@@ -516,5 +553,25 @@ class QRequest
     function getActionName()
     {
         return $this->action_name;
+    }
+
+    /**
+     * 获得当前请求包含的模块名
+     *
+     * @return string
+     */
+    function getModuleNmae()
+    {
+        return $this->module_name;
+    }
+
+    /**
+     * 获得当前请求包含的命名空间
+     *
+     * @return string
+     */
+    function getNamespace()
+    {
+        return $this->namespace;
     }
 }

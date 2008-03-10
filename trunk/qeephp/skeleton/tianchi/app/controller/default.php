@@ -12,7 +12,7 @@ class Controller_Default extends QController_Abstract
      *
      * @var array|string
      */
-    protected $helpers = '';
+    protected $helpers = 'url';
 
     /**
      * default action

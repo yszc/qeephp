@@ -75,6 +75,14 @@ class QExpress
     {
         self::init();
 
+        // 如果是 pathinfo 和 rewrite 模式，则启用路由器
+        if (Q::getIni('url_mode') != 'standard') {
+            $router = Q::getSingleton('QRouter');
+            /* @var $router QRouter */
+            $router->import(Q::getIni('routes'));
+            $router->parse();
+        }
+
         // 载入调度器并转发请求到控制器
         $dispatcher_class = Q::getIni('dispatcher');
         $dispatcher = new $dispatcher_class(QRequest::instance());

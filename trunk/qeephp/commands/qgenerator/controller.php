@@ -36,15 +36,24 @@ class QGenerator_Controller extends QGenerator_Abstract
             return false;
         }
 
+        $arr = explode('::', $controller_name);
+        if (count($arr) == 2) {
+            list($namespace, $controller_name) = $arr;
+            $full_name = "{$namespace}::{$controller_name}";
+        } else {
+            $namespace = null;
+            $full_name = $controller_name;
+        }
+
         $class_name = 'Controller_' . ucfirst(strtolower($controller_name));
-        if ($filename = $this->existsClassFile($class_name)) {
-            echo "Class '{$class_name}' declare file '{$filename}' exists.\n";
+        if (($filename = $this->existsClassFile($class_name, $namespace))) {
+            echo "Class '{$full_name}' declare file '{$filename}' exists.\n";
             return false;
         }
 
-        $content = $this->getCode($class_name);
+        $content = $this->getCode($class_name, $namespace);
         if ($content !== -1 && !empty($content)) {
-            return $this->createClassFile($class_name, $content);
+            return $this->createClassFile($class_name, $content, $namespace);
         } else {
             return false;
         }

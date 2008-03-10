@@ -28,14 +28,21 @@ abstract class QController_Abstract
      *
      * @var array|string
      */
-    protected $helpers = '';
+    public $helpers = 'url';
 
     /**
      * 封装请求的对象
      *
      * @var QRequest
      */
-    protected $request;
+    public $request;
+
+    /**
+     * 控制器动作要渲染的数据
+     *
+     * @var array
+     */
+    public $view = array();
 
     /**
      * 构造函数
@@ -50,19 +57,21 @@ abstract class QController_Abstract
      * 执行指定的动作
      *
      * @param string $action_name
+     * @param string $namespace
+     * @param string $module
      *
      * @return mixed
      */
-    function execute($action_name)
+    function execute($action_name, $namespace = null, $module = null)
     {
         $action_method = 'action' . ucfirst(strtolower($action_name));
         if (method_exists($this, $action_method)) {
-            $this->beforeExecute($action_name);
+            $this->beforeExecute($action_name, $namespace, $module);
             $ret = $this->{$action_method}();
-            return $this->afterExecute($action_name, $ret);
+            return $this->afterExecute($action_name, $ret, $namespace, $module);
         } else {
             throw new QController_Exception(__('Controller method "%s::%s()" is missing.',
-                                            $this->getControllerName(), $action_name));
+                                            $this->request->getControllerName(), $action_name));
         }
     }
 
@@ -82,7 +91,7 @@ abstract class QController_Abstract
             throw new QException(__('Property "%s" not defined.', $varname));
         }
 
-        Q::loadClass($class_name, null, 'Controller_');
+        Q::loadClass($class_name, null, 'QController');
         $this->{$varname} = new $class_name($this);
         return $this->{$varname};
     }
@@ -101,8 +110,10 @@ abstract class QController_Abstract
      * 执行控制器动作之前调用
      *
      * @param string $action_name
+     * @param string $namespace
+     * @param string $module
      */
-    protected function beforeExecute($action_name)
+    protected function beforeExecute($action_name, $namespace, $module)
     {
         return true;
     }
@@ -112,10 +123,13 @@ abstract class QController_Abstract
      *
      * @param string $action_name
      * @param mixed $ret
+     * @param string $action_name
+     * @param string $namespace
+     * @param string $module
      *
      * @return mixed
      */
-    protected function afterExecute($action_name, $ret)
+    protected function afterExecute($action_name, $ret, $namespace, $module)
     {
         return $ret;
     }

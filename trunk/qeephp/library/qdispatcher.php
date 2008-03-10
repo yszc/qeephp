@@ -54,7 +54,12 @@ class QDispatcher
      */
     function dispatching()
     {
-        $this->executeAction($this->request->getControllerName(), $this->request->getActionName());
+        $this->executeAction(
+            $this->request->getControllerName(),
+            $this->request->getActionName(),
+            $this->request->getNamespace(),
+            $this->request->getModuleNmae()
+        );
     }
 
     /**
@@ -62,35 +67,48 @@ class QDispatcher
      *
      * @param string $controller_name
      * @param string $action_name
+     * @param string $namespace
+     * @param string $module
      *
      * @return mixed
      */
-    function executeAction($controller_name, $action_name)
+    function executeAction($controller_name, $action_name, $namespace, $module)
     {
         // 检查是否有权限访问
-        if (!$this->checkAuthorized($controller_name, $action_name)) {
-            return call_user_func_array(Q::getIni('on_access_denied'), array($controller_name, $action_name));
+        if (!$this->checkAuthorized($controller_name, $action_name, $namespace, $module)) {
+            return call_user_func_array(Q::getIni('on_access_denied'), array($module, $namespace, $controller_name, $action_name));
         }
 
-        // 初始化控制器
+        // 尝试载入控制器
         $class_name = 'Controller_' . ucfirst($controller_name);
-        Q::loadClass($class_name);
+        if ($module) {
+            $root = ROOT_DIR . DS . 'module' . $module;
+        } else {
+            $root = ROOT_DIR . DS . 'app';
+        }
+        Q::loadClass($class_name, $root, null, $namespace);
+
+        // 构造控制器对象
         $controller = new $class_name($this->request);
         /* @var $controller QController_Abstract */
-        $data = $controller->execute($action_name);
+        $ret = $controller->execute($action_name, $namespace, $module);
 
-        if (is_object($data) && ($data instanceof QResponse_Interface)) {
-            return $data->run();
+        if (is_object($ret) && ($ret instanceof QResponse_Interface)) {
+            $ret->controller = $controller;
+            return $ret->run();
         }
 
-        $viewname = $controller_name . '_' . $action_name;
-        $response = new QResponse_Render($viewname);
-        if (is_array($data)) {
-            $response->assign($data);
+        $data = $controller->view;
+        if (!is_null($data)) {
+            $viewname = $controller_name . '_' . $action_name;
+            $response = new QResponse_Render($viewname, $data);
+            $response->module = $module;
+            $response->namespace = $namespace;
+            $response->controller = $controller;
+            return $response->run();
         } else {
-            $response->assign(array('data' => $data));
+            return null;
         }
-        return $response->run();
     }
 
     /**
@@ -98,10 +116,12 @@ class QDispatcher
      *
      * @param string $controller_name
      * @param string $action_name
+     * @param string $namespace
+     * @param string $module
      *
      * @return boolean
      */
-    function checkAuthorized($controller_name, $action_name)
+    function checkAuthorized($controller_name, $action_name, $namespace, $module)
     {
         // 如果控制器没有提供 ACT，或者提供了一个空的 ACT，则假定允许用户访问
         $raw_act = $this->getControllerACT($controller_name);

@@ -206,8 +206,9 @@ abstract class Q
      * @param string $className 要载入的类名字
      * @param string|array $dirs
      * @param string $prefix
+     * @param string $suffix
      */
-    static function loadClass($class_name, $dirs = null, $prefix = null)
+    static function loadClass($class_name, $dirs = null, $prefix = null, $suffix = null)
     {
         if (class_exists($class_name, false) || interface_exists($class_name, false)) {
             return;
@@ -216,7 +217,13 @@ abstract class Q
         $class_name = strtolower($class_name);
         $filename = str_replace('_', DS, $class_name);
         if (!is_null($prefix)) {
-            $filename = trim($prefix, '\\/') . DS . $filename;
+            $prefix = strtolower(str_replace('_', DS, $prefix));
+            $filename = trim($prefix, '\\/') . DS . dirname($filename) . DS . basename($filename);
+        }
+
+        if (!is_null($suffix)) {
+            $suffix = strtolower(str_replace('_', DS, $suffix));
+            $filename = dirname($filename) . DS . trim($suffix, '\\/') . DS . basename($filename);
         }
 
         if ($filename != $class_name) {
