@@ -400,7 +400,11 @@ class QDB_Table_Link
                 $this->mid_table = $p['mid_table_obj'];
             } elseif (!empty($p['mid_table_class'])) {
                 $this->mid_table = Q::getSingleton($p['mid_table_class']);
-            } elseif (!empty($p['mid_table_name'])) {
+            } else {
+                if (empty($p['mid_table_name'])) {
+                    // 尝试自动设置中间表名称
+                    $p['mid_table_name'] = $this->main_table->table_name . '_has_' . $this->assoc_table->table_name;
+                }
                 $params = array('table_name' => $p['mid_table_name']);
                 foreach ($p as $key => $value) {
                     if (substr($key, 0, 10) == 'mid_table_' && $key != 'mid_table_name') {
@@ -408,10 +412,6 @@ class QDB_Table_Link
                     }
                 }
                 $this->mid_table = new QDB_Table($params);
-            } else {
-                // LC_MSG: Expected parameter "%s".
-                $err = 'mid_table_obj or mid_table_class or mid_table_name';
-                throw new QDB_Table_Link_Exception(__('Expected parameter "%s" for link "%s".', $err, $this->name));
             }
             $this->mid_table->connect();
         }
@@ -422,37 +422,37 @@ class QDB_Table_Link
         switch ($this->type) {
         case QDB_Table::has_one:
         case QDB_Table::has_many:
-            $this->main_key  = isset($p['main_key'])  ? $p['main_key']  : $this->main_table->pk;
-            $this->assoc_key = isset($p['assoc_key']) ? $p['assoc_key'] : $this->main_table->pk;
-            $this->on_delete = isset($p['on_delete']) ? $p['on_delete'] : 'cascade';
-            $this->on_save   = isset($p['on_save'])   ? $p['on_save']   : 'save';
+            $this->main_key  = !empty($p['main_key'])  ? $p['main_key']  : $this->main_table->pk;
+            $this->assoc_key = !empty($p['assoc_key']) ? $p['assoc_key'] : $this->main_table->pk;
+            $this->on_delete = !empty($p['on_delete']) ? $p['on_delete'] : 'cascade';
+            $this->on_save   = !empty($p['on_save'])   ? $p['on_save']   : 'save';
             $this->one_to_one = $this->type == QDB_Table::has_one;
             break;
         case QDB_Table::belongs_to:
-            $this->main_key  = isset($p['main_key'])  ? $p['main_key']  : $this->assoc_table->pk;
-            $this->assoc_key = isset($p['assoc_key']) ? $p['assoc_key'] : $this->assoc_table->pk;
-            $this->on_delete = isset($p['on_delete']) ? $p['on_delete'] : 'skip';
-            $this->on_save   = isset($p['on_save'])   ? $p['on_save']   : 'skip';
+            $this->main_key  = !empty($p['main_key'])  ? $p['main_key']  : $this->assoc_table->pk;
+            $this->assoc_key = !empty($p['assoc_key']) ? $p['assoc_key'] : $this->assoc_table->pk;
+            $this->on_delete = !empty($p['on_delete']) ? $p['on_delete'] : 'skip';
+            $this->on_save   = !empty($p['on_save'])   ? $p['on_save']   : 'skip';
             $this->one_to_one = true;
             break;
         case QDB_Table::many_to_many:
-            $this->main_key      = isset($p['main_key'])      ? $p['main_key']      : $this->main_table->pk;
-            $this->assoc_key     = isset($p['assoc_key'])     ? $p['assoc_key']     : $this->assoc_table->pk;
-            $this->mid_main_key  = isset($p['mid_main_key'])  ? $p['mid_main_key']  : $this->main_table->pk;
-            $this->mid_assoc_key = isset($p['mid_assoc_key']) ? $p['mid_assoc_key'] : $this->assoc_table->pk;
-            $this->mid_on_find_fields = isset($p['mid_on_find_fields']) ? $p['mid_on_find_fields'] : null;
-            $this->mid_on_find_prefix = isset($p['mid_on_find_prefix']) ? $p['mid_on_find_prefix'] : 'mid_';
-            $this->on_delete     = isset($p['on_delete'])     ? $p['on_delete']     : 'skip';
-            $this->on_save       = isset($p['on_save'])       ? $p['on_save']       : 'skip';
+            $this->main_key      = !empty($p['main_key'])      ? $p['main_key']      : $this->main_table->pk;
+            $this->assoc_key     = !empty($p['assoc_key'])     ? $p['assoc_key']     : $this->assoc_table->pk;
+            $this->mid_main_key  = !empty($p['mid_main_key'])  ? $p['mid_main_key']  : $this->main_table->pk;
+            $this->mid_assoc_key = !empty($p['mid_assoc_key']) ? $p['mid_assoc_key'] : $this->assoc_table->pk;
+            $this->mid_on_find_fields = !empty($p['mid_on_find_fields']) ? $p['mid_on_find_fields'] : null;
+            $this->mid_on_find_prefix = !empty($p['mid_on_find_prefix']) ? $p['mid_on_find_prefix'] : 'mid_';
+            $this->on_delete     = !empty($p['on_delete'])     ? $p['on_delete']     : 'skip';
+            $this->on_save       = !empty($p['on_save'])       ? $p['on_save']       : 'skip';
             $this->one_to_one = false;
         }
-        $this->main_key_alias = isset($p['main_key_alias']) ? $p['main_key_alias'] : 'm_k_a_' . self::$alias_index;
-        $this->assoc_key_alias = isset($p['assoc_key_alias']) ? $p['assoc_key_alias'] : 'a_k_a_' . self::$alias_index;
-        $this->on_find = isset($p['on_find']) ? $p['on_find'] : 'all';
-        $this->on_find_where = isset($p['on_find_where']) ? $p['on_find_where'] : null;
-        $this->on_find_fields = isset($p['on_find_fields']) ? $p['on_find_fields'] : '*';
-        $this->on_find_order = isset($p['on_find_order']) ? $p['on_find_order'] : null;
-        $this->on_delete_set_value = isset($p['on_delete_set_value']) ? $p['on_delete_set_value'] : null;
+        $this->main_key_alias = !empty($p['main_key_alias']) ? $p['main_key_alias'] : 'm_k_a_' . self::$alias_index;
+        $this->assoc_key_alias = !empty($p['assoc_key_alias']) ? $p['assoc_key_alias'] : 'a_k_a_' . self::$alias_index;
+        $this->on_find = !empty($p['on_find']) ? $p['on_find'] : 'all';
+        $this->on_find_where = !empty($p['on_find_where']) ? $p['on_find_where'] : null;
+        $this->on_find_fields = !empty($p['on_find_fields']) ? $p['on_find_fields'] : '*';
+        $this->on_find_order = !empty($p['on_find_order']) ? $p['on_find_order'] : null;
+        $this->on_delete_set_value = !empty($p['on_delete_set_value']) ? $p['on_delete_set_value'] : null;
 
         $this->is_init = true;
 

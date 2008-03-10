@@ -392,15 +392,6 @@ abstract class QDB_Select_Abstract
                 }
             }
 
-            if ($this->as_object) {
-                Q::loadClass($this->as_object);
-                $col = array();
-                foreach (array_keys($rowset) as $offset) {
-                    $col[] = new $this->as_object($rowset[$offset]);
-                }
-                $rowset = $col;
-            }
-
             if ($this->limit == 1) {
                 return reset($rowset);
             } else {
