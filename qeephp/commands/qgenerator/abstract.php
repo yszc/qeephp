@@ -64,14 +64,19 @@ abstract class QGenerator_Abstract
      * 检查指定的类文件是否在应用程序目录中
      *
      * @param string $class
+     * @param string $namespace
      *
      * @return string|boolean
      */
-    protected function existsClassFile($class)
+    protected function existsClassFile($class, $namespace = null)
     {
         $dir = ROOT_DIR . DS . 'app';
-        $filename = str_replace('_', DIRECTORY_SEPARATOR, $class) . '.php';
-        $path = $dir . DIRECTORY_SEPARATOR . strtolower($filename);
+        $filename = strtolower(str_replace('_', DS, $class) . '.php');
+        if ($namespace) {
+            $path = $dir . DS . dirname($filename) . DS . $namespace . DS . basename($filename);
+        } else {
+            $path = $dir . DS . $filename;
+        }
         if (file_exists($path)) {
             return $path;
         } else {
@@ -84,12 +89,17 @@ abstract class QGenerator_Abstract
      *
      * @param string $class
      * @param string $content
+     * @param string $namespace
      */
-    protected function createClassFile($class, $content)
+    protected function createClassFile($class, $content, $namespace = null)
     {
         $dir = ROOT_DIR . DS . 'app';
-        $filename = str_replace('_', DIRECTORY_SEPARATOR, $class) . '.php';
-        $path = $dir . DIRECTORY_SEPARATOR . strtolower($filename);
+        $filename = strtolower(str_replace('_', DS, $class) . '.php');
+        if ($namespace) {
+            $path = $dir . DS . dirname($filename) . DS . $namespace . DS . basename($filename);
+        } else {
+            $path = $dir . DS . $filename;
+        }
         $dir = dirname($path);
         if (!file_exists($dir)) { mkdir($dir); }
         if (file_put_contents($path, $content)) {

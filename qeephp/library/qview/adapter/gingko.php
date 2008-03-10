@@ -31,7 +31,7 @@ class QView_Adapter_Gingko extends QView_Adapter_Abstract
      *
      * @var string
      */
-    protected $template_dir = '';
+    public $template_dir = '';
 
     /**
      * 模板变量
@@ -39,6 +39,26 @@ class QView_Adapter_Gingko extends QView_Adapter_Abstract
      * @var array
      */
     protected $vars = array();
+
+    /**
+     * 响应对象
+     *
+     * @var QResponse
+     */
+    protected $response;
+
+    /**
+     * 设置响应对象对应的控制器
+     *
+     * @var QController_Abstract
+     */
+    public $controller;
+
+    function __construct(QResponse_Render $response)
+    {
+        $this->response = $response;
+        $this->controller = $response->controller;
+    }
 
     /**
      * 指定模板引擎要使用的数据
@@ -75,9 +95,23 @@ class QView_Adapter_Gingko extends QView_Adapter_Abstract
     function fetch($viewname)
     {
         $viewname = str_replace('_', DS, $viewname);
-        $filename = rtrim($this->template_dir, '/\\') . DS . $viewname . '.html';
+        if (empty($this->template_dir)) {
+            if ($this->module) {
+                $root = ROOT_DIR . DS . 'module' . DS . 'view' . DS;
+            } else {
+                $root = ROOT_DIR . DS . 'app' . DS . 'view' . DS;
+            }
+            if ($this->namespace) {
+                $root .= $this->namespace . DS;
+            }
+            $this->template_dir = $root;
+            $___filename = $this->template_dir . $viewname . '.html';
+        } else {
+            $___filename = rtrim($this->template_dir, '/\\') . DS . $viewname . '.html';
+        }
         ob_start();
-        self::_fetch($filename, $this->vars);
+        extract($this->vars);
+        require $___filename;
         $content = ob_get_clean();
         return $this->filter($content);
     }
@@ -90,9 +124,24 @@ class QView_Adapter_Gingko extends QView_Adapter_Abstract
         $this->vars = array();
     }
 
-    static function _fetch($filename, array $viewdata)
+    /**
+     * 魔法方法，用于自动加载 helper
+     *
+     * @param string $varname
+     *
+     * @return mixed
+     */
+    function __get($varname)
     {
-        extract($viewdata);
-        require $filename;
+        if (isset($this->controller->helpers[$varname])) {
+            $class_name = 'Helper_' . ucfirst($varname);
+        } else {
+            // LC_MSG: Property "%s" not defined.
+            throw new QException(__('Property "%s" not defined.', $varname));
+        }
+
+        Q::loadClass($class_name, null, 'QController');
+        $this->{$varname} = new $class_name($this->controller);
+        return $this->{$varname};
     }
 }

@@ -34,7 +34,21 @@ abstract class QView_Adapter_Abstract
      *
      * @var string
      */
-    protected $viewname;
+    public $viewname;
+
+    /**
+     * 视图所属模块
+     *
+     * @var string
+     */
+    public $module;
+
+    /**
+     * 视图所属命名空间
+     *
+     * @var string
+     */
+    public $namespace;
 
     /**
      * 构造函数
@@ -46,7 +60,7 @@ abstract class QView_Adapter_Abstract
         $this->viewname = $viewname;
         $this->filters = new QColl('QFilter_Interface');
 
-        $view_config = Q::getIni('view_config');
+        $view_config = (array)Q::getIni('view_config');
         foreach ($view_config as $key => $value) {
             if (isset($this->{$key})) {
                 $this->{$key} = $value;
@@ -61,16 +75,6 @@ abstract class QView_Adapter_Abstract
      * @param mixed $value
      */
     abstract function assign($data, $value = null);
-
-    /**
-     * 选择视图
-     *
-     * @param string $viewname
-     */
-    function selectView($viewname)
-    {
-        $this->viewname = $viewname;
-    }
 
     /**
      * 渲染指定的视图，并输出渲染结果

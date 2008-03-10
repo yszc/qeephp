@@ -34,6 +34,18 @@ return array(
     'action_accessor'           => 'action',
     'default_action'            => 'index',
 
+    /**
+     * 指示命名空间的 url 参数名和默认命名空间
+     */
+    'namespace_accessor'        => 'namespace',
+    'default_namespace'         => null,
+
+    /**
+     * 指示模块的 url 参数名和默认模块名
+     */
+    'module_accessor'           => 'module',
+    'default_module'            => null,
+
     'dispatcher'                => 'QDispatcher',
     'on_access_denied'          => array('QExpress', 'on_access_denied'),
     'on_action_not_found'       => array('QExpress', 'on_page_not_found'),

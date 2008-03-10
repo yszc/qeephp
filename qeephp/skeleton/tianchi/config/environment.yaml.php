@@ -4,18 +4,6 @@
 # 核心设置
 #############################
 
-# 控制器的 url 参数名和默认控制器名
-# 控制器名字只能是 a-z 字母和 0-9 数字，以及“_”下划线。
-controller_accessor:    controller
-default_controller:     default
-
-# 动作方法的 url 参数名和默认动作方法名，动作方法名只能是 a-z 字母
-action_accessor:        action
-default_action:         index
-
-# 要使用的 MVC 调度器
-dispatcher:             QDispatcher
-
 # 当用户没有权限访问特定 URL 时，要调用的错误处理函数
 on_access_denied:       on_access_denied
 
@@ -26,16 +14,6 @@ on_action_not_found:    on_page_not_found
 # 只有在 url_mode 为 pathinfo 或 rewrite 时，routes.yaml 指定的路由才能生效
 # 如果使用 IIS，有可能需要将 url_mode 改为 standard 才能正常运行
 url_mode:               pathinfo
-
-# 默认的应用程序入口文件名
-url_bootstrap:          index.php
-
-# 在生成 url 时，是否总是使用应用程序入口文件名，仅在 url_mode 为 'standard' 时生效
-#
-# 如果该设置为 false，则生成的 url 类似：
-#
-# http://www.example.com/?controller=xxx&action=yyy
-url_always_use_bootstrap: true
 
 # QeePHP 内部及 cache 系列函数使用的缓存目录
 # 应用程序必须设置该选项才能使用 cache 功能。
@@ -54,10 +32,6 @@ default_timezone:       Asia/Shanghai
 
 # 要使用的模板引擎，PHP 表示使用 PHP 语言本身作模板引擎
 view_adapter:           QView_Adapter_Gingko
-
-# 模板引擎所需的配置
-view_config:
-    template_dir:       %ROOT_DIR%/app/view
 
 # QWebControls 扩展控件的保存目录
 webcontrols_ext_dir:
@@ -79,9 +53,6 @@ auto_session:           false
 #############################
 # 访问控制
 #############################
-
-# 调度器要使用的验证服务提供程序
-dispatcher_acl_provider: QACL
 
 # 指示当没有为控制器提供 ACT 时，要使用的默认 ACT
 default_act:
