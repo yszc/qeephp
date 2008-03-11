@@ -121,6 +121,13 @@ abstract class QDB_Select_Abstract
     protected $recursion_link = null;
 
     /**
+     * 指示是否将查询到的数据封装为对象
+     *
+     * @var string
+     */
+    protected $as_object = null;
+
+    /**
      * 构造函数
      *
      * @param QDB_Table $table
@@ -317,6 +324,11 @@ abstract class QDB_Select_Abstract
         return $this;
     }
 
+    function as_object($class_name)
+    {
+        $this->as_object = $class_name;
+    }
+
     /**
      * 执行查询
      *
@@ -326,6 +338,10 @@ abstract class QDB_Select_Abstract
      */
     function query($clean_up = true)
     {
+        if ($this->as_object) {
+            Q::loadClass($this->as_object);
+        }
+
         list($sql, $used_links) = $this->toStringInternal();
 
         if (!is_array($this->limit)) {
@@ -392,16 +408,34 @@ abstract class QDB_Select_Abstract
                 }
             }
 
+            unset($row);
             if ($this->limit == 1) {
-                return reset($rowset);
-            } else {
-                return $rowset;
+                $row = reset($rowset);
             }
         } else {
+            unset($row);
             if ($this->limit == 1) {
-                return $handle->fetchRow();
+                $row = $handle->fetchRow();
             } else {
-                return $handle->fetchAll();
+                $rowset = $handle->fetchAll();
+            }
+        }
+
+        if (isset($row)) {
+            if ($this->as_object) {
+                return new $this->as_object($row);
+            } else {
+                return $row;
+            }
+        } else {
+            if ($this->as_object) {
+                $objects = array();
+                foreach (array_keys($rowset) as $offset) {
+                    $objects[] = new $this->as_object($rowset[$offset]);
+                }
+                return $objects;
+            } else {
+                return $rowset;
             }
         }
     }

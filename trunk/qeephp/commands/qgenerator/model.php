@@ -39,7 +39,7 @@ class QGenerator_Model extends QGenerator_Abstract
         $class_name = ucfirst($this->camelName($model_name));
         if (($filename = $this->existsClassFile($class_name))) {
             echo "Class '{$class_name}' declare file '{$filename}' exists.\n";
-            return false;
+            return 0;
         }
 
         $content = $this->getCode($table_name, $class_name);
@@ -61,44 +61,29 @@ class QGenerator_Model extends QGenerator_Abstract
      */
     function getCode($table_name, $class_name)
     {
-        if (substr($table_name, 0, 6) == 'Table_') {
-            // 如果指定的是表数据入口类名，则载入该表数据入口
-            $table_class = $table_name;
-            unset($table_name);
-            try {
-                Q::loadClass($table_class);
-            } catch (Exception $ex) {
-                echo $ex->__toString();
-                return false;
-            }
+        $table_class = 'Table_' . ucfirst($table_name);
+        // 首先尝试创建表数据入口的文件，然后再创建 Model 文件
 
-            $table = new $table_class();
-            /* @var $table QDB_Table */
-            $meta = $table->columns();
-            $table_name = $table->table_name;
-            $pk = Q::normalize($table->pk);
-        } else {
-            $table_class = null;
-            // 尝试读取数据表的信息
-            $dbo = QDB::getConn();
-            $dbo->connect();
-            $tables = $dbo->metaTables();
-            if (!in_array($table_name, $tables)) {
-                echo "Database table '{$table_name}' not exists.\n";
-                return -1;
-            }
+        require_once dirname(__FILE__) . DS . 'table.php';
+        $generator = new QGenerator_Table();
+        if ($generator->execute(array($table_name)) === false) {
+            return false;
+        }
 
-            $meta = $dbo->metaColumns($table_name);
-            $pk = array();
-            foreach ($meta as $field) {
-                if ($field['pk']) {
-                    $pk[] = $field['name'];
-                }
+        // 尝试读取数据表的信息
+        Q::loadClass($table_class);
+        $table = new $table_class();
+        /* @var $table QDB_Table */
+        $table->connect();
+        $meta = $table->columns();
+        $pk = array();
+        foreach ($meta as $field) {
+            if ($field['pk']) {
+                $pk[] = $field['name'];
             }
         }
 
         $viewdata = array(
-            'table_name' => $table_name,
             'class_name' => $class_name,
             'table_class' => $table_class,
             'meta' => $meta,

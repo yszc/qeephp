@@ -854,6 +854,7 @@ class QDB_Table
         $this->cache_id = $this->dbo->getID() . '/' . $this->qtable_name;
         $this->prepareMETA();
 
+        // 尝试自动设置主键字段
         if (empty($this->pk)) {
             $this->pk = array();
             foreach (self::$tables_meta[$this->cache_id] as $field) {
@@ -865,6 +866,12 @@ class QDB_Table
 
         // 处理主键字段
         $pk = Q::normalize($this->pk);
+
+        if (empty($pk)) {
+            // LC_MSG: Database table "%s" not defined primary key.
+            throw new QDB_Table_Exception(__('Database table "%s" not defined primary key.', $this->full_table_name));
+        }
+
         $this->pk_count = count($pk);
         $this->is_cpk = $this->pk_count > 1;
         $this->pk = ($this->is_cpk) ? $pk : reset($pk);

@@ -38,6 +38,13 @@ abstract class QController_Abstract
     public $request;
 
     /**
+     * 封装 SESSION 对象
+     *
+     * @var QSession
+     */
+    public $session;
+
+    /**
      * 控制器动作要渲染的数据
      *
      * @var array

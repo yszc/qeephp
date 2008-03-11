@@ -48,7 +48,7 @@ class QGenerator_Controller extends QGenerator_Abstract
         $class_name = 'Controller_' . ucfirst(strtolower($controller_name));
         if (($filename = $this->existsClassFile($class_name, $namespace))) {
             echo "Class '{$full_name}' declare file '{$filename}' exists.\n";
-            return false;
+            return 0;
         }
 
         $content = $this->getCode($class_name, $namespace);

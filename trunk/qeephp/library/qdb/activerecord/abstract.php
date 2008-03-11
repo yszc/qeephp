@@ -171,7 +171,23 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     function toArray()
     {
-        return $this->__all_props;
+        $row = array();
+        foreach (self::$__defines[$this->__class]['attribs'] as $define) {
+            $field = $define['alias'];
+            if ($define['assoc']) {
+                if (is_array($this->{$field})) {
+                    $row[$field] = array();
+                    foreach ($this->{$field} as $obj) {
+                        $row[$field][] = $obj->toArray();
+                    }
+                } else {
+                    $row[$field] = $this->{$field}->toArray();
+                }
+            } else {
+                $row[$field] = $this->{$field};
+            }
+        }
+        return $row;
     }
 
     /**
@@ -182,20 +198,28 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     function attach(array $row)
     {
         foreach (self::$__defines[$this->__class]['attribs'] as $field => $define) {
-            if (!isset($row[$field])) {
+            if (!isset($row[$field]) && $define['assoc'] == false) {
                 $row[$field] = self::$__defines[$this->__class]['attribs'][$field]['default'];
             }
 
-            if ($define['readonly'] || !$define['public']) {
-                $this->__props[$field] = $row[$field];
+            if ($define['readonly'] || !$define['public'] || $define['assoc']) {
+                if ($define['assoc']) {
+                    if (!is_array($row[$field])) {
+                        // LC_MSG: Property "%s" type mismatch. expected is "%s", actual is "%s".
+                        $msg = 'Property "%s" type mismatch. expected is "%s", actual is "%s".';
+                        throw new QDB_ActiveRecord_Exception(__($msg, "\$row[{$field}]", 'array', gettype($row[$field])));
+                    } else {
+                        foreach ($row[$field] as $assoc_row) {
+                            $this->__props[$field][] = new $define['class']($assoc_row);
+                        }
+                    }
+                } else {
+                    $this->__props[$field] = $row[$field];
+                }
                 $this->__all_props[$field] =& $this->__props[$field];
             } else {
                 $this->{$field} = $row[$field];
-                if (isset($this->{$field})) {
-                    $this->__all_props[$field] =& $this->{$field};
-                } else {
-                    $this->__all_props[$field] =& $this->__props[$field];
-                }
+                $this->__all_props[$field] =& $this->{$field};
             }
         }
     }
@@ -248,26 +272,30 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
             throw new QException(__('Property "%s" is readonly.', $varname));
         }
         if (isset($attr['setter'])) {
-            call_user_func($attr['setter'], $value);
+            $this->__all_props[$varname] = call_user_func($attr['setter'], $value);
             return;
         }
         if (!$attr['assoc']) {
-            $this->__props[$varname] = $value;
+            if (isset($this->__props[$varname])) {
+                $this->__props[$varname] = $value;
+            } else {
+                $this->{$varname} = $value;
+            }
             return;
         }
 
         if ($attr['assoc'] == 'has_many' || $attr['assoc'] == 'many_to_many') {
             // 聚合的对象，要求 $value 必须是一个包含特定类型对象的数组
             if (!is_array($value)) {
-                // LC_MSG: Property "%s" type mismatch. expected is "array", actual is "%s".
-                $msg = 'Property "%s" type mismatch. expected is "array", actual is "%s".';
-                throw new QDB_ActiveRecord_Exception(__($msg, $varname, gettype($value)));
+                // LC_MSG: Property "%s" type mismatch. expected is "%s", actual is "%s".
+                $msg = 'Property "%s" type mismatch. expected is "%s", actual is "%s".';
+                throw new QDB_ActiveRecord_Exception(__($msg, $varname, 'array', gettype($value)));
             }
-            foreach (array_kesy($value) as $key) {
+            foreach (array_keys($value) as $key) {
                 if (!is_object($value[$key]) || !($value[$key] instanceof $attr['class'])) {
                     // LC_MSG: Property "%s[]" type mismatch. expected is "%s", actual is "%s".
                     $msg = 'Property "%s[]" type mismatch. expected is "%s", actual is "%s".';
-                    throw new QDB_ActiveRecord_Exception(__($msg, $varname, $attr['model'], gettype($value[$key])));
+                    throw new QDB_ActiveRecord_Exception(__($msg, $varname, $attr['class'], gettype($value[$key])));
                 }
             }
             $this->__props[$varname] = $value;
@@ -338,7 +366,12 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     protected static function __find($class, array $args)
     {
         self::__init($class);
-        $select = new QDB_ActiveRecord_Select($class, self::$__defines[$class]['table'], self::$__defines[$class]['attribs']);
+        $select = new QDB_ActiveRecord_Select(
+            $class,
+            self::$__defines[$class]['table'],
+            self::$__defines[$class]['attribs'],
+            self::$__defines[$class]['links']
+        );
         if (!empty(self::$__callbacks[$class][self::after_find])) {
             $select->bindCallbacks(self::$__callbacks[$class][self::after_find]);
         }
@@ -368,19 +401,29 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     {
         if (isset(self::$__defines[$class])) { return; }
         $class_define = call_user_func(array($class, '__define'));
+        if (!is_array($class_define['fields'])) {
+            $class_define['fields'] = array();
+        }
+
+        // 构造表数据入口
+        $class_define['table'] = Q::getSingleton($class_define['table_class']);
+        $class_define['pk'] = $class_define['table']->pk;
 
         // 绑定行为插件
         self::$__callbacks[$class] = array();
         self::$__methods[$class] = array();
 
         $behaviors = isset($class_define['behaviors']) ? Q::normalize($class_define['behaviors']) : array();
-        $extend_setter = array();
-        $extend_getter = array();
         foreach ($behaviors as $behavior) {
             $behavior_class = 'Behavior_' . ucfirst(strtolower($behavior));
             $dirs = array(Q_DIR . DS . 'qdb' . DS . 'activerecord');
-            Q::loadClass($behavior_class, $dirs);
-            $behavior_obj = new $behavior_class($class);
+            if (!Q::isRegistered($behavior_class)) {
+                Q::loadClass($behavior_class, $dirs);
+                $behavior_obj = new $behavior_class($class);
+                Q::register($behavior_obj, $behavior_class);
+            } else {
+                $behavior_obj = Q::registry($behavior_class);
+            }
             /* @var $behavior_obj QDB_ActiveRecord_Behavior_Interface */
             $callbacks = $behavior_obj->__callbacks();
             self::$__behaviors[$behavior] = $behavior_obj;
@@ -397,10 +440,10 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
                     }
                     break;
                 case self::setter:
-                    $extend_setter[$method] = array($behavior_obj, 'set' . ucfirst($method));
+                    $class_define['fields'][$method] = array('setter' => array($behavior_obj, 'set' . ucfirst($method)));
                     break;
                 case self::getter:
-                    $extend_getter[$method] = array($behavior_obj, 'get' . ucfirst($method));
+                    $class_define['fields'][$method] = array('getter' => array($behavior_obj, 'get' . ucfirst($method)));
                     break;
                 default:
                     self::$__callbacks[$class][$type][] = $method;
@@ -408,21 +451,9 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
             }
         }
 
-        // 构造表数据入口
-        if (!isset($class_define['table_class'])) {
-            if (!isset($class_define['table_name'])) {
-                $arr = explode('_', $class);
-                $class_define['table_name'] = strtolower($arr[count($arr) - 1]);
-            }
-            $class_define['table'] = new QDB_Table(array('table_name' => $class_define['table_name']));
-        } else {
-            $class_define['table'] = Q::getSingleton($class_define['table_class']);
-        }
-        $class_define['pk'] = $class_define['table']->pk;
-
-        // 确定字段属性
+        // 根据字段定义确定字段属性
         $meta = $class_define['table']->columns();
-        $attribs = array('__links' => array());
+        $class_define['links'] = array();
         if (isset($class_define['fields']) && is_array($class_define['fields'])) {
             foreach ($class_define['fields'] as $field => $options) {
                 $define = array('public' => true, 'readonly' => false, 'assoc' => false);
@@ -432,13 +463,13 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
                     $define['alias'] = $options;
                 } else {
                     $define['readonly'] = isset($options['readonly']) ? (bool)$options['readonly'] : false;
-                    if (isset($options['setter']) || isset($extend_setter[$field])) {
+                    if (isset($options['setter'])) {
                         $define['public'] = false;
-                        $define['setter'] = isset($options['setter']) ? $options['setter'] : $extend_setter[$field];
+                        $define['setter'] = $options['setter'];
                     }
-                    if (isset($options['getter']) || isset($extend_getter[$field])) {
+                    if (isset($options['getter'])) {
                         $define['public'] = false;
-                        $define['getter'] = isset($options['getter']) ? $options['getter'] : $extend_getter[$field];
+                        $define['getter'] = $options['getter'];
                     }
                     if (isset($options['alias'])) {
                         $define['alias'] = $options['alias'];
@@ -468,7 +499,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
                         unset($options['setter']);
                         unset($options['getter']);
                         $define['assoc_options'] = $options;
-                        $attribs['__links'][] = $define;
+                        $class_define['links'][$field] = $define;
                     }
                 }
 

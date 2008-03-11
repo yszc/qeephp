@@ -39,7 +39,7 @@ class QGenerator_Table extends QGenerator_Abstract
         $class_name = 'Table_' . ucfirst($this->camelName($table_name));
         if ($filename = $this->existsClassFile($class_name)) {
             echo "Class '{$class_name}' declare file '{$filename}' exists.\n";
-            return false;
+            return 0;
         }
 
         $content = $this->getCode($table_name, $class_name);
