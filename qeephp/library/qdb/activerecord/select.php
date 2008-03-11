@@ -35,25 +35,14 @@ class QDB_ActiveRecord_Select extends QDB_Select_Abstract
     protected $attribs;
 
     /**
-     * 查询参数
-     *
-     * @var array
-     */
-    protected $params;
-
-    /**
-     * @var QDB_Table
-     */
-    protected $table;
-
-    /**
      * 构造函数
      *
      * @param string $class
      * @param QDB_Table $table
      * @param array $attribs
+     * @param array $links
      */
-    function __construct($class, QDB_Table $table, array $attribs)
+    function __construct($class, QDB_Table $table, array $attribs, array $links)
     {
         parent::__construct($table);
         $this->class = $class;
@@ -62,42 +51,20 @@ class QDB_ActiveRecord_Select extends QDB_Select_Abstract
         $this->attribs = $attribs;
 
         // 根据对象聚合创建关联
-        foreach ($attribs['__links'] as $define) {
+        foreach ($links as $define) {
             $mapping_name = $define['alias'];
             if ($this->table->existsLink($mapping_name)) { continue; }
             $class_define = call_user_func(array($define['class'], '__define'));
-            if (!empty($class_define['table_class'])) {
-                $table = Q::getSingleton($class_define['table_class']);
-            } else {
-                $id = 'model_table_' . strtolower($class_define['table_name']);
-                if (Q::isRegistered($id)) {
-                    $table = Q::registry($id);
-                } else {
-                    $table = new QDB_Table(array('table_name' => $class_define['table_name']));
-                    Q::register($table, $id);
-                }
-            }
+            $table = Q::getSingleton($class_define['table_class']);
             $link = array(
                 'table_obj' => $table,
                 'mapping_name' => $define['alias'],
             );
             $this->table->createLinks($link, $define['assoc']);
             $this->table->getLink($define['alias'])->init();
-            QDebug::dump($this->table->getLink($define['alias']));
         }
-    }
-
-    /**
-     * 执行查询
-     *
-     * @param boolean $clean_up 是否清理数据集中的临时字段
-     *
-     * @return mixed
-     */
-    function query($clean_up = true)
-    {
-        $data = parent::query($clean_up);
-        return $data;
+        $this->links = $this->table->getAllLinks();
+        $this->as_object($class);
     }
 
     /**

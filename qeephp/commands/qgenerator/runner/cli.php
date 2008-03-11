@@ -89,7 +89,7 @@ EOT;
         $help = array(
             'controller' => '<controller name>',
             'table'      => '<database table name> [table class name]',
-            'model'      => '<class name> <database table name|table class name>',
+            'model'      => '<class name> <database table name>',
         );
 
         foreach ($this->generators_list as $type) {

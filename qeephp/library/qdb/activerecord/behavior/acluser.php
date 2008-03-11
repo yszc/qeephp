@@ -60,6 +60,7 @@ class Behavior_Acluser implements QDB_ActiveRecord_Behavior_Interface
      */
     function setPassword($password)
     {
+        QDebug::dump($password, __CLASS__ . "::setPassword()");
         switch ($this->encode_type) {
         case 'md5':
             return md5($password);

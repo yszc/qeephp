@@ -61,13 +61,8 @@ class <?php echo $class_name; ?> extends QDB_ActiveRecord_Abstract
             // 指定该 ActiveRecord 要使用的行为插件
             'behaviors' => '',
 
-<?php if (empty($table_class)): ?>
-            // 用什么数据表保存对象的数据
-            'table_name' => '<?php echo $table_name; ?>',
-<?php else: ?>
             // 用什么表数据入口处理对象的持久化
             'table_class' => '<?php echo $table_class; ?>',
-<?php endif; ?>
 
             // 指定数据表记录字段与对象属性之间的映射关系
             // 没有在此处指定的字段，QeePHP 会自动设置将字段映射为对象的可读写属性
