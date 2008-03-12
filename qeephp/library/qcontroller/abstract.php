@@ -91,6 +91,8 @@ abstract class QController_Abstract
      */
     function __get($varname)
     {
+        static $dirs;
+
         if (isset($this->helpers[$varname])) {
             $class_name = 'Helper_' . ucfirst($varname);
         } else {
@@ -98,7 +100,18 @@ abstract class QController_Abstract
             throw new QException(__('Property "%s" not defined.', $varname));
         }
 
-        Q::loadClass($class_name, null, 'QController');
+        if (is_null($dirs)) {
+            $dirs = array(Q_DIR . '/qcontroller/helper');
+            $module = $this->request->getModuleNmae();
+            if ($module) {
+                $dirs[] = ROOT_DIR . '/module/' . $module . '/helper';
+            } else {
+                $dirs[] = ROOT_DIR . '/app/helper';
+            }
+        }
+
+        $filename = $varname . '_helper.php';
+        Q::loadClassFile($filename, $dirs, $class_name);
         $this->{$varname} = new $class_name($this);
         return $this->{$varname};
     }
@@ -106,7 +119,7 @@ abstract class QController_Abstract
     /**
      * 获得当前使用的 Dispatcher
      *
-     * @return Dispatcher
+     * @return QDispatcher
      */
     function getDispatcher()
     {

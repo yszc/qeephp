@@ -44,7 +44,7 @@ class QDispatcher
     function __construct(QRequest $request)
     {
         $this->request = $request;
-        $this->acl = Q::getSingleton(Q::getIni('dispatcher_acl_provider'));
+        $this->acl = Q::getSingleton(Q::getIni('dispatcher_acl_class'));
     }
 
     /**
@@ -76,21 +76,28 @@ class QDispatcher
     {
         // 检查是否有权限访问
         if (!$this->checkAuthorized($controller_name, $action_name, $namespace, $module)) {
-            return call_user_func_array(Q::getIni('on_access_denied'), array($module, $namespace, $controller_name, $action_name));
+            return call_user_func_array(Q::getIni('on_access_denied'), array($controller_name, $action_name, $namespace, $module));
         }
 
         // 尝试载入控制器
         $class_name = 'Controller_' . ucfirst($controller_name);
         if ($module) {
-            $root = ROOT_DIR . DS . 'module' . $module;
+            $dir = ROOT_DIR . DS . 'module' . DS . $module . DS . 'controller';
         } else {
-            $root = ROOT_DIR . DS . 'app';
+            $dir = ROOT_DIR . DS . 'app' . DS . 'controller';
         }
-        Q::loadClass($class_name, $root, null, $namespace);
+        if ($namespace) {
+            $dir .= DS . $namespace;
+        }
 
         // 构造控制器对象
+        $filename = $controller_name . '_controller.php';
+        Q::loadClassFile($filename, array($dir), $class_name);
+
         $controller = new $class_name($this->request);
         /* @var $controller QController_Abstract */
+
+        Q::register($controller, 'current_controller');
         $ret = $controller->execute($action_name, $namespace, $module);
 
         if (is_object($ret) && ($ret instanceof QResponse_Interface)) {
@@ -100,7 +107,7 @@ class QDispatcher
 
         $data = $controller->view;
         if (is_array($data)) {
-            $viewname = $controller_name . '_' . $action_name;
+            $viewname = $controller_name . DS . $action_name;
             $response = new QResponse_Render($viewname, $data);
             $response->module = $module;
             $response->namespace = $namespace;
@@ -182,7 +189,7 @@ class QDispatcher
     /**
      * 返回当前使用的验证服务对象
      *
-     * @return ACL
+     * @return QACL
      */
     function getACL()
     {
@@ -215,7 +222,7 @@ class QDispatcher
      */
     function setUser(array $user, $roles)
     {
-        $roles = normalize($roles);
+        $roles = Q::normalize($roles);
         $user[Q::getIni('acl_roles_key')] = implode(',', $roles);
         $key = Q::getIni('acl_session_key');
         $_SESSION[$key] = $user;

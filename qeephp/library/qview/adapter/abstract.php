@@ -93,6 +93,15 @@ abstract class QView_Adapter_Abstract
     abstract function fetch($viewname);
 
     /**
+     * 检查指定的视图是否存在
+     *
+     * @param string $viewname
+     *
+     * @return boolean
+     */
+    abstract function exists($viewname);
+
+    /**
      * 清除已经设置的所有数据
      */
     abstract function clear();

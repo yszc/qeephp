@@ -37,7 +37,6 @@ require Q_DIR . DS . 'qexception.php';
  */
 abstract class Q
 {
-    // {{{ -- private member var
     /**
      * 应用程序设置
      *
@@ -58,9 +57,7 @@ abstract class Q
      * @var array
      */
     private static $class_path = array();
-    // }}}
 
-    // {{{ getIni()
     /**
      * 获取指定的应用程序设置内容
      *
@@ -82,9 +79,7 @@ abstract class Q
         }
         return $pos;
     }
-    // }}}
 
-    // {{{ setIni()
     /**
      * 修改指定应用程序设置的内容
      *
@@ -114,9 +109,17 @@ abstract class Q
             }
         }
     }
-    // }}}
 
-    // {{{ getCache()
+    /**
+     * 返回所有的设置值
+     *
+     * @return array
+     */
+    static function getAllIni()
+    {
+        return self::$config;
+    }
+
     /**
      * 读取指定缓存的内容，如果缓存内容不存在或已经失效，则返回 false
      *
@@ -140,9 +143,7 @@ abstract class Q
             return $cache->get($id, $policy);
         }
     }
-    // }}}
 
-    // {{{ setCache()
     /**
      * 将变量内容写入缓存
      *
@@ -165,9 +166,7 @@ abstract class Q
             $cache->set($id, $data, $policy);
         }
     }
-    // }}}
 
-    // {{{ removeCache()
     /**
      * 删除指定的缓存内容
      *
@@ -184,9 +183,26 @@ abstract class Q
         }
         $cache->remove($id, $policy);
     }
-    // }}}
 
-    // {{{ loadClass()
+    /**
+     * 载入特定文件，并检查是否包含指定类的定义
+     *
+     * @param string $filename
+     * @param string|array $dirs
+     * @param string $class_name
+     */
+    static function loadClassFile($filename, $dirs, $class_name)
+    {
+        if (class_exists($class_name, false) || interface_exists($class_name, false)) {
+            return;
+        }
+        Q::loadFile($filename, true, $dirs);
+        if (!class_exists($class_name, false) && !interface_exists($class_name, false)) {
+            // LC_MSG: %s "%s" not defined in file "%s".
+            throw new QException(__('Class "%s" not defined in file "%s".', $class_name, $filename));
+        }
+    }
+
     /**
      * 载入指定类的定义文件，如果载入失败抛出异常
      *
@@ -201,14 +217,10 @@ abstract class Q
      * loadClass() 会首先尝试从开发者指定的搜索路径中查找类的定义文件。
      * 搜索路径可以用 Q::import() 添加。
      *
-     * 如果 $prefix 参数不为空，则会在搜索类定义文件路径中添加 $prefix 指定的目录名。
-     *
      * @param string $className 要载入的类名字
      * @param string|array $dirs
-     * @param string $prefix
-     * @param string $suffix
      */
-    static function loadClass($class_name, $dirs = null, $prefix = null, $suffix = null)
+    static function loadClass($class_name, $dirs = null)
     {
         if (class_exists($class_name, false) || interface_exists($class_name, false)) {
             return;
@@ -216,34 +228,29 @@ abstract class Q
 
         $class_name = strtolower($class_name);
         $filename = str_replace('_', DS, $class_name);
-        if (!is_null($prefix)) {
-            $prefix = strtolower(str_replace('_', DS, $prefix));
-            $filename = trim($prefix, '\\/') . DS . dirname($filename) . DS . basename($filename);
-        }
-
-        if (!is_null($suffix)) {
-            $suffix = strtolower(str_replace('_', DS, $suffix));
-            $filename = dirname($filename) . DS . trim($suffix, '\\/') . DS . basename($filename);
-        }
 
         if ($filename != $class_name) {
             $dirname = dirname($filename);
-            if (!is_array($dirs)) {
-                if (empty($dirs)) {
-                    $dirs = array();
-                } else {
-                    $dirs = explode(PATH_SEPARATOR, $dirs);
+            if (!empty($dirs)) {
+                if (!is_array($dirs)) {
+                    if (empty($dirs)) {
+                        $dirs = array();
+                    } else {
+                        $dirs = explode(PATH_SEPARATOR, $dirs);
+                    }
                 }
-            }
-            foreach ($dirs as $offset => $dir) {
-                $dirs[$offset] = $dir . DS . $dirname;
-            }
-            foreach (self::$class_path as $dir) {
-                if ($dir == '.') {
-                    $dirs[] = $dirname;
-                } else {
-                    $dir = rtrim($dir, '\\/');
-                    $dirs[] = $dir . DS . $dirname;
+                foreach ($dirs as $offset => $dir) {
+                    $dirs[$offset] = $dir . DS . $dirname;
+                }
+            } else {
+                $dirs = array();
+                foreach (self::$class_path as $dir) {
+                    if ($dir == '.') {
+                        $dirs[] = $dirname;
+                    } else {
+                        $dir = rtrim($dir, '\\/');
+                        $dirs[] = $dir . DS . $dirname;
+                    }
                 }
             }
             $filename = basename($filename) . '.php';
@@ -252,17 +259,9 @@ abstract class Q
             $filename .= '.php';
         }
 
-        try {
-            self::loadFile($filename, false, $dirs);
-        } catch (QException $ex) {
-            unset($ex);
-            // LC_MSG: Not found class "%s".
-            throw new QException(__('Not found class "%s".', $class_name));
-        }
+        self::loadClassFile($filename, $dirs, $class_name);
     }
-    // }}}
 
-    // {{{ loadFile()
     /**
      * 载入指定的文件
      *
@@ -325,9 +324,7 @@ abstract class Q
 
         return false;
     }
-    // }}}
 
-    // {{{ getSingleton()
     /**
      * 返回指定对象的唯一实例，如果指定类无法载入或不存在，则抛出异常
      *
@@ -343,9 +340,7 @@ abstract class Q
         self::loadClass($class_name);
         return self::register(new $class_name(), $class_name);
     }
-    // }}}
 
-    // {{{ register()
     /**
      * 以特定名字注册一个对象，以便稍后用 registry() 方法取回该对象。
      * 如果指定名字已经被使用，则抛出异常
@@ -400,9 +395,7 @@ abstract class Q
         self::$objects[$name] = $obj;
         return $obj;
     }
-    // }}}
 
-    // {{{ registry()
     /**
      * 取得指定名字的对象实例，如果指定名字的对象不存在则抛出异常
      *
@@ -418,9 +411,7 @@ abstract class Q
         // LC_MSG: No object is registered of name "%s".
         throw new QException(__('No object is registered of name "%s".', $name));
     }
-    // }}}
 
-    // {{{ isRegistered()
     /**
      * 检查指定名字的对象是否已经注册
      *
@@ -432,9 +423,7 @@ abstract class Q
     {
         return isset(self::$objects[$name]);
     }
-    // }}}
 
-    // {{{ import()
     /**
      * 导入文件搜索路径
      *
@@ -459,9 +448,7 @@ abstract class Q
             self::$class_path[$dir] = realpath($dir);
         }
     }
-    // }}}
 
-    // {{{ isReadable()
     /**
      * 检查指定文件是否可读
      *
@@ -487,9 +474,7 @@ abstract class Q
 
         return false;
     }
-    // }}}
 
-    // {{{ normalize()
     /**
      * 对输入的数组或字符串进行规格化
      *
@@ -505,9 +490,7 @@ abstract class Q
         $input = array_map('trim', $input);
         return array_filter($input, 'strlen');
     }
-    // }}}
 
-    // {{{ loadYAML()
     /**
      * 载入 YAML 文件，返回分析结果
      *
@@ -534,81 +517,57 @@ abstract class Q
      *
      * 这样可以确保即便浏览器直接访问该 .yaml.php 文件，也无法看到内容。
      *
-     * 当 $cache 为 true 时，将使用默认设置对载入的 YAML 内容进行缓存。
-     * 如果希望自行指定缓存策略以及要使用的缓存服务，可以将 $cache 参数设置为
-     * $cache = array($policy, $backend)。
-     *
-     * 当 $cache 为 false 时，将不会对载入的 YAML 内容进行缓存。
-     *
      * @param string $filename
      * @param array $replace 对于 YAML 内容要进行自动替换的字符串对
-     * @param boolean $cache 缓存设置
      *
      * @return array
      */
-    static function loadYAML($filename, $replace = null, $cache = true)
+    static function loadYAML($filename, $replace = null)
     {
         static $callback;
-
-        if (is_array($cache)) {
-            if (isset($cache[0])) {
-                $policy = $cache[0];
-            } else {
-                $policy = self::getIni('default_yaml_cache_policy');
-            }
-            if (isset($cache[1])) {
-                $backend = $cache[1];
-            } else {
-                $backend = null;
-            }
-            $cache_enabled = true;
-        } elseif ($cache) {
-            $cache_enabled = true;
-            $policy = self::getIni('default_yaml_cache_policy');
-            $backend = null;
-        } else {
-            $cache_enabled = false;
-        }
-
-        if ($cache_enabled) {
-            $yaml = self::getCache('YAML-' . $filename, $policy);
-            if ($yaml) { return $yaml; }
-        }
 
         if (!Q::isReadable($filename)) {
             // LC_MSG: File "%s" not found.
             throw new QException(__('File "%s" not found.', $filename));
         }
 
-        self::loadFile('spyc.php', true, Q_DIR . DS . '_vendor');
+        if (!class_exists('Spyc', false)) {
+            self::loadFile('spyc.php', true, Q_DIR . DS . '_vendor');
+        }
         $yaml = Spyc::YAMLLoad($filename);
 
         if (is_null($callback)) {
             $callback = create_function('& $v, $key, $replace', 'foreach ($replace as $search => $rep) { $v = str_replace($search, $rep, $v); }; return $v;');
         }
         array_walk_recursive($yaml, $callback, $replace);
-
-        if ($cache_enabled) {
-            self::setCache('yaml:' . $filename, $yaml, $policy, $backend);
-        }
         return $yaml;
     }
-    // }}}
 
-    // {{{ dumpAllIni()
     /**
-     * 返回所有的设置值
+     * 载入特定的表数据入口
      *
-     * @return array
+     * @param string $table_class
      */
-    static function dumpAllIni()
+    static function loadTable($table_class)
     {
-        return self::$config;
+        $request = self::registry('current_request');
+        if (is_object($request)) {
+            /* @var $request QRequest */
+            $module = $request->getModuleNmae();
+
+            if ($module) {
+                $dir = ROOT_DIR . '/module/' . $module;
+            } else {
+                $dir = ROOT_DIR . '/app';
+            }
+            $filename = str_replace('_', DS, strtolower($table_class)) . '_table.php';
+            self::loadClassFile($filename, array($dir), $table_class);
+        } else {
+            self::loadClass($table_class);
+        }
     }
-    // }}}
 }
 
-// {{{ __()
 /**
  * QeePHP 内部使用的多语言翻译函数
  *
@@ -628,5 +587,3 @@ function __()
     array_unshift($args, $msg);
     return call_user_func_array('sprintf', $args);
 }
-// }}}
-

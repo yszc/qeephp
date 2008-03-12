@@ -47,6 +47,24 @@ class QColl implements Iterator, ArrayAccess, Countable
     }
 
     /**
+     * 遍历集合中的所有对象，返回包含特定属性值的数组
+     *
+     * @param string $field
+     *
+     * @return array
+     */
+    function values($field)
+    {
+        $return = array();
+        foreach (array_keys($this->coll) as $offset) {
+            if (isset($this->coll[$offset]->{$field})) {
+                $return[] = $this->coll[$offset]->{$field};
+            }
+        }
+        return $return;
+    }
+
+    /**
      * 检查指定索引的元素是否存在
      *
      * @param mixed $offset

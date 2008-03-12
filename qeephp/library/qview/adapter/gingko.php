@@ -94,26 +94,24 @@ class QView_Adapter_Gingko extends QView_Adapter_Abstract
      */
     function fetch($viewname)
     {
-        $viewname = str_replace('_', DS, $viewname);
-        if (empty($this->template_dir)) {
-            if ($this->module) {
-                $root = ROOT_DIR . DS . 'module' . DS . 'view' . DS;
-            } else {
-                $root = ROOT_DIR . DS . 'app' . DS . 'view' . DS;
-            }
-            if ($this->namespace) {
-                $root .= $this->namespace . DS;
-            }
-            $this->template_dir = $root;
-            $___filename = $this->template_dir . $viewname . '.html';
-        } else {
-            $___filename = rtrim($this->template_dir, '/\\') . DS . $viewname . '.html';
-        }
+        $___filename = $this->getFilename($viewname);
         ob_start();
         extract($this->vars);
         require $___filename;
         $content = ob_get_clean();
         return $this->filter($content);
+    }
+
+    /**
+     * 检查指定的视图是否存在
+     *
+     * @param string $viewname
+     *
+     * @return boolean
+     */
+    function exists($viewname)
+    {
+        return Q::isReadable($this->getFilename($viewname));
     }
 
     /**
@@ -133,15 +131,43 @@ class QView_Adapter_Gingko extends QView_Adapter_Abstract
      */
     function __get($varname)
     {
-        if (isset($this->controller->helpers[$varname])) {
-            $class_name = 'Helper_' . ucfirst($varname);
-        } else {
-            // LC_MSG: Property "%s" not defined.
-            throw new QException(__('Property "%s" not defined.', $varname));
-        }
+        return $this->controller->{$varname};
+    }
 
-        Q::loadClass($class_name, null, 'QController');
-        $this->{$varname} = new $class_name($this->controller);
-        return $this->{$varname};
+    /**
+     * 获得视图对应的文件名
+     *
+     * @param string $viewname
+     *
+     * @return string
+     */
+    private function getFilename($viewname)
+    {
+        if (empty($this->template_dir)) {
+            if ($this->module) {
+                $root = ROOT_DIR . DS . 'module' . DS . 'view' . DS;
+            } else {
+                $root = ROOT_DIR . DS . 'app' . DS . 'view' . DS;
+            }
+            if ($this->namespace) {
+                $root .= $this->namespace . DS;
+            }
+            $this->template_dir = $root;
+            return $this->template_dir . $viewname . '.html';
+        } else {
+            return rtrim($this->template_dir, '/\\') . DS . $viewname . '.html';
+        }
+    }
+
+    protected function include_file($viewname)
+    {
+        echo $this->fetch($viewname);
+    }
+
+    protected function control($type, $name, array $attribs = null)
+    {
+        $ui = Q::getSingleton('QWebControls');
+        /* @var $ui QWebControls */
+        echo $ui->control($type, $name, $attribs);
     }
 }

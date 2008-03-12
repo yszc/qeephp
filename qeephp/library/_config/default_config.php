@@ -9,10 +9,8 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * “调试”模式的 QeePHP 应用程序的默认设置
+ * QeePHP 默认设置
  *
- * @copyright Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
- * @author 起源科技 (www.qeeyuan.com)
  * @package Config
  * @version $Id$
  */
@@ -46,9 +44,48 @@ return array(
     'module_accessor'           => 'module',
     'default_module'            => null,
 
-    'dispatcher'                => 'QDispatcher',
-    'on_access_denied'          => array('QExpress', 'on_access_denied'),
-    'on_action_not_found'       => array('QExpress', 'on_page_not_found'),
+    /**
+     * 指示要使用的调度器
+     */
+    'dispatcher_class'          => 'QDispatcher',
+
+    /**
+     * 指示要使用的请求对象
+     */
+    'requiest_class'            => 'QRequest',
+
+    /**
+     * 是否启动session_start，对负载有影响，建议关闭。如果需要验证等功能，请使用cookie代替
+     */
+    'auto_session'              => false,
+
+    /**
+     * 调度器要使用的验证服务提供程序
+     */
+    'dispatcher_acl_class'      => 'QACL',
+
+    /**
+     * 指示当没有为控制器提供 ACT 时，要使用的默认 ACT
+     */
+    'default_act'               => array('allow' => 'acl_everyone'),
+
+    /**
+     * 全局 ACT，当没有指定 ACT 时则从全局 ACT 中查找指定控制器的 ACT
+     */
+    'global_act'                => null,
+
+    /**
+     * 指示 ACL 组件用什么键名在 session 中保存用户数据
+     *
+     * 如果在一个域名下同时运行多个应用程序，
+     * 请务必为每一个应用程序使用自己独一无二的键名
+     */
+    'acl_session_key'           => 'acl_userdata',
+
+    /**
+     * 指示 ACL 组件用什么键名在 session 中保存用户角色信息
+     */
+    'acl_roles_key'             => 'acl_roles',
 
     /**
      * url 参数的传递模式，可以是标准、PATHINFO、URL 重写等模式
@@ -59,15 +96,6 @@ return array(
      * 指示默认的应用程序入口文件名
      */
     'url_bootstrap'             => 'index.php',
-
-    /**
-     * 指示在生成 url 时，是否总是使用应用程序入口文件名，仅限 standard 模式
-     *
-     * 如果该设置为 false，则生成的 url 类似：
-     *
-     * http://www.example.com/?controller=xxx&action=yyy
-     */
-    'url_always_use_bootstrap'  => true,
 
     /**
      * QeePHP 内部及 cache 系列函数使用的缓存目录
@@ -147,39 +175,6 @@ return array(
      * 指示是否启用多语言支持
      */
     'multi_languages'           => false,
-
-    /**
-     * 是否启动session_start，对负载有影响，建议关闭。如果需要验证等功能，请使用cookie代替
-     */
-    'auto_session'              => false,
-
-    /**
-     * 调度器要使用的验证服务提供程序
-     */
-    'dispatcher_acl_provider'   => 'QACL',
-
-    /**
-     * 指示当没有为控制器提供 ACT 时，要使用的默认 ACT
-     */
-    'default_act'               => array('allow' => 'acl_everyone'),
-
-    /**
-     * 全局 ACT，当没有指定 ACT 时则从全局 ACT 中查找指定控制器的 ACT
-     */
-    'global_act'                => null,
-
-    /**
-     * 指示 ACL 组件用什么键名在 session 中保存用户数据
-     *
-     * 如果在一个域名下同时运行多个应用程序，
-     * 请务必为每一个应用程序使用自己独一无二的键名
-     */
-    'acl_session_key'           => 'ACL_USERDATA',
-
-    /**
-     * 指示 ACL 组件用什么键名在 session 中保存用户角色信息
-     */
-    'acl_roles_key'             => 'ACL_ROLES',
 
     // }}}
 

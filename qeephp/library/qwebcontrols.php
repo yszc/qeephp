@@ -49,11 +49,8 @@ class QWebControls
      */
     function __construct()
     {
-        $this->add_ext_dir(Q::getIni('webcontrols_ext_dir'));
-        $this->add_ext_dir(Q_DIR . '/_webcontrols');
-        if (defined('EXPRESS_MODE')) {
-            $this->load('standard');
-        }
+        $this->addExtDir(Q::getIni('webcontrols_ext_dir'));
+        $this->addExtDir(Q_DIR . '/_webcontrols');
     }
 
     /**
@@ -61,7 +58,7 @@ class QWebControls
      *
      * @param array|string $dirs
      */
-    function add_ext_dir($dirs)
+    function addExtDir($dirs)
     {
         if (!is_array($dirs)) {
             $dirs = explode(PATH_SEPARATOR, $dirs);
@@ -78,12 +75,8 @@ class QWebControls
      */
     function load($libname)
     {
-        static $loaded = array();
-
-        if (isset($loaded[$libname])) { return; }
         $filename = 'controls.' . strtolower($libname) . '.php';
-        Q::load_file($filename, true, $this->dirs, true);
-        $loaded[$libname] = true;
+        Q::loadFile($filename, true, $this->dirs, true);
     }
 
     /**
@@ -99,6 +92,9 @@ class QWebControls
     function control($type, $name, $attribs = null, $return = false)
     {
         $function = 'ctl_' . strtolower($type);
+        if (!function_exists($function)) {
+            $this->load($type);
+        }
         if (function_exists($function)) {
             $attribs = (array)$attribs;
             if ($return) { ob_start(); }
@@ -110,7 +106,8 @@ class QWebControls
                 return '';
             }
         } else {
-            throw new Exception('Invalid QWebControls type : ' . $type);
+            // LC_MSG: Invalid QWebControls type "%s".
+            throw new QException(__('Invalid QWebControls type "%s".', $type));
         }
     }
 
