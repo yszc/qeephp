@@ -29,12 +29,38 @@ error_reporting(E_ALL | E_STRICT);
  */
 define('RUN_MODE', 'devel');
 
+
+/*******************************************************************************
+ * 使用绝对路径载入 QeePHP 框架文件
+ *******************************************************************************/
+
 /**
- * 载入 QeePHP 框架
+ * 定义常量，指示 QeePHP 框架根目录
  *
  * 如果改动了 QeePHP 框架文件所在位置，需要修改下面的常量定义。
  */
 define('QEEPHP_INST_DIR', '%QEEPHP_INST_DIR%');
+
+/**
+ * 载入 QeePHP 框架
+ */
+require QEEPHP_INST_DIR . '/library/q.php';
+
+
+/*******************************************************************************
+ * 如果已经将 QeePHP 框架文件所在位置加入了 include_path，那么使用下面的代码
+ *******************************************************************************/
+
+/**
+ * 载入 QeePHP 框架
+ */
+# require 'library/q.php';
+
+/**
+ * 定义常量，指示 QeePHP 框架根目录
+ */
+# define('QEEPHP_INST_DIR', dirname(Q_DIR));
+
 
 /**
  * 定义缓存配置文件要使用的缓存服务
@@ -42,11 +68,6 @@ define('QEEPHP_INST_DIR', '%QEEPHP_INST_DIR%');
  * 默认使用 QCache_File 来缓存配置文件。
  */
 define('CONFIG_CACHE_BACKEND', 'QCache_File');
-
-/**
- * 载入 QeePHP 框架
- */
-require QEEPHP_INST_DIR . '/library/q.php';
 
 // 定义应用程序根目录
 define('ROOT_DIR', dirname(dirname(__FILE__)));
