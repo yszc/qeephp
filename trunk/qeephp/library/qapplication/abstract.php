@@ -9,56 +9,90 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 QDispatcher 类
+ * 定义 QApplication_Abstract 类
  *
  * @package mvc
  * @version $Id$
  */
 
 /**
- * QDispatcher 分析 HTTP 请求，并转发到合适的 QController_Abstract 继承类实例处理
+ * QApplication_Abstract 提供应用程序级别的访问点
+ *
+ * QApplication_Abstract 实际上是一个前端控制器，负责解析请求，并调用相应的控制器动作。
  *
  * @package mvc
  */
-class QDispatcher
+abstract class QApplication_Abstract
 {
     /**
-     * 封装请求信息的 QRequest 对象
+     * QRequest 对象，封装当前的请求
      *
      * @var QRequest
      */
-    protected $request;
+    public $request;
+
+    /**
+     * 日志对象
+     *
+     * @var QLog
+     */
+    public $log;
 
     /**
      * 用于提供验证服务的对象实例
      *
      * @var QACL
      */
-    protected $acl;
+    public $acl;
+
+    /**
+     * 当前访问的控制器
+     *
+     * @var QController_Abstract
+     */
+    public $current_controller;
 
     /**
      * 构造函数
-     *
-     * @param QRequest $request
      */
-    function __construct(QRequest $request)
+    protected function __construct()
     {
-        $this->request = $request;
-        $this->acl = Q::getSingleton(Q::getIni('dispatcher_acl_class'));
+        Q::register($this, 'app');
+
+        require_once Q_DIR . '/qdebug.php';
+
+        Q::setIni(Q::loadFile('default_config.php', false, Q_DIR . DS . '_config'));
+        set_exception_handler(array($this, 'exceptionHandler'));
+        spl_autoload_register(array('Q', 'loadClass'));
+        set_magic_quotes_runtime(0);
+        date_default_timezone_set(Q::getIni('default_timezone'));
+
+        $this->log = Q::getSingleton(Q::getIni('log_provider'));
+        $this->request = Q::getSingleton(Q::getIni('request_class'));
+        $this->acl = Q::getSingleton(Q::getIni('request_acl_class'));
+
+        if (Q::getIni('session_provider')) {
+            Q::loadClass(Q::getIni('session_provider'));
+        }
+        if (Q::getIni('auto_session')) {
+            session_start();
+        }
+
+        // 设置调度错误处理例程
+        Q::setIni('on_access_denied', array($this, 'onAccessDenied'));
+        Q::setIni('on_action_not_found', array($this, 'onActionNotFound'));
     }
 
     /**
-     * 执行控制器及动作
-     *
-     * @return mixed
+     * QeePHP 应用程序 MVC 模式入口
      */
-    function dispatching()
+    function run()
     {
         $this->executeAction(
             $this->request->getControllerName(),
             $this->request->getActionName(),
             $this->request->getNamespace(),
-            $this->request->getModuleNmae()
+            $this->request->getModuleName()
         );
     }
 
@@ -72,11 +106,12 @@ class QDispatcher
      *
      * @return mixed
      */
-    function executeAction($controller_name, $action_name, $namespace, $module)
+    function executeAction($controller_name, $action_name, $namespace = null, $module = null)
     {
         // 检查是否有权限访问
+        $arr = array($controller_name, $action_name, $namespace, $module);
         if (!$this->checkAuthorized($controller_name, $action_name, $namespace, $module)) {
-            return call_user_func_array(Q::getIni('on_access_denied'), array($controller_name, $action_name, $namespace, $module));
+            return call_user_func_array(Q::getIni('on_access_denied'), $arr);
         }
 
         // 尝试载入控制器
@@ -92,12 +127,16 @@ class QDispatcher
 
         // 构造控制器对象
         $filename = $controller_name . '_controller.php';
-        Q::loadClassFile($filename, array($dir), $class_name);
+        try {
+            Q::loadClassFile($filename, array($dir), $class_name);
+        } catch (Exception $ex) {
+            unset($ex);
+            return call_user_func_array(Q::getIni('on_action_not_found'), $arr);
+        }
 
-        $controller = new $class_name($this->request);
+        $controller = new $class_name($this);
         /* @var $controller QController_Abstract */
 
-        Q::register($controller, 'current_controller');
         $ret = $controller->execute($action_name, $namespace, $module);
 
         if (is_object($ret) && ($ret instanceof QResponse_Interface)) {
@@ -129,7 +168,7 @@ class QDispatcher
      *
      * @return boolean
      */
-    function checkAuthorized($controller_name, $action_name, $namespace, $module)
+    function checkAuthorized($controller_name, $action_name, $namespace = null, $module = null)
     {
         // 如果控制器没有提供 ACT，或者提供了一个空的 ACT，则假定允许用户访问
         $raw_act = $this->getControllerACT($controller_name);
@@ -160,40 +199,6 @@ class QDispatcher
         // 如果当前要访问的控制器方法没有在 act 中指定，则检查 act 中是否提供了 ACTION_ALL
         if (!isset($act['actions']['action_all'])) { return true; }
         return $this->acl->check($roles, $act['actions']['action_all']);
-    }
-
-    /**
-     * 从请求中取得 Controller 名字
-     *
-     * 如果没有指定 Controller 名字，则返回配置文件中定义的默认 Controller 名字。
-     *
-     * @return string
-     */
-    function getControllerName()
-    {
-        return $this->controller_name;
-    }
-
-    /**
-     * 从请求中取得 Action 名字
-     *
-     * 如果没有指定 Action 名字，则返回配置文件中定义的默认 Action 名字。
-     *
-     * @return string
-     */
-    function getActionName()
-    {
-        return $this->action_name;
-    }
-
-    /**
-     * 返回当前使用的验证服务对象
-     *
-     * @return QACL
-     */
-    function getACL()
-    {
-        return $this->acl;
     }
 
     /**
@@ -260,5 +265,19 @@ class QDispatcher
         $roles = isset($user[$key]) ? $user[$key] : '';
         return explode(',', $roles);
     }
-}
 
+    /**
+     * 默认的 on_access_denied 事件处理函数
+     */
+    abstract function onAccessDenied($controller_name, $action_name, $namespace = null, $module = null);
+
+    /**
+     * 默认的 on_action_not_found 事件处理函数
+     */
+    abstract function onActionNotFound($controller_name, $action_name, $namespace = null, $module = null);
+
+    /**
+     * 默认的异常处理
+     */
+    abstract function exceptionHandler(Exception $ex);
+}

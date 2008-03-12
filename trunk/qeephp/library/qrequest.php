@@ -29,40 +29,40 @@ class QRequest
      *
      * @var array
      */
-    protected $params = array();
+    public $params = array();
 
     /**
      * 请求包含的控制器名称
      *
      * @var string
      */
-    protected $controller_name;
+    public $controller_name;
 
     /**
      * 请求包含的动作名
      *
      * @var string
      */
-    protected $action_name;
+    public $action_name;
 
     /**
      * 请求包含的模块名
      *
      * @var string
      */
-    protected $module_name;
+    public $module_name;
 
     /**
      * 请求包含的命名空间
      *
      * @var string
      */
-    protected $namespace;
+    public $namespace;
 
     /**
      * 构造函数
      */
-    protected function __construct()
+    function __construct()
     {
         if (get_magic_quotes_gpc()) {
             $in = array(& $_GET, & $_POST, & $_COOKIE, & $_REQUEST);
@@ -116,20 +116,6 @@ class QRequest
         $this->action_name = strtolower(preg_replace('/[^a-z0-9_]+/i', '', $this->action_name));
         $this->module_name = strtolower(preg_replace('/[^a-z0-9_]+/i', '', $this->module_name));
         $this->namespace = strtolower(preg_replace('/[^a-z0-9_]+/i', '', $this->namespace));
-    }
-
-    /**
-     * 获得 QRequest 的唯一实例
-     *
-     * @return QRequest
-     */
-    static function instance()
-    {
-        static $instance = null;
-        if (!$instance) {
-            $instance = new QRequest();
-        }
-        return $instance;
     }
 
     /**
@@ -560,7 +546,7 @@ class QRequest
      *
      * @return string
      */
-    function getModuleNmae()
+    function getModuleName()
     {
         return $this->module_name;
     }

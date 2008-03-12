@@ -28,6 +28,7 @@ define('DS', DIRECTORY_SEPARATOR);
 
 // {{{ includes
 require Q_DIR . DS . 'qexception.php';
+Q::import(Q_DIR);
 // }}}
 
 /**
@@ -553,7 +554,7 @@ abstract class Q
         $request = self::registry('current_request');
         if (is_object($request)) {
             /* @var $request QRequest */
-            $module = $request->getModuleNmae();
+            $module = $request->getModuleName();
 
             if ($module) {
                 $dir = ROOT_DIR . '/module/' . $module;
