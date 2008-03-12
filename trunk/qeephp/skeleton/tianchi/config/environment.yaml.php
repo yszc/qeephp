@@ -35,7 +35,7 @@ view_adapter:           QView_Adapter_Gingko
 
 # QWebControls 扩展控件的保存目录
 webcontrols_ext_dir:
-    - %ROOT_DIR%/app/webcontrols
+    - %ROOT_DIR%/app/ui
 
 # 指示 QeePHP 应用程序内部处理数据和输出内容要使用的编码
 response_charset:       utf-8

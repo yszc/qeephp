@@ -80,7 +80,7 @@ class QResponse_Render
         }
         $this->namespace = $namespace;
         $this->module = $module;
-        $this->layouts = 'layouts_default';
+        $this->layouts = '_layouts/default_layout';
     }
 
     /**
@@ -115,8 +115,13 @@ class QResponse_Render
         $adapter->namespace = $this->namespace;
         $adapter->filters[] = new QFilter_View_Macros();
         $adapter->assign($this->data);
-        $content_for_layouts = $adapter->fetch($this->viewname);
-        $adapter->assign('content_for_layouts', $content_for_layouts);
-        $adapter->display($this->layouts);
+
+        if ($adapter->exists($this->layouts)) {
+            $content_for_layouts = $adapter->fetch($this->viewname);
+            $adapter->assign('contents_for_layouts', $content_for_layouts);
+            $adapter->display($this->layouts);
+        } else {
+            $adapter->display($this->viewname);
+        }
     }
 }

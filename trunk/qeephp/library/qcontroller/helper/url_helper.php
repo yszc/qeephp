@@ -34,7 +34,7 @@ class Helper_Url
      *
      * @param QController_Abstract $controller
      */
-    function __construct(QController_Abstract $controller)
+    function __construct(QController_Abstract $controller = null)
     {
         $this->controller = $controller;
     }
@@ -60,14 +60,15 @@ class Helper_Url
         if (is_null($module)) {
             $module = $this->controller->request->getModuleNmae();
         }
+        if (is_null($controller_name) && !is_null($this->controller)) {
+            $controller_name = $this->controller->request->getControllerName();
+        }
 
         // 确定控制器和动作的名字
-        $controller_name = empty($controller_name) ?
-            strtolower(Q::getIni('default_controller')) :
-            strtolower($controller_name);
-        $action_name = empty($action_name) ?
-            strtolower(Q::getIni('default_action')) :
-            strtolower($action_name);
+        $controller_name = empty($controller_name) ? Q::getIni('default_controller') : $controller_name;
+        $action_name = empty($action_name) ? Q::getIni('default_action') : $action_name;
+        $controller_name = strtolower($controller_name);
+        $action_name = strtolower($action_name);
 
         $url = $baseuri . '?' . Q::getIni('controller_accessor'). '=' . $controller_name;
         $url .= '&' . Q::getIni('action_accessor') . '=' . $action_name;

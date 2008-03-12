@@ -25,30 +25,18 @@ require dirname(__FILE__) . DIRECTORY_SEPARATOR . 'q.php';
  */
 define('Q_EXPRESS', true);
 
+require Q_DIR . DS . 'qdebug.php';
+
 if (!defined('Q_RUN_MODE')) {
     define('Q_RUN_MODE', 'debug');
 }
 
-switch (Q_RUN_MODE) {
-case 'deploy':
-    Q::setIni(Q::loadFile('deploy_mode_config.php', false, Q_DIR . DS . '_config'));
-    break;
-case 'test':
-    require Q_DIR . DS . 'qdebug.php';
-    Q::setIni(Q::loadFile('test_mode_config.php', false, Q_DIR . DS . '_config'));
-    break;
-case 'debug':
-default:
-    require Q_DIR . DS . 'qdebug.php';
-    Q::setIni(Q::loadFile('debug_mode_config.php', false, Q_DIR . DS . '_config'));
-}
-
+Q::setIni(Q::loadFile('default_config.php', false, Q_DIR . DS . '_config'));
 error_reporting(E_ALL | E_STRICT);
 set_exception_handler(array('QExpress', 'exceptionHandler'));
 
 // 允许 QeePHP 自动载入需要的类
 Q::import(Q_DIR);
-
 if (function_exists('spl_autoload_register')) {
     spl_autoload_register(array('Q', 'loadClass'));
 } elseif (!function_exists('__autoload')) {
@@ -79,13 +67,17 @@ class QExpress
         if (Q::getIni('url_mode') != 'standard') {
             $router = Q::getSingleton('QRouter');
             /* @var $router QRouter */
-            $router->import(Q::getIni('routes'));
+            $router->import((array)Q::getIni('routes'));
             $router->parse();
         }
 
         // 载入调度器并转发请求到控制器
-        $dispatcher_class = Q::getIni('dispatcher');
-        $dispatcher = new $dispatcher_class(QRequest::instance());
+        $dispatcher_class = Q::getIni('dispatcher_class');
+        $request_class = Q::getIni('requiest_class');
+        $request = call_user_func(array($request_class, 'instance'));
+        Q::register($request, 'current_request');
+        $dispatcher = new $dispatcher_class($request);
+        /* @var $dispatcher QDispatcher */
         Q::register($dispatcher, 'current_dispatcher');
         Q::register($dispatcher, $dispatcher_class);
 

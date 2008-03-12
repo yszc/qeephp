@@ -209,6 +209,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
                         $msg = 'Property "%s" type mismatch. expected is "%s", actual is "%s".';
                         throw new QDB_ActiveRecord_Exception(__($msg, "\$row[{$field}]", 'array', gettype($row[$field])));
                     } else {
+                        $this->__props[$field] = new QColl($define['class']);
                         foreach ($row[$field] as $assoc_row) {
                             $this->__props[$field][] = new $define['class']($assoc_row);
                         }

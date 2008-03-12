@@ -48,6 +48,7 @@ require QEEPHP_INST_DIR . '/library/qexpress.php';
 define('ROOT_DIR', dirname(dirname(__FILE__)));
 
 // 导入应用程序目录，以便 Q::loadClass() 能够加载类定义文件
+Q::import(ROOT_DIR . DS . 'app' . DS . 'model');
 Q::import(ROOT_DIR . DS . 'app');
 
 /**
@@ -83,20 +84,44 @@ function load_boot_config($reload = false)
         if (is_array($config)) { return $config; }
     }
 
+    // 载入默认模块的配置
+    $config = load_module_config(null);
+
+    // 写入缓存
+    Q::setCache($cacheid, $config, $policy, CONFIG_CACHE_BACKEND);
+    return $config;
+}
+
+
+/**
+ * 载入指定模块的配置
+ *
+ * @param string $module
+ *
+ * @return array
+ */
+function load_module_config($module)
+{
     // 载入配置文件，并替换配置文件中的宏
-    $replace = array('%ROOT_DIR%' => ROOT_DIR);
+    if ($module) {
+        $module = strtolower(preg_replace('/[^a-z0-9_]+/i', '', $module));
+        $root = ROOT_DIR . '/module/' . $module;
+    } else {
+        $root = ROOT_DIR;
+    }
+
     $files = array(
-        ROOT_DIR . '/config/environment.yaml.php'                   => 'global',
-        ROOT_DIR . '/config/database.yaml.php'                      => 'dsn_pool',
-        ROOT_DIR . '/config/routes.yaml.php'                        => 'routes',
-        ROOT_DIR . '/config/acl.yaml.php'                           => 'global_act',
-        ROOT_DIR . '/config/environments/' . RUN_MODE . '.yaml.php' => 'global',
+        $root . '/config/environment.yaml.php'                   => 'global',
+        $root . '/config/database.yaml.php'                      => 'dsn_pool',
+        $root . '/config/acl.yaml.php'                           => 'global_act',
+        $root . '/config/environments/' . RUN_MODE . '.yaml.php' => 'global',
     );
+    $replace = array('%ROOT_DIR%' => ROOT_DIR);
 
     $config = array();
     foreach ($files as $filename => $namespace) {
         if (!file_exists($filename)) { continue; }
-        $contents = Q::loadYAML($filename, $replace, false);
+        $contents = Q::loadYAML($filename, $replace);
         if ($namespace == 'global') {
             $config = array_merge_recursive($config, $contents);
         } else {
@@ -108,10 +133,9 @@ function load_boot_config($reload = false)
     }
     $config['dsn'] = $config['dsn_pool'][RUN_MODE];
 
-    // 写入缓存
-    Q::setCache($cacheid, $config, $policy, CONFIG_CACHE_BACKEND);
     return $config;
 }
+
 
 // 载入配置
 Q::setIni(load_boot_config());
