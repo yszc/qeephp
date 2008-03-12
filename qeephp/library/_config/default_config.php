@@ -118,6 +118,11 @@ return array(
      */
     'default_timezone'          => 'Asia/Shanghai',
 
+    /**
+     * 第三方库的保存目录
+     */
+    'vendor_ext_dir'       => array(Q_DIR . DS . '_vendor'),
+
     // }}}
 
     // {{{ 数据库相关

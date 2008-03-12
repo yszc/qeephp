@@ -153,9 +153,9 @@ class QView_Adapter_Gingko extends QView_Adapter_Abstract
                 $root .= $this->namespace . DS;
             }
             $this->template_dir = $root;
-            return $this->template_dir . $viewname . '.html';
+            return $this->template_dir . $viewname . '.php';
         } else {
-            return rtrim($this->template_dir, '/\\') . DS . $viewname . '.html';
+            return rtrim($this->template_dir, '/\\') . DS . $viewname . '.php';
         }
     }
 

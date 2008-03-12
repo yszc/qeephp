@@ -59,11 +59,9 @@ abstract class QApplication_Abstract
     {
         require_once Q_DIR . '/qdebug.php';
         Q::register($this, 'app');
-        Q::setIni(Q::loadFile('default_config.php', false, Q_DIR . DS . '_config'));
         load_boot_config();
 
         set_exception_handler(array($this, 'exceptionHandler'));
-        spl_autoload_register(array('Q', 'loadClass'));
         set_magic_quotes_runtime(0);
         date_default_timezone_set(Q::getIni('default_timezone'));
 

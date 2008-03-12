@@ -15,10 +15,6 @@
  * @version $Id$
  */
 
-// {{{ includes
-require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'abstract.php';
-// }}}
-
 /**
  * QGenerator_Runner_Cli 实现了一个命令行接口的代码生成器入口
  *
@@ -82,19 +78,23 @@ class QGenerator_Runner_Cli extends QGenerator_Runner_Abstract
 
 scripts/generator <type> <....>
 
-example:
+syntax:
+    php scripts/generate.php controller <[namespace::]controller name> [-m module]
+    php scripts/generate.php table <database table name> [table class name] [-m module]
+    php scripts/generate.php model <class name> <database table name | table class name> [-m module]
+
+examples:
+    php scripts/generate.php controller posts
+    php scripts/generate.php controller admin::posts
+
+    php scripts/generate.php table posts
+    php scripts/generate.php table q_contents Table_Contents
+
+    php scripts/generate.php model post posts
+    php scripts/generate.php model post Table_Posts
+
 
 EOT;
 
-        $help = array(
-            'controller' => '<controller name>',
-            'table'      => '<database table name> [table class name]',
-            'model'      => '<class name> <database table name>',
-        );
-
-        foreach ($this->generators_list as $type) {
-            echo "    scripts/generate {$type} {$help[$type]}\n";
-        }
-        echo "\n";
     }
 }

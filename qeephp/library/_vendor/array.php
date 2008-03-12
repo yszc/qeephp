@@ -11,7 +11,7 @@
 /**
  * 定义了一系列用于简化数组操作的函数
  *
- * @package vender
+ * @package vendor
  * @version $Id$
  */
 

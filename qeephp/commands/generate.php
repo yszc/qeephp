@@ -16,6 +16,7 @@
  */
 
 Q::import(dirname(__FILE__));
+Q::loadClass('QGenerator_Runner_Cli');
 
 $runner = new QGenerator_Runner_Cli($argv);
 $runner->run();

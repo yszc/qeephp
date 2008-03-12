@@ -45,30 +45,43 @@ class QGenerator_Controller extends QGenerator_Abstract
             $full_name = $controller_name;
         }
 
-        $class_name = 'Controller_' . ucfirst(strtolower($controller_name));
-        if (($filename = $this->existsClassFile($class_name, $namespace))) {
-            echo "Class '{$full_name}' declare file '{$filename}' exists.\n";
+        $controller_name = strtolower($controller_name);
+        $class_name = 'Controller_' . ucfirst($controller_name);
+        $filename = $controller_name . '_controller.php';
+        Q::loadVendor('filesys');
+
+        if ($namespace) {
+            $path = ROOT_DIR . '/app/controller/' . $namespace;
+            $this->createDir($path);
+            $path .= "/{$filename}";
+        } else {
+            $path = ROOT_DIR . '/app/controller/' .$filename;
+        }
+        $path = str_replace('/', DS, $path);
+
+        if (Q::isReadable($path)) {
+            echo "Class '{$full_name}' declare file '{$path}' exists.\n";
             return 0;
         }
 
-        $content = $this->getCode($class_name, $namespace);
-        if ($content !== -1 && !empty($content)) {
-            return $this->createClassFile($class_name, $content, $namespace);
-        } else {
+        $viewdata = array('class_name' => $class_name, 'namespace' => $namespace);
+        $content = $this->parseTemplate('controller', $viewdata);
+        $this->createDir(dirname($path));
+        if ($content == -1 || empty($content) || !file_put_contents($path, $content)) {
             return false;
         }
-    }
 
-    /**
-     * 生成代码
-     *
-     * @param string $class_name
-     *
-     * @return string
-     */
-    function getCode($class_name)
-    {
-        $viewdata = array('class_name' => $class_name);
-        return $this->parseTemplate('controller', $viewdata);
+        echo "Create file '{$path}' successed.\n";
+
+        if ($namespace) {
+            $path = ROOT_DIR . DS . 'app' . DS  . 'view' . DS . $namespace . DS;
+            $this->createDir($path);
+            $this->createDir($path. '/_layout');
+        } else {
+            $path = ROOT_DIR . DS . 'app' . DS . 'view' . DS;
+        }
+        $this->createDir($path);
+
+        return true;
     }
 }

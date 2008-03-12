@@ -8,13 +8,6 @@
 class Controller_Default extends QController_Abstract
 {
     /**
-     * 当前控制器要使用的助手
-     *
-     * @var array|string
-     */
-    public $helpers = 'url';
-
-    /**
      * default action
      */
     function actionIndex()

@@ -110,6 +110,17 @@ abstract class QGenerator_Abstract
     }
 
     /**
+     * 建立需要的目录路径
+     *
+     * @param string $dir
+     */
+    protected function createDir($dir)
+    {
+        $dir = str_replace('/', DS, $dir);
+
+    }
+
+    /**
      * 载入模板，返回解析结果
      *
      * @param string $tpl
