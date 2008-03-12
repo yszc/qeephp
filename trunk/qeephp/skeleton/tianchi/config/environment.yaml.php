@@ -25,6 +25,10 @@ default_cache_backend:  QCache_File
 # 默认的时区设置
 default_timezone:       Asia/Shanghai
 
+# 第三方库保存目录
+vendor_ext_dir
+  - %ROOT_DIR%/lib/vendor
+
 
 #############################
 # 视图相关设置

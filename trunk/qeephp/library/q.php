@@ -29,6 +29,8 @@ define('DS', DIRECTORY_SEPARATOR);
 // {{{ includes
 require Q_DIR . DS . 'qexception.php';
 Q::import(Q_DIR);
+spl_autoload_register(array('Q', 'loadClass'));
+Q::setIni(include(Q_DIR . '/_config/default_config.php'));
 // }}}
 
 /**
@@ -327,6 +329,16 @@ abstract class Q
     }
 
     /**
+     * 载入指定名称的第三方库
+     *
+     * @param string $name
+     */
+    static function loadVendor($name)
+    {
+        Q::loadFile($name . '.php', true, (array)self::getIni('vendor_ext_dir'));
+    }
+
+    /**
      * 返回指定对象的唯一实例，如果指定类无法载入或不存在，则抛出异常
      *
      * @param string $class_name 要获取的对象的类名字
@@ -532,9 +544,7 @@ abstract class Q
             throw new QException(__('File "%s" not found.', $filename));
         }
 
-        if (!class_exists('Spyc', false)) {
-            self::loadFile('spyc.php', true, Q_DIR . DS . '_vendor');
-        }
+        Q::loadVendor('spyc');
         $yaml = Spyc::YAMLLoad($filename);
 
         if (is_null($callback)) {

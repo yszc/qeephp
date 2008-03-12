@@ -24,13 +24,6 @@
 abstract class QController_Abstract
 {
     /**
-     * 当前控制器要使用的助手
-     *
-     * @var array|string
-     */
-    public $helpers = null;
-
-    /**
      * 应用程序对象
      *
      * @var QApplication_Abstract
@@ -66,13 +59,6 @@ abstract class QController_Abstract
         $this->app = $app;
         $this->app->current_controller = $this;
         $this->request = $app->request;
-        $this->helpers = array_flip(Q::normalize($this->helpers));
-        // 确保 QeePHP 自带的助手能够被载入
-        $this->helpers['url'] = 'url';
-        $this->helpers['control'] = 'control';
-        $this->helpers['html'] = 'html';
-        $this->helpers['uploader'] = 'uploader';
-        $this->helpers['imgcode'] = 'imgcode';
     }
 
     /**
@@ -109,13 +95,6 @@ abstract class QController_Abstract
     {
         static $dirs;
 
-        if (isset($this->helpers[$varname])) {
-            $class_name = 'Helper_' . ucfirst($varname);
-        } else {
-            // LC_MSG: Property "%s" not defined.
-            throw new QException(__('Property "%s" not defined.', $varname));
-        }
-
         if (is_null($dirs)) {
             $dirs = array(Q_DIR . '/qcontroller/helper');
             if ($this->request->module_name) {
@@ -125,10 +104,20 @@ abstract class QController_Abstract
             }
         }
 
+        $class_name = 'Helper_' . ucfirst($varname);
         $filename = $varname . '_helper.php';
-        Q::loadClassFile($filename, $dirs, $class_name);
-        $this->{$varname} = new $class_name($this);
-        return $this->{$varname};
+        try {
+            Q::loadClassFile($filename, $dirs, $class_name);
+            $this->{$varname} = new $class_name($this);
+            return $this->{$varname};
+        } catch (Exception $ex) {
+            if (!class_exists($class_name, false)) {
+                // LC_MSG: Property "%s" not defined.
+                throw new QException(__('Property "%s" not defined.', $varname));
+            } else {
+                throw $ex;
+            }
+        }
     }
 
     /**
