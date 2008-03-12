@@ -92,8 +92,9 @@ abstract class QController_Abstract
             $ret = $this->{$action_method}();
             return $this->afterExecute($action_name, $ret, $namespace, $module);
         } else {
-            throw new QController_Exception(__('Controller method "%s::%s()" is missing.',
-                                            $this->request->getControllerName(), $action_name));
+            $arr = array($this->request->controller_name, $action_name, $namespace, $module);
+            $this->view = null;
+            return call_user_func_array(Q::getIni('on_action_not_found'), $arr);
         }
     }
 
