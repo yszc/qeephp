@@ -55,10 +55,10 @@ class Helper_Url
         $baseuri = $this->controller->request->getBaseUri();
 
         if (is_null($namespace)) {
-            $namespace = $this->controller->request->getNamespace();
+            $namespace = $this->controller->request->namespace;
         }
         if (is_null($module)) {
-            $module = $this->controller->request->getModuleNmae();
+            $module = $this->controller->request->module_name;
         }
         if (is_null($controller_name) && !is_null($this->controller)) {
             $controller_name = $this->controller->request->getControllerName();

@@ -4,79 +4,59 @@
 //
 // Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
 //
-// 许可协议，请查看源代码中附带的 LICENSE.txt 文件，
+// 许可协议，请查看源代码中附带的 LICENSE.TXT 文件，
 // 或者访问 http://www.qeephp.org/ 获得详细信息。
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 QWebControls 类
+ * 定义 Helper_Control 类
  *
- * @copyright Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
- * @author 起源科技 (www.qeeyuan.com)
- * @package core
+ * @package helper
  * @version $Id$
  */
 
 /**
- * QWebControls 类提供一组支持 QWebControls 的静态方法
+ * Helper_Control 类实现了 WebControls
  *
- * 开发者不应该自行加载该文件，而是调用 init_webcontrols() 来进行 QWebControls 的初始化。
- *
- * @package core
- * @author 起源科技 (www.qeeyuan.com)
- * @version 1.0
+ * @package helper
  */
-class QWebControls
+class Helper_Control
 {
     /**
-     * 扩展的控件
+     * QController_Abstract 实例
      *
-     * @var array
+     * @var QController_Abstract
      */
-    protected $extends = array();
-
-    /**
-     * 保存扩展控件的目录
-     *
-     * @var array
-     */
-    protected $dirs = array();
+    protected $controller;
 
     /**
      * 构造函数
      *
-     * @return QWebControls
+     * @param QController_Abstract $controller
      */
-    function __construct()
+    function __construct(QController_Abstract $controller = null)
     {
-        $this->addExtDir(Q::getIni('webcontrols_ext_dir'));
-        $this->addExtDir(Q_DIR . '/_webcontrols');
+        $this->controller = $controller;
+        require_once dirname(__FILE__) . '/control/controls.standard.php';
     }
 
     /**
-     * 添加扩展搜索目录
+     * 载入指定的控件
      *
-     * @param array|string $dirs
+     * @param string $type
      */
-    function addExtDir($dirs)
+    function load($type)
     {
-        if (!is_array($dirs)) {
-            $dirs = explode(PATH_SEPARATOR, $dirs);
+        if ($this->controller->request->module_name) {
+            $dir = ROOT_DIR . '/module/' . $this->controller->request->module_name . '/ui';
+        } else {
+            $dir = ROOT_DIR . '/app/ui';
         }
-        if (is_array($dirs) && count($dirs) > 0) {
-            $this->dirs = array_merge($this->dirs, $dirs);
+        if ($this->controller->request->namespace) {
+            $dir .= '/' . $this->controller->request->namespace;
         }
-    }
-
-    /**
-     * 载入指定的控件库
-     *
-     * @param string $libname
-     */
-    function load($libname)
-    {
-        $filename = 'controls.' . strtolower($libname) . '.php';
-        Q::loadFile($filename, true, $this->dirs, true);
+        $filename = 'control.' . strtolower($type) . '.php';
+        Q::loadFile($filename, true, array($dir));
     }
 
     /**
@@ -89,7 +69,7 @@ class QWebControls
      *
      * @return string
      */
-    function control($type, $name, $attribs = null, $return = false)
+    function make($type, $name, $attribs = null, $return = false)
     {
         $function = 'ctl_' . strtolower($type);
         if (!function_exists($function)) {
@@ -165,20 +145,5 @@ class QWebControls
             }
         }
         $attribs = $args;
-    }
-
-    /**
-     * 返回视图对象
-     *
-     * @return object
-     */
-    function get_view()
-    {
-        $view_class = Q::getIni('view_engine');
-        if (strtolower($view_class) != 'php') {
-            return Q::getSingleton($view_class);
-        } else {
-            return null;
-        }
     }
 }
