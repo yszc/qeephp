@@ -13,6 +13,13 @@
  */
 
 /**
+ * 设置错误输出级别
+ *
+ * 如果要屏蔽错误输出信息，修改为 error_reporting(0)
+ */
+error_reporting(E_ALL | E_STRICT);
+
+/**
  * 将应用程序发布到生产服务器时，请将 RUN_MODE 修改为“deploy”
  *
  * 可用的 RUN_MODE 值如下：
@@ -38,11 +45,8 @@ define('CONFIG_CACHE_BACKEND', 'QCache_File');
 
 /**
  * 载入 QeePHP 框架
- *
- * 默认使用 Express 模式，因此载入了 qexpress.php 文件。
- * 如果不使用 Express 模式，修改下列代码，改为载入 q.php 文件。
  */
-require QEEPHP_INST_DIR . '/library/qexpress.php';
+require QEEPHP_INST_DIR . '/library/q.php';
 
 // 定义应用程序根目录
 define('ROOT_DIR', dirname(dirname(__FILE__)));
@@ -81,17 +85,16 @@ function load_boot_config($reload = false)
     if (!$reload) {
         // 尝试从缓存载入配置
         $config = Q::getCache($cacheid, $policy, CONFIG_CACHE_BACKEND);
-        if (is_array($config)) { return $config; }
+        if (is_array($config)) {
+            Q::setIni($config);
+            return;
+        }
     }
 
-    // 载入默认模块的配置
     $config = load_module_config(null);
-
-    // 写入缓存
     Q::setCache($cacheid, $config, $policy, CONFIG_CACHE_BACKEND);
-    return $config;
+    Q::setIni($config);
 }
-
 
 /**
  * 载入指定模块的配置
@@ -135,7 +138,3 @@ function load_module_config($module)
 
     return $config;
 }
-
-
-// 载入配置
-Q::setIni(load_boot_config());

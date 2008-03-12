@@ -31,6 +31,13 @@ abstract class QController_Abstract
     public $helpers = 'url';
 
     /**
+     * 应用程序对象
+     *
+     * @var QApplication_Abstract
+     */
+    public $app;
+
+    /**
      * 封装请求的对象
      *
      * @var QRequest
@@ -54,9 +61,10 @@ abstract class QController_Abstract
     /**
      * 构造函数
      */
-    function __construct(QRequest $request)
+    function __construct(QApplication_Abstract $app)
     {
-        $this->request = $request;
+        $this->app = $app;
+        $this->request = $app->request;
         $this->helpers = array_flip(Q::normalize($this->helpers));
     }
 

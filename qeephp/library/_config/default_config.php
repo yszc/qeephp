@@ -45,14 +45,19 @@ return array(
     'default_module'            => null,
 
     /**
-     * 指示要使用的调度器
+     * 当无权访问请求的动作时要调用的处理例程
      */
-    'dispatcher_class'          => 'QDispatcher',
+    'on_access_denied'          => null,
+
+    /**
+     * 当请求的动作不存在时要调用的处理例程
+     */
+    'on_action_not_found'       => null,
 
     /**
      * 指示要使用的请求对象
      */
-    'requiest_class'            => 'QRequest',
+    'request_class'             => 'QRequest',
 
     /**
      * 是否启动session_start，对负载有影响，建议关闭。如果需要验证等功能，请使用cookie代替
@@ -60,9 +65,9 @@ return array(
     'auto_session'              => false,
 
     /**
-     * 调度器要使用的验证服务提供程序
+     * 处理请求时要使用的验证服务提供程序
      */
-    'dispatcher_acl_class'      => 'QACL',
+    'request_acl_class'         => 'QACL',
 
     /**
      * 指示当没有为控制器提供 ACT 时，要使用的默认 ACT

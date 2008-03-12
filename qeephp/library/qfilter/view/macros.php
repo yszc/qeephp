@@ -20,7 +20,7 @@
  *
  * @package filter
  */
-class QFilter_View_Macros implements QFilter_Interface
+class QFilter_View_Macros
 {
     /**
      * 要搜索的宏
@@ -49,7 +49,7 @@ class QFilter_View_Macros implements QFilter_Interface
 
     function __construct()
     {
-        $this->request = QRequest::instance();
+        $this->request = Q::getSingleton(Q::getIni('request_class'));
         $this->replace[] = $this->request->getBaseDir();
         $this->replace[] = $this->request->getBaseUri();
         $this->replace[] = $this->request->getRequestUri();

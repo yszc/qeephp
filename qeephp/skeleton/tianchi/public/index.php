@@ -4,4 +4,7 @@ global $g_boot_time;
 $g_boot_time = microtime(true);
 
 require dirname(__FILE__) . '/../config/boot.php';
-QExpress::runMVC();
+require ROOT_DIR . '/app/app.php';
+
+$app = App::instanc();
+$app->run();
