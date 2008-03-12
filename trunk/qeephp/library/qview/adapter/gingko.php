@@ -163,11 +163,4 @@ class QView_Adapter_Gingko extends QView_Adapter_Abstract
     {
         echo $this->fetch($viewname);
     }
-
-    protected function control($type, $name, array $attribs = null)
-    {
-        $ui = Q::getSingleton('QWebControls');
-        /* @var $ui QWebControls */
-        echo $ui->control($type, $name, $attribs);
-    }
 }

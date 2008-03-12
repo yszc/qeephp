@@ -33,10 +33,6 @@ default_timezone:       Asia/Shanghai
 # 要使用的模板引擎，PHP 表示使用 PHP 语言本身作模板引擎
 view_adapter:           QView_Adapter_Gingko
 
-# QWebControls 扩展控件的保存目录
-webcontrols_ext_dir:
-    - %ROOT_DIR%/app/ui
-
 # 指示 QeePHP 应用程序内部处理数据和输出内容要使用的编码
 response_charset:       utf-8
 

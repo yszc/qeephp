@@ -28,7 +28,7 @@ abstract class QController_Abstract
      *
      * @var array|string
      */
-    public $helpers = 'url';
+    public $helpers = null;
 
     /**
      * 应用程序对象
@@ -64,8 +64,15 @@ abstract class QController_Abstract
     function __construct(QApplication_Abstract $app)
     {
         $this->app = $app;
+        $this->app->current_controller = $this;
         $this->request = $app->request;
         $this->helpers = array_flip(Q::normalize($this->helpers));
+        // 确保 QeePHP 自带的助手能够被载入
+        $this->helpers['url'] = 'url';
+        $this->helpers['control'] = 'control';
+        $this->helpers['html'] = 'html';
+        $this->helpers['uploader'] = 'uploader';
+        $this->helpers['imgcode'] = 'imgcode';
     }
 
     /**
@@ -110,9 +117,8 @@ abstract class QController_Abstract
 
         if (is_null($dirs)) {
             $dirs = array(Q_DIR . '/qcontroller/helper');
-            $module = $this->request->getModuleNmae();
-            if ($module) {
-                $dirs[] = ROOT_DIR . '/module/' . $module . '/helper';
+            if ($this->request->module_name) {
+                $dirs[] = ROOT_DIR . '/module/' . $this->request->module_name . '/helper';
             } else {
                 $dirs[] = ROOT_DIR . '/app/helper';
             }
@@ -122,16 +128,6 @@ abstract class QController_Abstract
         Q::loadClassFile($filename, $dirs, $class_name);
         $this->{$varname} = new $class_name($this);
         return $this->{$varname};
-    }
-
-    /**
-     * 获得当前使用的 Dispatcher
-     *
-     * @return QDispatcher
-     */
-    function getDispatcher()
-    {
-        return Q::registry('current_dispatcher');
     }
 
     /**

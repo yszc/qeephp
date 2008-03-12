@@ -57,11 +57,11 @@ abstract class QApplication_Abstract
      */
     protected function __construct()
     {
-        Q::register($this, 'app');
-
         require_once Q_DIR . '/qdebug.php';
-
+        Q::register($this, 'app');
         Q::setIni(Q::loadFile('default_config.php', false, Q_DIR . DS . '_config'));
+        load_boot_config();
+
         set_exception_handler(array($this, 'exceptionHandler'));
         spl_autoload_register(array('Q', 'loadClass'));
         set_magic_quotes_runtime(0);
@@ -78,9 +78,10 @@ abstract class QApplication_Abstract
             session_start();
         }
 
-        // 设置调度错误处理例程
         Q::setIni('on_access_denied', array($this, 'onAccessDenied'));
         Q::setIni('on_action_not_found', array($this, 'onActionNotFound'));
+        Q::setIni('current_namespace', $this->request->namespace);
+        Q::setIni('current_module', $this->request->module_name);
     }
 
     /**
@@ -89,10 +90,10 @@ abstract class QApplication_Abstract
     function run()
     {
         $this->executeAction(
-            $this->request->getControllerName(),
-            $this->request->getActionName(),
-            $this->request->getNamespace(),
-            $this->request->getModuleName()
+            $this->request->controller_name,
+            $this->request->action_name,
+            $this->request->namespace,
+            $this->request->module_name
         );
     }
 

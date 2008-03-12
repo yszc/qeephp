@@ -501,7 +501,7 @@ abstract class Q
      *
      * 用法：
      * <code>
-     * $data = QExpress::loadYAML('myData.yaml');
+     * $data = Q::loadYAML('myData.yaml');
      * </code>
      *
      * 注意：为了安全起见，不要将 yaml 文件置于浏览器能够访问的目录中。
@@ -542,30 +542,6 @@ abstract class Q
         }
         array_walk_recursive($yaml, $callback, $replace);
         return $yaml;
-    }
-
-    /**
-     * 载入特定的表数据入口
-     *
-     * @param string $table_class
-     */
-    static function loadTable($table_class)
-    {
-        $request = self::registry('current_request');
-        if (is_object($request)) {
-            /* @var $request QRequest */
-            $module = $request->getModuleName();
-
-            if ($module) {
-                $dir = ROOT_DIR . '/module/' . $module;
-            } else {
-                $dir = ROOT_DIR . '/app';
-            }
-            $filename = str_replace('_', DS, strtolower($table_class)) . '_table.php';
-            self::loadClassFile($filename, array($dir), $table_class);
-        } else {
-            self::loadClass($table_class);
-        }
     }
 }
 
