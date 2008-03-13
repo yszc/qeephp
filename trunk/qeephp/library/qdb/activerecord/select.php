@@ -56,10 +56,9 @@ class QDB_ActiveRecord_Select extends QDB_Select_Abstract
             if ($this->table->existsLink($mapping_name)) { continue; }
             $class_define = call_user_func(array($define['class'], '__define'));
             $table = Q::getSingleton($class_define['table_class']);
-            $link = array(
-                'table_obj' => $table,
-                'mapping_name' => $define['alias'],
-            );
+            $link = $define['assoc_options'];
+            $link['table_obj'] = $table;
+            $link['mapping_name'] = $define['alias'];
             $this->table->createLinks($link, $define['assoc']);
             $this->table->getLink($define['alias'])->init();
         }

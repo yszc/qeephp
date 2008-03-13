@@ -52,12 +52,11 @@ class QGenerator_Controller extends QGenerator_Abstract
 
         if ($namespace) {
             $path = ROOT_DIR . '/app/controller/' . $namespace;
-            $this->createDir($path);
-            $path .= "/{$filename}";
         } else {
-            $path = ROOT_DIR . '/app/controller/' .$filename;
+            $path = ROOT_DIR . '/app/controller';
         }
-        $path = str_replace('/', DS, $path);
+        $this->createDir($path);
+        $path .= '/' . $filename;
 
         if (Q::isReadable($path)) {
             echo "Class '{$full_name}' declare file '{$path}' exists.\n";
@@ -66,7 +65,6 @@ class QGenerator_Controller extends QGenerator_Abstract
 
         $viewdata = array('class_name' => $class_name, 'namespace' => $namespace);
         $content = $this->parseTemplate('controller', $viewdata);
-        $this->createDir(dirname($path));
         if ($content == -1 || empty($content) || !file_put_contents($path, $content)) {
             return false;
         }
@@ -74,13 +72,12 @@ class QGenerator_Controller extends QGenerator_Abstract
         echo "Create file '{$path}' successed.\n";
 
         if ($namespace) {
-            $path = ROOT_DIR . DS . 'app' . DS  . 'view' . DS . $namespace . DS;
-            $this->createDir($path);
-            $this->createDir($path. '/_layout');
+            $path = ROOT_DIR . '/app/view/' . $namespace;
         } else {
-            $path = ROOT_DIR . DS . 'app' . DS . 'view' . DS;
+            $path = ROOT_DIR . '/app/view';
         }
-        $this->createDir($path);
+        $this->createDir($path . '/_layouts');
+        $this->createDir($path . '/' . $controller_name);
 
         return true;
     }

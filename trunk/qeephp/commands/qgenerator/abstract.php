@@ -116,8 +116,12 @@ abstract class QGenerator_Abstract
      */
     protected function createDir($dir)
     {
+        Q::loadVendor('filesys');
         $dir = str_replace('/', DS, $dir);
-
+        if (!file_exists($dir)) {
+            mkdirs($dir);
+            echo "Create directory '{$dir}' successed.\n";
+        }
     }
 
     /**
