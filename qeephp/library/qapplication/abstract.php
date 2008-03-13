@@ -80,6 +80,10 @@ abstract class QApplication_Abstract
         Q::setIni('on_action_not_found', array($this, 'onActionNotFound'));
         Q::setIni('current_namespace', $this->request->namespace);
         Q::setIni('current_module', $this->request->module_name);
+
+        if (Q::getIni('auto_response_header')) {
+            header('Content-Type: text/html; charset=' . Q::getIni('response_charset'));
+        }
     }
 
     /**
@@ -143,16 +147,15 @@ abstract class QApplication_Abstract
             return $ret->run();
         }
 
-        $data = $controller->view;
-        if (is_array($data)) {
+        if (is_array($controller->view)) {
             $viewname = $controller_name . DS . $action_name;
-            $response = new QResponse_Render($viewname, $data);
-            $response->module = $module;
-            $response->namespace = $namespace;
+            $response = new QResponse_Render($viewname, $namespace, $module);
+            $response->data = $controller->view;
+            $response->layouts = $controller->view_layouts;
             $response->controller = $controller;
             return $response->run();
-        } elseif (!is_null($data)) {
-            echo $data;
+        } elseif (!is_null($controller->view)) {
+            echo $controller->view;
         }
         return null;
     }

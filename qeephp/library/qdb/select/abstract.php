@@ -492,7 +492,7 @@ abstract class QDB_Select_Abstract
 
         $used_links = array();
         if ($use_links && $this->recursion > 0) {
-            foreach ($this->links as $link) {
+            foreach ((array)$this->links as $link) {
                 /* @var $link QDB_Table_Link */
                 if (!$link->enabled || $link->on_find == 'skip') { continue; }
                 $link->init();

@@ -394,47 +394,51 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     }
 
     /**
-     * 初始化指定 QDB_ActiveRecord_Abstract 继承类的定义
+     * 获得一个模型类的反射信息
      *
      * @param string $class
+     *
+     * @return array
      */
-    private static function __init($class)
+    static function __reflection($class)
     {
-        if (isset(self::$__defines[$class])) { return; }
-        $class_define = call_user_func(array($class, '__define'));
-        if (!is_array($class_define['fields'])) {
-            $class_define['fields'] = array();
+        if (isset(self::$__defines[$class])) {
+            return self::$__defines[$class];
+        }
+
+        $ref = call_user_func(array($class, '__define'));
+        if (!is_array($ref['fields'])) {
+            $ref['fields'] = array();
         }
 
         // 构造表数据入口
-        if (!empty($class_define['table_name'])) {
+        if (!empty($ref['table_name'])) {
             // 通过 table_name 指定数据表
             $obj_id = 'activerecord_table_' . strtolower($class);
             if (Q::isRegistered($obj_id)) {
-                $class_define['table'] = Q::registry($obj_id);
+                $ref['table'] = Q::registry($obj_id);
             } else {
                 Q::loadClass('QDB_Table');
-                $params = array('table_name' => $class_define['table_name']);
-                foreach ($class_define as $key => $value) {
+                $params = array('table_name' => $ref['table_name']);
+                foreach ($ref as $key => $value) {
                     if (substr($key, 0, 6) == 'table_' && $key != 'table_name') {
                         $params[substr($key, 6)] = $value;
                     }
                 }
-                $class_define['table'] = new QDB_Table($params, true);
-                $class_define['pk'] = $class_define['table']->pk;
-                Q::register($class_define['table'], $obj_id);
+                $ref['table'] = new QDB_Table($params, true);
+                Q::register($ref['table'], $obj_id);
             }
-        } elseif (!empty($class_define['table_class'])) {
-            $class_define['table'] = Q::getSingleton($class_define['table_class']);
-            $class_define['table']->connect();
-            $class_define['pk'] = $class_define['table']->pk;
+        } elseif (!empty($ref['table_class'])) {
+            $ref['table'] = Q::getSingleton($ref['table_class']);
+            $ref['table']->connect();
         }
+        $ref['pk'] = $ref['table']->pk;
 
         // 绑定行为插件
         self::$__callbacks[$class] = array();
         self::$__methods[$class] = array();
 
-        $behaviors = isset($class_define['behaviors']) ? Q::normalize($class_define['behaviors']) : array();
+        $behaviors = isset($ref['behaviors']) ? Q::normalize($ref['behaviors']) : array();
         foreach ($behaviors as $behavior) {
             $behavior_class = 'Behavior_' . ucfirst(strtolower($behavior));
             $dirs = array(Q_DIR . DS . 'qdb' . DS . 'activerecord');
@@ -461,10 +465,10 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
                     }
                     break;
                 case self::setter:
-                    $class_define['fields'][$method] = array('setter' => array($behavior_obj, 'set' . ucfirst($method)));
+                    $ref['fields'][$method] = array('setter' => array($behavior_obj, 'set' . ucfirst($method)));
                     break;
                 case self::getter:
-                    $class_define['fields'][$method] = array('getter' => array($behavior_obj, 'get' . ucfirst($method)));
+                    $ref['fields'][$method] = array('getter' => array($behavior_obj, 'get' . ucfirst($method)));
                     break;
                 default:
                     self::$__callbacks[$class][$type][] = $method;
@@ -473,10 +477,10 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         }
 
         // 根据字段定义确定字段属性
-        $meta = $class_define['table']->columns();
-        $class_define['links'] = array();
-        if (isset($class_define['fields']) && is_array($class_define['fields'])) {
-            foreach ($class_define['fields'] as $field => $options) {
+        $meta = $ref['table']->columns();
+        $ref['links'] = array();
+        if (isset($ref['fields']) && is_array($ref['fields'])) {
+            foreach ($ref['fields'] as $field => $options) {
                 $define = array('public' => true, 'readonly' => false, 'assoc' => false);
 
                 if (!is_array($options)) {
@@ -520,7 +524,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
                         unset($options['setter']);
                         unset($options['getter']);
                         $define['assoc_options'] = $options;
-                        $class_define['links'][$field] = $define;
+                        $ref['links'][$field] = $define;
                     }
                 }
 
@@ -546,9 +550,20 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
                 );
             }
         }
-        $class_define['attribs'] = $attribs;
-        unset($class_define['fields']);
+        $ref['attribs'] = $attribs;
+        unset($ref['fields']);
 
-        self::$__defines[$class] = $class_define;
+        return $ref;
+    }
+
+    /**
+     * 初始化指定 QDB_ActiveRecord_Abstract 继承类的定义
+     *
+     * @param string $class
+     */
+    private static function __init($class)
+    {
+        if (isset(self::$__defines[$class])) { return; }
+        self::$__defines[$class] = self::__reflection($class);
     }
 }
