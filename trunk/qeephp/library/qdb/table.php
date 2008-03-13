@@ -852,7 +852,7 @@ class QDB_Table
             $this->dbo->connect();
         }
         $this->cache_id = $this->dbo->getID() . '/' . $this->qtable_name;
-        $this->prepareMETA();
+        $this->prepareMeta();
 
         // 尝试自动设置主键字段
         if (empty($this->pk)) {
@@ -1198,7 +1198,7 @@ class QDB_Table
      *
      * @return boolean
      */
-    private function prepareMETA()
+    private function prepareMeta()
     {
         $cached = Q::getIni('db_meta_cached');
 

@@ -62,44 +62,20 @@ class QResponse_Render
      *
      * @var string
      */
-    protected $layouts;
+    public $layouts;
 
     /**
      * 构造函数
      *
      * @param string $viewname
-     * @param array $data
      * @param string $namespace
      * @param module
      */
-    function __construct($viewname, array $data = null, $namespace = null, $module = null)
+    function __construct($viewname, $namespace = null, $module = null)
     {
         $this->viewname = $viewname;
-        if (is_array($data)) {
-            $this->data = $data;
-        }
         $this->namespace = $namespace;
         $this->module = $module;
-        $this->layouts = '_layouts/default_layout';
-    }
-
-    /**
-     * 指定要渲染的数据
-     *
-     * @param mixed $data
-     * @param mixed $value
-     */
-    function assign($data, $value = null)
-    {
-        if (is_array($data)) {
-            if (empty($this->data)) {
-                $this->data = $data;
-            } elseif (!empty($data)) {
-                $this->data = array_merge($this->data, $data);
-            }
-        } else {
-            $this->data[$data] = $value;
-        }
     }
 
     /**
@@ -116,10 +92,11 @@ class QResponse_Render
         $adapter->filters[] = new QFilter_View_Macros();
         $adapter->assign($this->data);
 
-        if ($adapter->exists($this->layouts)) {
+        $layouts = '_layouts/' . $this->layouts . '_layout';
+        if ($adapter->exists($layouts)) {
             $content_for_layouts = $adapter->fetch($this->viewname);
             $adapter->assign('contents_for_layouts', $content_for_layouts);
-            $adapter->display($this->layouts);
+            $adapter->display($layouts);
         } else {
             $adapter->display($this->viewname);
         }

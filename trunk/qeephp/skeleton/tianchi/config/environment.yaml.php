@@ -47,7 +47,7 @@ auto_response_header:   true
 multi_languages:        false
 
 # 是否启动session_start，对负载有影响，建议关闭。如果需要验证等功能，请使用cookie代替
-auto_session:           false
+auto_session:           true
 
 
 #############################

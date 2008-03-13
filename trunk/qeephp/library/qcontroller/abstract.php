@@ -45,6 +45,13 @@ abstract class QController_Abstract
     public $session;
 
     /**
+     * 控制器要使用的布局视图
+     *
+     * @var string
+     */
+    public $view_layouts = 'default';
+
+    /**
      * 控制器动作要渲染的数据
      *
      * @var array

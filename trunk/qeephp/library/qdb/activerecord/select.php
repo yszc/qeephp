@@ -54,11 +54,33 @@ class QDB_ActiveRecord_Select extends QDB_Select_Abstract
         foreach ($links as $define) {
             $mapping_name = $define['alias'];
             if ($this->table->existsLink($mapping_name)) { continue; }
-            $class_define = call_user_func(array($define['class'], '__define'));
-            $table = Q::getSingleton($class_define['table_class']);
+            $ref = QDB_ActiveRecord_Abstract::__reflection($define['class']);
+            $table = $ref['table'];
+
             $link = $define['assoc_options'];
             $link['table_obj'] = $table;
             $link['mapping_name'] = $define['alias'];
+
+            switch ($define['assoc']) {
+            case QDB_Table::has_one:
+            case QDB_Table::has_many:
+                if (empty($link['assoc_key'])) {
+                    $link['assoc_key'] = strtolower($class) . '_id';
+                }
+                break;
+            case QDB_Table::belongs_to:
+                if (empty($link['main_key'])) {
+                    $link['main_key'] = strtolower($define['clsas']) . '_id';
+                }
+                break;
+            case QDB_Table::many_to_many:
+                if (empty($link['mid_main_key'])) {
+                    $link['mid_main_key'] = strtolower($class) . '_id';
+                }
+                if (empty($link['mid_assoc_key'])) {
+                    $link['mid_assoc_key'] = strtolower($define['clsas']) . '_id';
+                }
+            }
             $this->table->createLinks($link, $define['assoc']);
             $this->table->getLink($define['alias'])->init();
         }
