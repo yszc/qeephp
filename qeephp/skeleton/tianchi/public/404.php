@@ -5,26 +5,28 @@
 
 <head>
   <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
-  <title>The page you were looking for doesn't exist (404)</title>
-	<style type="text/css">
-		body { background-color: #fff; color: #666; text-align: center; font-family: arial, sans-serif; }
-		div.dialog {
-			width: 25em;
-			padding: 0 4em;
-			margin: 4em auto 0 auto;
-			border: 1px solid #ccc;
-			border-right-color: #999;
-			border-bottom-color: #999;
-		}
-		h1 { font-size: 100%; color: #f00; line-height: 1.5em; }
-	</style>
+  <title>访问的页面不存在 (404)</title>
+    <style type="text/css">
+        body { background-color: #fff; color: #666; text-align: center; font-family: arial, sans-serif; }
+        div.dialog {
+            width: 25em;
+            padding: 0 4em;
+            margin: 4em auto 0 auto;
+            border: 1px solid #ccc;
+            border-right-color: #999;
+            border-bottom-color: #999;
+        }
+        h1 { font-size: 100%; color: #f00; line-height: 1.5em; }
+        p.tip { font-size: 12px; color: #aaa; }
+    </style>
 </head>
 
 <body>
-  <!-- This file lives in public/404.html -->
   <div class="dialog">
-    <h1>The page you were looking for doesn't exist.</h1>
-    <p>You may have mistyped the address or the page may have moved.</p>
+    <h1>访问的页面不存在</h1>
+    <p>请检查是否正确输入了访问地址，或者该页面已经移除。</p>
+    <p>&nbsp;</p>
+    <p class="tip">修改 public/404.php 文件可以定制此出错页面的内容。</p>
   </div>
 </body>
 </html>

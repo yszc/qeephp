@@ -407,8 +407,28 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         }
 
         // 构造表数据入口
-        $class_define['table'] = Q::getSingleton($class_define['table_class']);
-        $class_define['pk'] = $class_define['table']->pk;
+        if (!empty($class_define['table_name'])) {
+            // 通过 table_name 指定数据表
+            $obj_id = 'activerecord_table_' . strtolower($class);
+            if (Q::isRegistered($obj_id)) {
+                $class_define['table'] = Q::registry($obj_id);
+            } else {
+                Q::loadClass('QDB_Table');
+                $params = array('table_name' => $class_define['table_name']);
+                foreach ($class_define as $key => $value) {
+                    if (substr($key, 0, 6) == 'table_' && $key != 'table_name') {
+                        $params[substr($key, 6)] = $value;
+                    }
+                }
+                $class_define['table'] = new QDB_Table($params, true);
+                $class_define['pk'] = $class_define['table']->pk;
+                Q::register($class_define['table'], $obj_id);
+            }
+        } elseif (!empty($class_define['table_class'])) {
+            $class_define['table'] = Q::getSingleton($class_define['table_class']);
+            $class_define['table']->connect();
+            $class_define['pk'] = $class_define['table']->pk;
+        }
 
         // 绑定行为插件
         self::$__callbacks[$class] = array();
