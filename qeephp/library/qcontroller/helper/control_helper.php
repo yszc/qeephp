@@ -54,6 +54,7 @@ class Helper_Control
     {
         $control = QUI_Control::instance($type, $id, $attribs,
                 $this->controller->request->namespace, $this->controller->request->module_name);
+        $control->viewdata = $this->controller->view;
         return $control->render($return);
     }
 }

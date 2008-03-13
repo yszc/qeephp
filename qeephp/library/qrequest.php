@@ -168,6 +168,25 @@ class QRequest
     }
 
     /**
+     * 从 GET、POST，以及附加参数中查询指定的值
+     *
+     * @param string $key
+     * @param mixed $default
+     */
+    function get($key, $default = null)
+    {
+        if (isset($_GET[$key])) {
+            return $_GET[$key];
+        } elseif (isset($_POST[$key])) {
+            return $_POST[$key];
+        } elseif (isset($this->params[$key])) {
+            return $this->params[$key];
+        } else {
+            return $default;
+        }
+    }
+
+    /**
      * 获得 GET 数据
      *
      * @param string $key
