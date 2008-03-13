@@ -63,6 +63,13 @@ abstract class QUI_Control_Abstract
     public $attribs;
 
     /**
+     * 额外的视图数据，通常来自控制器
+     *
+     * @var array
+     */
+    public $viewdata = null;
+
+    /**
      * 构造函数
      *
      * @param string $id
