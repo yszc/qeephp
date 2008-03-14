@@ -151,7 +151,7 @@ abstract class QDB_Select_Abstract
      *
      * @param array|string|QDB_Expr $expr
      *
-     * @return QDB_Table_Select
+     * @return QDB_Select_Abstract
      */
     function select($expr = '*')
     {
@@ -165,7 +165,7 @@ abstract class QDB_Select_Abstract
      * @param int $recursion
      * @param QDB_Table_Link $link
      *
-     * @return QDB_Table_Select
+     * @return QDB_Select_Abstract
      */
     function recursion($recursion, QDB_Table_Link $link = null)
     {
@@ -181,7 +181,7 @@ abstract class QDB_Select_Abstract
      *
      * @param array|string $links
      *
-     * @return QDB_Table_Select
+     * @return QDB_Select_Abstract
      */
     function links($links)
     {
@@ -205,7 +205,7 @@ abstract class QDB_Select_Abstract
      *
      * @param array|string $where
      *
-     * @return QDB_Table_Select
+     * @return QDB_Select_Abstract
      */
     function where($where)
     {
@@ -223,7 +223,7 @@ abstract class QDB_Select_Abstract
      *
      * @param string $expr
      *
-     * @return QDB_Table_Select
+     * @return QDB_Select_Abstract
      */
     function order($expr)
     {
@@ -234,7 +234,7 @@ abstract class QDB_Select_Abstract
     /**
      * 指示查询所有符合条件的记录
      *
-     * @return QDB_Table_Select
+     * @return QDB_Select_Abstract
      */
     function all()
     {
@@ -248,7 +248,7 @@ abstract class QDB_Select_Abstract
      * @param int $count
      * @param int $offset
      *
-     * @return QDB_Table_Select
+     * @return QDB_Select_Abstract
      */
     function limit($count, $offset = 0)
     {
@@ -263,7 +263,7 @@ abstract class QDB_Select_Abstract
      * @param int $page_size
      * @param int $base
      *
-     * @return QDB_Table_Select
+     * @return QDB_Select_Abstract
      */
     function limitPage($page, $page_size = 20, $base = 1)
     {
@@ -278,7 +278,7 @@ abstract class QDB_Select_Abstract
      *
      * @param string $expr
      *
-     * @return QDB_Table_Select
+     * @return QDB_Select_Abstract
      */
     function group($expr)
     {
@@ -291,7 +291,7 @@ abstract class QDB_Select_Abstract
      * @param array|string $where
      * @param array $args
      *
-     * @return QDB_Table_Select
+     * @return QDB_Select_Abstract
      */
     function having($where, array $args = null)
     {
@@ -303,7 +303,7 @@ abstract class QDB_Select_Abstract
      *
      * @param boolean $flag
      *
-     * @return QDB_Table_Select
+     * @return QDB_Select_Abstract
      */
     function forUpdate($flag = true)
     {
@@ -316,7 +316,7 @@ abstract class QDB_Select_Abstract
      *
      * @param boolean $flag
      *
-     * @return QDB_Table_Select
+     * @return QDB_Select_Abstract
      */
     function distinct($flag = true)
     {
@@ -324,9 +324,28 @@ abstract class QDB_Select_Abstract
         return $this;
     }
 
+    /**
+     * 指示将查询结果封装为特定的 ActiveRecord 对象
+     *
+     * @param string $class_name
+     *
+     * @return QDB_Select_Abstract
+     */
     function as_object($class_name)
     {
         $this->as_object = $class_name;
+        return $this;
+    }
+
+    /**
+     * 指示将查询结果返回为数组
+     *
+     * @return QDB_Select_Abstract
+     */
+    function as_array()
+    {
+        $this->as_object = null;
+        return $this;
     }
 
     /**
@@ -422,13 +441,13 @@ abstract class QDB_Select_Abstract
         }
 
         if (isset($row)) {
-            if ($this->as_object) {
+            if (!empty($row) && $this->as_object) {
                 return new $this->as_object($row);
             } else {
                 return $row;
             }
         } else {
-            if ($this->as_object) {
+            if (!empty($rowset) && $this->as_object) {
                 $objects = array();
                 foreach (array_keys($rowset) as $offset) {
                     $objects[] = new $this->as_object($rowset[$offset]);

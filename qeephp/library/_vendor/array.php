@@ -112,8 +112,7 @@ function array_group_by(& $arr, $keyField)
  *
  * return array
  */
-function array_to_tree($arr, $fid, $fparent = 'parent_id',
-    $fchildrens = 'childrens', $returnReferences = false)
+function array_to_tree($arr, $fid, $fparent = 'parent_id', $fchildrens = 'childrens', $returnReferences = false)
 {
     $pkvRefs = array();
     foreach ($arr as $offset => $row) {
@@ -124,7 +123,10 @@ function array_to_tree($arr, $fid, $fparent = 'parent_id',
     foreach ($arr as $offset => $row) {
         $parentId = $row[$fparent];
         if ($parentId) {
-            if (!isset($pkvRefs[$parentId])) { continue; }
+            if (!isset($pkvRefs[$parentId])) {
+                $tree[] =& $arr[$offset];
+                continue;
+            }
             $parent =& $pkvRefs[$parentId];
             $parent[$fchildrens][] =& $arr[$offset];
         } else {
@@ -132,7 +134,7 @@ function array_to_tree($arr, $fid, $fparent = 'parent_id',
         }
     }
     if ($returnReferences) {
-        return array('tree' => $tree, 'refs' => $pkvRefs);
+        return array($tree, $pkvRefs);
     } else {
         return $tree;
     }

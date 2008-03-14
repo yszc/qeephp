@@ -41,17 +41,6 @@ interface QDB_ActiveRecord_Interface
     static function find();
 
     /**
-     * 删除符合条件的对象，返回成功删除的对象的数量
-     *
-     * @static
-     *
-     * @param mixed $where
-     *
-     * @return int
-     */
-    static function deleteWhere($where);
-
-    /**
      * 实例化所有符合条件的对象，并调用这些对象的 destroy() 方法，返回成功删除的对象的数量
      *
      * @static
