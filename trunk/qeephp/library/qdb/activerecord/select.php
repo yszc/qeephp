@@ -78,7 +78,7 @@ class QDB_ActiveRecord_Select extends QDB_Select_Abstract
                     $link['mid_main_key'] = strtolower($class) . '_id';
                 }
                 if (empty($link['mid_assoc_key'])) {
-                    $link['mid_assoc_key'] = strtolower($define['clsas']) . '_id';
+                    $link['mid_assoc_key'] = strtolower($define['class']) . '_id';
                 }
             }
             $this->table->createLinks($link, $define['assoc']);
