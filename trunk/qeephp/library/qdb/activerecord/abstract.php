@@ -114,6 +114,17 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     }
 
     /**
+     * 从数据库重新读取对象
+     *
+     * @param int $recursion
+     */
+    function reload($recursion = 0)
+    {
+        $arr = $this->getTable()->find(array($this->idname() => $this->id()))->as_array()->recursion($recursion)->query();
+        $this->attach($arr);
+    }
+
+    /**
      * 验证对象属性
      *
      * @param string $mode
@@ -339,7 +350,8 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         /* @var $table QDB_Table */
         $this->validate('create');
         $this->__doCallbacks(self::before_create);
-        $table->create($this->to_array());
+        $id = $table->create($this->toArray());
+        $this->__all_props[$this->idname()] = $id;
         $this->__doCallbacks(self::after_create);
     }
 
@@ -352,7 +364,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         /* @var $table QDB_Table */
         $this->validate('update');
         $this->__doCallbacks(self::before_update);
-        $table->update($this->to_array());
+        $table->update($this->toArray());
         $this->__doCallbacks(self::after_update);
     }
 
