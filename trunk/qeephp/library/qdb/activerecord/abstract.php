@@ -76,7 +76,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      *
      * @var array
      */
-    private static $__defines = array();
+    private static $__ref = array();
 
     /**
      * 构造函数
@@ -120,7 +120,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     function reload($recursion = 0)
     {
-        $arr = $this->getTable()->find(array($this->idname() => $this->id()))->as_array()->recursion($recursion)->query();
+        $arr = $this->getTable()->find(array($this->idname() => $this->id()))->recursion($recursion)->as_array()->query();
         $this->attach($arr);
     }
 
@@ -147,7 +147,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     function destroy()
     {
-        $table = self::$__defines[$this->__class]['table'];
+        $table = self::$__ref[$this->__class]['table'];
         /* @var $table QDB_Table */
         $this->__doCallbacks(self::before_destroy);
         $table->remove($this->id());
@@ -161,7 +161,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     function id()
     {
-        $pk = self::$__defines[$this->__class]['pk'];
+        $pk = self::$__ref[$this->__class]['pk'];
         return $this->{$pk};
     }
 
@@ -172,7 +172,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     function idname()
     {
-        return self::$__defines[$this->__class]['pk'];
+        return self::$__ref[$this->__class]['pk'];
     }
 
     /**
@@ -183,57 +183,36 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     function toArray()
     {
         $row = array();
-        foreach (self::$__defines[$this->__class]['attribs'] as $define) {
-            $field = $define['alias'];
-            if ($define['assoc']) {
-                if (is_array($this->{$field})) {
-                    $row[$field] = array();
-                    foreach ($this->{$field} as $obj) {
-                        $row[$field][] = $obj->toArray();
+        $attribs = self::$__ref[$this->__class]['attribs'];
+        // ralias 是 别名 => 实际字段名
+        $ralias = self::$__ref[$this->__class]['ralias'];
+
+        foreach (array_keys($this->__all_props) as $key) {
+            $rf = $ralias[$key];
+            if ($attribs[$rf]['assoc']) {
+                if (is_array($this->__props[$key])) {
+                    $row[$key] = array();
+                    foreach ($this->__props[$key] as $obj) {
+                        $row[$key][] = $obj->toArray();
                     }
                 } else {
-                    $row[$field] = $this->{$field}->toArray();
+                    $row[$key] = $this->__props[$key]->toArray();
                 }
             } else {
-                $row[$field] = $this->{$field};
+                $row[$key] = isset($this->__props[$key]) ? $this->__props[$key] : $this->{$key};
             }
         }
         return $row;
     }
 
     /**
-     * 将对象附着到一个包含对象属性的数组，等同于将数组的属性值复制到对象
+     * 返回对象所有属性的 JSON 字符串
      *
-     * @param array $row
+     * @return string
      */
-    function attach(array $row)
+    function toJSON()
     {
-        foreach (self::$__defines[$this->__class]['attribs'] as $field => $define) {
-            if (!isset($row[$field]) && $define['assoc'] == false) {
-                $row[$field] = self::$__defines[$this->__class]['attribs'][$field]['default'];
-            }
-
-            if ($define['readonly'] || !$define['public'] || $define['assoc']) {
-                if ($define['assoc']) {
-                    if (!is_array($row[$field])) {
-                        // LC_MSG: Property "%s" type mismatch. expected is "%s", actual is "%s".
-                        $msg = 'Property "%s" type mismatch. expected is "%s", actual is "%s".';
-                        throw new QDB_ActiveRecord_Exception(__($msg, "\$row[{$field}]", 'array', gettype($row[$field])));
-                    } else {
-                        $this->__props[$field] = new QColl($define['class']);
-                        foreach ($row[$field] as $assoc_row) {
-                            $this->__props[$field][] = new $define['class']($assoc_row);
-                        }
-                    }
-                } else {
-                    $this->__props[$field] = $row[$field];
-                }
-                $this->__all_props[$field] =& $this->__props[$field];
-            } else {
-                $this->{$field} = $row[$field];
-                $this->__all_props[$field] =& $this->{$field};
-            }
-        }
+        return json_encode($this->toArray());
     }
 
     /**
@@ -243,7 +222,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     function getTable()
     {
-        return self::$__defines[$this->__class]['table'];
+        return self::$__ref[$this->__class]['table'];
     }
 
     /**
@@ -255,11 +234,11 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     function __get($varname)
     {
-        if (!isset(self::$__defines[$this->__class]['attribs'][$varname])) {
+        if (!isset(self::$__ref[$this->__class]['attribs'][$varname])) {
             // LC_MSG: Property "%s" not defined.
             throw new QDB_ActiveRecord_Exception(__('Property "%s" not defined.', $varname));
         }
-        $attr = self::$__defines[$this->__class]['attribs'][$varname];
+        $attr = self::$__ref[$this->__class]['attribs'][$varname];
         if (isset($attr['getter'])) {
             return call_user_func($attr['getter'], $varname);
         }
@@ -274,11 +253,11 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     function __set($varname, $value)
     {
-        if (!isset(self::$__defines[$this->__class]['attribs'][$varname])) {
+        if (!isset(self::$__ref[$this->__class]['attribs'][$varname])) {
             $this->{$varname} = $value;
             return;
         }
-        $attr = self::$__defines[$this->__class]['attribs'][$varname];
+        $attr = self::$__ref[$this->__class]['attribs'][$varname];
         if ($attr['readonly']) {
             // LC_MSG: Property "%s" is readonly.
             throw new QException(__('Property "%s" is readonly.', $varname));
@@ -342,11 +321,50 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     }
 
     /**
+     * 将对象附着到一个包含对象属性的数组，等同于将数组的属性值复制到对象
+     *
+     * @param array $row
+     */
+    protected function attach(array $row)
+    {
+        $alias = self::$__ref[$this->__class]['alias'];
+        foreach (self::$__ref[$this->__class]['attribs'] as $field => $define) {
+            if (!isset($row[$field]) && $define['assoc'] == false) {
+                $row[$field] = self::$__ref[$this->__class]['attribs'][$field]['default'];
+            }
+
+            if ($define['readonly'] || !$define['public'] || $define['assoc']) {
+                if ($define['assoc']) {
+                    if (!is_array($row[$field])) {
+                        // LC_MSG: Property "%s" type mismatch. expected is "%s", actual is "%s".
+                        $msg = 'Property "%s" type mismatch. expected is "%s", actual is "%s".';
+                        throw new QDB_ActiveRecord_Exception(__($msg, "\$row[{$field}]", 'array', gettype($row[$field])));
+                    } else {
+                        $this->__props[$field] = new QColl($define['class']);
+                        foreach ($row[$field] as $assoc_row) {
+                            $this->__props[$field][] = new $define['class']($assoc_row);
+                        }
+                    }
+                    $this->__all_props[$field] =& $this->__props[$field];
+                } else {
+                    $af = $alias[$field];
+                    $this->__props[$af] = $row[$field];
+                    $this->__all_props[$af] =& $this->__props[$af];
+                }
+            } else {
+                $af = $alias[$field];
+                $this->{$af} = $row[$field];
+                $this->__all_props[$af] =& $this->{$af};
+            }
+        }
+    }
+
+    /**
      * 在数据库中创建对象
      */
     protected function create()
     {
-        $table = self::$__defines[$this->__class]['table'];
+        $table = self::$__ref[$this->__class]['table'];
         /* @var $table QDB_Table */
         $this->validate('create');
         $this->__doCallbacks(self::before_create);
@@ -360,7 +378,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     protected function update()
     {
-        $table = self::$__defines[$this->__class]['table'];
+        $table = self::$__ref[$this->__class]['table'];
         /* @var $table QDB_Table */
         $this->validate('update');
         $this->__doCallbacks(self::before_update);
@@ -381,9 +399,9 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         self::__init($class);
         $select = new QDB_ActiveRecord_Select(
             $class,
-            self::$__defines[$class]['table'],
-            self::$__defines[$class]['attribs'],
-            self::$__defines[$class]['links']
+            self::$__ref[$class]['table'],
+            self::$__ref[$class]['attribs'],
+            self::$__ref[$class]['links']
         );
         if (!empty(self::$__callbacks[$class][self::after_find])) {
             $select->bindCallbacks(self::$__callbacks[$class][self::after_find]);
@@ -414,8 +432,8 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     static function __reflection($class)
     {
-        if (isset(self::$__defines[$class])) {
-            return self::$__defines[$class];
+        if (isset(self::$__ref[$class])) {
+            return self::$__ref[$class];
         }
 
         $ref = call_user_func(array($class, '__define'));
@@ -491,6 +509,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         // 根据字段定义确定字段属性
         $meta = $ref['table']->columns();
         $ref['links'] = array();
+        $ref['alias'] = array();
         if (isset($ref['fields']) && is_array($ref['fields'])) {
             foreach ($ref['fields'] as $field => $options) {
                 $define = array('public' => true, 'readonly' => false, 'assoc' => false);
@@ -500,33 +519,34 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
                     $define['alias'] = $options;
                 } else {
                     $define['readonly'] = isset($options['readonly']) ? (bool)$options['readonly'] : false;
-                    if (isset($options['setter'])) {
+                    if (!empty($options['setter'])) {
                         $define['public'] = false;
                         $define['setter'] = $options['setter'];
                     }
-                    if (isset($options['getter'])) {
+                    if (!empty($options['getter'])) {
                         $define['public'] = false;
                         $define['getter'] = $options['getter'];
                     }
-                    if (isset($options['alias'])) {
-                        $define['alias'] = $options['alias'];
+                    if (!empty($options['alias'])) {
+                        $ref['alias'][$field] = $options['alias'];
                     } else {
-                        $define['alias'] = $field;
+                        $ref['alias'][$field] = $field;
                     }
+                    $define['alias'] = $ref['alias'][$field];
 
-                    if (isset($options['has_one'])) {
+                    if (!empty($options['has_one'])) {
                         $define['assoc'] = 'has_one';
                         $define['class'] = $options['has_one'];
                     }
-                    if (isset($options['has_many'])) {
+                    if (!empty($options['has_many'])) {
                         $define['assoc'] = 'has_many';
                         $define['class'] = $options['has_many'];
                     }
-                    if (isset($options['belongs_to'])) {
+                    if (!empty($options['belongs_to'])) {
                         $define['assoc'] = 'belongs_to';
                         $define['class'] = $options['belongs_to'];
                     }
-                    if (isset($options['many_to_many'])) {
+                    if (!empty($options['many_to_many'])) {
                         $define['assoc'] = 'many_to_many';
                         $define['class'] = $options['many_to_many'];
                     }
@@ -541,7 +561,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
                 }
 
                 // 根据 META 确定属性的默认值
-                if (isset($meta[$field]) && $meta[$field]['has_default']) {
+                if (!empty($meta[$field]) && $meta[$field]['has_default']) {
                     $define['default'] = $meta[$field]['default'];
                 } else {
                     $define['default'] = null;
@@ -553,16 +573,19 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         // 将没有指定的字段也设置为对象属性
         foreach ($meta as $key => $field) {
             if (!isset($attribs[$key])) {
+                $ref['alias'][$key] = $key;
                 $attribs[$key] = array(
                     'public'    => true,
                     'readonly'  => false,
-                    'alias'     => $key,
                     'assoc'     => false,
+                    'alias'     => $key,
                     'default'   => ($field['has_default']) ? $field['default'] : null,
                 );
             }
         }
         $ref['attribs'] = $attribs;
+        $ref['ralias'] = array_flip($ref['alias']);
+        $ref['table']->setAlias($ref['alias'], $ref['ralias']);
         unset($ref['fields']);
 
         return $ref;
@@ -575,7 +598,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     private static function __init($class)
     {
-        if (isset(self::$__defines[$class])) { return; }
-        self::$__defines[$class] = self::__reflection($class);
+        if (isset(self::$__ref[$class])) { return; }
+        self::$__ref[$class] = self::__reflection($class);
     }
 }
