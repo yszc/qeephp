@@ -52,8 +52,12 @@ class Helper_Control
      */
     function make($type, $id, array $attribs = null, $return = false)
     {
-        $control = QUI_Control::instance($type, $id, $attribs,
-                $this->controller->request->namespace, $this->controller->request->module_name);
+        $control = QUI_Control::instance($this->controller->response->view_adapter,
+                                         $type,
+                                         $id,
+                                         $attribs,
+                                         $this->controller->request->namespace,
+                                         $this->controller->request->module_name);
         $control->viewdata = $this->controller->view;
         return $control->render($return);
     }

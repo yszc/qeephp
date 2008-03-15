@@ -30,13 +30,6 @@ abstract class QDB_Select_Abstract
     protected $table;
 
     /**
-     * 字段的别名
-     *
-     * @var array
-     */
-    protected $fields2alias = array();
-
-    /**
      * SELECT 子句后要查询的内容
      *
      * @var string
@@ -135,6 +128,13 @@ abstract class QDB_Select_Abstract
     protected $as_object = null;
 
     /**
+     * 指示按照什么字段对结果集分组
+     *
+     * @var string
+     */
+    protected $group_result = null;
+
+    /**
      * 构造函数
      *
      * @param QDB_Table $table
@@ -151,19 +151,6 @@ abstract class QDB_Select_Abstract
             list($sql, ) = $this->table->parseSQLInternal($where, $args);
             $this->where[] = $sql;
         }
-    }
-
-    /**
-     * 将查询结果中的特定字段转换为别名
-     *
-     * @param array $fields2alias
-     *
-     * @return QDB_Select_Abstract
-     */
-    function alias(array $fields2alias)
-    {
-        $this->fields2alias = $fields2alias;
-        return $this;
     }
 
     /**
@@ -239,6 +226,23 @@ abstract class QDB_Select_Abstract
     }
 
     /**
+     * 添加查询条件，并且以数组附加查询参数
+     *
+     * @param array|string $where
+     * @param array $args
+     *
+     * @return QDB_Select_Abstract
+     */
+    function whereArgs($where, array $args)
+    {
+        list($sql, ) = $this->table->parseSQLInternal($where, $args);
+        if (!empty($sql)) {
+            $this->where[] = $sql;
+        }
+        return $this;
+    }
+
+    /**
      * 指定查询的排序
      *
      * @param string $expr
@@ -287,6 +291,7 @@ abstract class QDB_Select_Abstract
      */
     function limitPage($page, $page_size = 20, $base = 1)
     {
+        if ($page < $base) { $page = $base; }
         $this->page_base = $base;
         $page -= $base;
         $this->limit = array($page_size, $page * $page_size);
@@ -351,7 +356,7 @@ abstract class QDB_Select_Abstract
      *
      * @return QDB_Select_Abstract
      */
-    function as_object($class_name)
+    function asObject($class_name)
     {
         $this->as_object = $class_name;
         return $this;
@@ -362,9 +367,22 @@ abstract class QDB_Select_Abstract
      *
      * @return QDB_Select_Abstract
      */
-    function as_array()
+    function asArray()
     {
         $this->as_object = null;
+        return $this;
+    }
+
+    /**
+     * 让结果集按照特定字段分组
+     *
+     * @param string $group_result
+     *
+     * @return QDB_Select_Abstract
+     */
+    function groupResult($group_result)
+    {
+        $this->group_result = $group_result;
         return $this;
     }
 
@@ -462,44 +480,33 @@ abstract class QDB_Select_Abstract
 
         if (isset($row)) {
             if (!empty($row) && $this->as_object) {
-                return new $this->as_object($row);
+                return new $this->as_object($row, false);
             } else {
-                return $this->mappingToAlias($row);
+                return $row;
             }
         } else {
             if (!empty($rowset) && $this->as_object) {
                 $objects = array();
-                foreach (array_keys($rowset) as $offset) {
-                    $objects[] = new $this->as_object($rowset[$offset]);
+                if (!empty($this->group_result)) {
+                    foreach (array_keys($rowset) as $offset) {
+                        $v = $rowset[$offset][$this->group_result];
+                        $objects[$v][] = new $this->as_object($rowset[$offset]);
+                    }
+                } else {
+                    foreach (array_keys($rowset) as $offset) {
+                        $objects[] = new $this->as_object($rowset[$offset]);
+                    }
                 }
                 return $objects;
             } else {
-                foreach (array_keys($rowset) as $offset) {
-                    $rowset[$offset] = $this->mappingToAlias($rowset[$offset]);
+                if (!empty($this->group_result)) {
+                    Q::loadVendor('array');
+                    return array_group_by($rowset, $this->group_result);
+                } else {
+                    return $rowset;
                 }
-                return $rowset;
             }
         }
-    }
-
-    /**
-     * 将数组中的字段名转换为别名
-     *
-     * @param array $row
-     *
-     * @return array
-     */
-    function mappingToAlias($row)
-    {
-        if (!is_array($row)) { return $row; }
-        foreach ($this->fields2alias as $f => $a) {
-            if ($f == $a || !isset($row[$f])) {
-                continue;
-            }
-            $row[$a] = $row[$f];
-            unset($row[$f]);
-        }
-        return $row;
     }
 
     /**

@@ -135,20 +135,6 @@ class QDB_Table
     protected $pk_count;
 
     /**
-     * 字段和别名的映射
-     *
-     * @var array
-     */
-    protected $fields2alias = array();
-
-    /**
-     * 别名和字段的映射
-     *
-     * @var array
-     */
-    protected $alias2fields = array();
-
-    /**
      * 当前数据表的元数据
      *
      * 元数据是一个二维数组，每个元素的键名就是全小写的字段名，而键值则是该字段的数据表定义。
@@ -387,7 +373,6 @@ class QDB_Table
         $args = func_get_args();
         array_shift($args);
         $select = new QDB_Table_Select($this, $where, $args, $this->links);
-        $select->alias($this->fields2alias);
         return $select;
     }
 
@@ -416,9 +401,6 @@ class QDB_Table
      */
     function create(array $row, $recursion = 99)
     {
-        // 处理字段别名问题
-        $row = $this->mappingFromAlias($row);
-
         /**
          * 处理主键字段
          *
@@ -535,9 +517,6 @@ class QDB_Table
      */
     function update(array $row, $recursion = 1)
     {
-        // 处理字段别名问题
-        $row = $this->mappingFromAlias($row);
-
         // TODO: update() 实现对关联的处理
         // TODO: update() 实现对复合主键的处理
         $this->fillFieldsWithCurrentTime($row, $this->updated_time_fields);
@@ -574,9 +553,6 @@ class QDB_Table
      */
     function updateWhere(array $pairs, $where)
     {
-        // 处理字段别名问题
-        $row = $this->mappingFromAlias($row);
-
         // TODO: updateWhere() 实现对关联的处理
         $args = func_get_args();
         array_shift($args);
@@ -620,9 +596,6 @@ class QDB_Table
      */
     function incrWhere($field, $step = 1, $where)
     {
-        if (isset($this->alias2fields[$field])) {
-            $field = $this->alias2fields[$field];
-        }
         $args = func_get_args();
         array_shift($args);
         array_shift($args);
@@ -641,9 +614,6 @@ class QDB_Table
      */
     function decrWhere($field, $step = 1, $where)
     {
-        if (isset($this->alias2fields[$field])) {
-            $field = $this->alias2fields[$field];
-        }
         $args = func_get_args();
         array_shift($args);
         array_shift($args);
@@ -662,9 +632,6 @@ class QDB_Table
      */
     function save(array $row, $recursion = 1, $method = 'save')
     {
-        // 处理字段别名问题
-        $row = $this->mappingFromAlias($row);
-
         if ($this->is_cpk) {
             // 如果是复合主键，并且需要自动判断使用 create() 或 update()，则抛出异常
             if ($method == 'save' || $method == 'only_create' || $method == 'only_update') {
@@ -714,9 +681,6 @@ class QDB_Table
      */
     function replace(array $row)
     {
-        // 处理字段别名问题
-        $row = $this->mappingFromAlias($row);
-
         $this->fillFieldsWithCurrentTime($row, $this->created_time_fields);
         $sql = $this->dbo->getReplaceSQL($row, $this->full_table_name, $this->schema);
         $this->dbo->execute($sql, $row);
@@ -957,41 +921,6 @@ class QDB_Table
     }
 
     /**
-     * 设置字段别名
-     *
-     * @param array $f2a
-     * @param array $a2f
-     */
-    function setAlias(array $f2a = null, array $a2f = null)
-    {
-        if (is_null($f2a)) { $f2a = array(); }
-        if (is_null($a2f)) { $a2f = array_flip($f2a); }
-
-        $this->fields2alias = $f2a;
-        $this->alias2fields = $a2f;
-    }
-
-    /**
-     * 将数组中的别名转换为实际字段名
-     *
-     * @param array $row
-     *
-     * @return array
-     */
-    function mappingFromAlias($row)
-    {
-        if (!is_array($row)) { return $row; }
-        foreach ($this->alias2fields as $a => $f) {
-            if ($a == $f || !isset($row[$a])) {
-                continue;
-            }
-            $row[$f] = $row[$a];
-            unset($row[$a]);
-        }
-        return $row;
-    }
-
-    /**
      * 分析查询条件和参数
      *
      * @param array|string $sql
@@ -1047,6 +976,13 @@ class QDB_Table
      */
     protected function parseSQLArray(array $arr, array $args = null)
     {
+        static $keywords;
+
+        if (is_null($keywords)) {
+            $keywords = explode(' ', '( AND OR NOT BETWEEN CASE && || = <=> >= > <= < <> != IS LIKE');
+            $keywords = array_flip($keywords);
+        }
+
         $parts = array();
         $callback = array($this->dbo, 'qstr');
         $next_op = '';
@@ -1060,16 +996,22 @@ class QDB_Table
                  * 对于其他值，则假定为需要再分析的 SQL。
                  * 因此再次调用 parseSQLInternal() 分析。
                  */
-                if ($value == ')') {
-                    $next_op = 'AND';
-                    $sql = ')';
-                } else {
+                if (isset($keywords[$value])) {
                     $next_op = '';
+                    $sql = $value;
+                } elseif ($value == ')') {
+                    $next_op = 'AND';
+                    $sql = $value;
+                } else {
+                    if ($next_op != '') {
+                        $parts[] = $next_op;
+                    }
                     list($sql, , $args_count) = $this->parseSQLInternal($value, $args);
                     if (empty($sql)) { continue; }
                     if ($args_count > 0) {
                         $args = array_slice($args, $args_count);
                     }
+                    $next_op = 'AND';
                 }
                 $parts[] = $sql;
             } else {

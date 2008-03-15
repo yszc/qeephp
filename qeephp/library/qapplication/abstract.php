@@ -149,10 +149,9 @@ abstract class QApplication_Abstract
 
         if (is_array($controller->view)) {
             $viewname = $controller_name . DS . $action_name;
-            $response = new QResponse_Render($viewname, $namespace, $module);
+            $response = new QResponse_Render($controller, $viewname, $namespace, $module);
             $response->data = $controller->view;
             $response->layouts = $controller->view_layouts;
-            $response->controller = $controller;
             return $response->run();
         } elseif (!is_null($controller->view)) {
             echo $controller->view;

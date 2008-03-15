@@ -137,11 +137,11 @@ class Behavior_Tree implements QDB_ActiveRecord_Behavior_Interface
      *
      * @param QDB_ActiveRecord_Abstract $obj
      * @param array $props
-     * @param boolean $as_array
+     * @param boolean $asArray
      *
      * @return QColl|array
      */
-    function getPath(QDB_ActiveRecord_Abstract $obj, array & $props, $as_array = false)
+    function getPath(QDB_ActiveRecord_Abstract $obj, array & $props, $asArray = false)
     {
         $rgt = $this->settings['right'];
         $lft = $this->settings['left'];
@@ -150,10 +150,10 @@ class Behavior_Tree implements QDB_ActiveRecord_Behavior_Interface
                       ->find("[{$lft}] < ? AND [{$rgt}] > ?", $props[$lft], $props[$rgt])
                       ->all()
                       ->order($this->settings['left'] . ' ASC');
-        if ($as_array) {
-            $select->as_array();
+        if ($asArray) {
+            $select->asArray();
         } else {
-            $select->as_object(get_class($obj));
+            $select->asObject(get_class($obj));
         }
         return $select->query();
     }
@@ -163,20 +163,20 @@ class Behavior_Tree implements QDB_ActiveRecord_Behavior_Interface
      *
      * @param QDB_ActiveRecord_Abstract $obj
      * @param array $props
-     * @param boolean $as_array
+     * @param boolean $asArray
      *
      * @return QColl|array
      */
-    function getSubNodes(QDB_ActiveRecord_Abstract $obj, array & $props, $as_array = false)
+    function getSubNodes(QDB_ActiveRecord_Abstract $obj, array & $props, $asArray = false)
     {
         $select = $obj->getTable()
                       ->find("[{$this->settings['parent_id']}] = ?", $obj->id())
                       ->all()
                       ->order($this->settings['left'] . ' ASC');
-        if ($as_array) {
-            $select->as_array();
+        if ($asArray) {
+            $select->asArray();
         } else {
-            $select->as_object(get_class($obj));
+            $select->asObject(get_class($obj));
         }
         return $select->query();
     }
@@ -186,11 +186,11 @@ class Behavior_Tree implements QDB_ActiveRecord_Behavior_Interface
      *
      * @param QDB_ActiveRecord_Abstract $obj
      * @param array $props
-     * @param boolean $as_array
+     * @param boolean $asArray
      *
      * @return QColl|array
      */
-    function getSubTree(QDB_ActiveRecord_Abstract $obj, array & $props, $as_array = false)
+    function getSubTree(QDB_ActiveRecord_Abstract $obj, array & $props, $asArray = false)
     {
         $rgt = $this->settings['right'];
         $lft = $this->settings['left'];
@@ -199,10 +199,10 @@ class Behavior_Tree implements QDB_ActiveRecord_Behavior_Interface
                       ->find("[{$lft}] BETWEEN ? AND ?", $props[$lft], $props[$rgt])
                       ->all()
                       ->order($this->settings['left'] . ' ASC');
-        if ($as_array) {
-            $select->as_array();
+        if ($asArray) {
+            $select->asArray();
         } else {
-            $select->as_object(get_class($obj));
+            $select->asObject(get_class($obj));
         }
         return $select->query();
     }
@@ -212,11 +212,11 @@ class Behavior_Tree implements QDB_ActiveRecord_Behavior_Interface
      *
      * @param QDB_ActiveRecord_Abstract $obj
      * @param array $props
-     * @param boolean $as_array
+     * @param boolean $asArray
      *
      * @return QColl|array
      */
-    function getCurrentLevelNodes(QDB_ActiveRecord_Abstract $obj, array & $props, $as_array = false)
+    function getCurrentLevelNodes(QDB_ActiveRecord_Abstract $obj, array & $props, $asArray = false)
     {
         $pid = $this->settings['parent_id'];
 
@@ -224,10 +224,10 @@ class Behavior_Tree implements QDB_ActiveRecord_Behavior_Interface
                       ->find("[{$pid}] = ?", $props[$pid])
                       ->all()
                       ->order($this->settings['left'] . ' ASC');
-        if ($as_array) {
-            $select->as_array();
+        if ($asArray) {
+            $select->asArray();
         } else {
-            $select->as_object(get_class($obj));
+            $select->asObject(get_class($obj));
         }
         return $select->query();
     }

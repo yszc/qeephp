@@ -120,7 +120,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     function reload($recursion = 0)
     {
-        $arr = $this->getTable()->find(array($this->idname() => $this->id()))->recursion($recursion)->as_array()->query();
+        $arr = $this->getTable()->find(array($this->idname() => $this->id()))->recursion($recursion)->asArray()->query();
         $this->attach($arr);
     }
 
@@ -187,19 +187,19 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         // ralias 是 别名 => 实际字段名
         $ralias = self::$__ref[$this->__class]['ralias'];
 
-        foreach (array_keys($this->__all_props) as $key) {
-            $rf = $ralias[$key];
-            if ($attribs[$rf]['assoc']) {
-                if (is_array($this->__props[$key])) {
-                    $row[$key] = array();
-                    foreach ($this->__props[$key] as $obj) {
-                        $row[$key][] = $obj->toArray();
+        foreach (array_keys($this->__all_props) as $a) {
+            $f = $ralias[$a];
+            if ($attribs[$f]['assoc']) {
+                if (is_array($this->__props[$a]) || $this->__props[$a] instanceof Iterator) {
+                    $row[$f] = array();
+                    foreach ($this->__props[$a] as $obj) {
+                        $row[$f][] = $obj->toArray();
                     }
                 } else {
-                    $row[$key] = $this->__props[$key]->toArray();
+                    $row[$f] = $this->__props[$a]->toArray();
                 }
             } else {
-                $row[$key] = isset($this->__props[$key]) ? $this->__props[$key] : $this->{$key};
+                $row[$f] = isset($this->__props[$a]) ? $this->__props[$a] : $this->{$a};
             }
         }
         return $row;
@@ -240,6 +240,9 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         }
         $attr = self::$__ref[$this->__class]['attribs'][$varname];
         if (isset($attr['getter'])) {
+            if (!is_array($attr['getter'])) {
+                $attr['getter'] = array($this, $attr['getter']);
+            }
             return call_user_func($attr['getter'], $varname);
         }
         return $this->__props[$varname];
@@ -340,9 +343,14 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
                         $msg = 'Property "%s" type mismatch. expected is "%s", actual is "%s".';
                         throw new QDB_ActiveRecord_Exception(__($msg, "\$row[{$field}]", 'array', gettype($row[$field])));
                     } else {
-                        $this->__props[$field] = new QColl($define['class']);
-                        foreach ($row[$field] as $assoc_row) {
-                            $this->__props[$field][] = new $define['class']($assoc_row);
+                        if ($define['assoc'] == 'has_one' ||  $define['assoc'] == 'belongs_to') {
+                            $this->__props[$field] = new $define['class']($row[$field][0]);
+                        } else {
+                            $coll = new QColl($define['class']);
+                            $this->__props[$field] = $coll;
+                            foreach ($row[$field] as $assoc_row) {
+                                $coll[] = new $define['class']($assoc_row);
+                            }
                         }
                     }
                     $this->__all_props[$field] =& $this->__props[$field];
@@ -585,7 +593,6 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         }
         $ref['attribs'] = $attribs;
         $ref['ralias'] = array_flip($ref['alias']);
-        $ref['table']->setAlias($ref['alias'], $ref['ralias']);
         unset($ref['fields']);
 
         return $ref;

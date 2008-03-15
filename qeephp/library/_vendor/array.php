@@ -45,7 +45,7 @@ function array_remove_empty(& $arr, $trim = true)
  *
  * @return array
  */
-function array_col_values(& $arr, $col)
+function array_col_values($arr, $col)
 {
     $ret = array();
     foreach ($arr as $row) {
@@ -65,7 +65,7 @@ function array_col_values(& $arr, $col)
  *
  * @return array
  */
-function array_to_hashmap(& $arr, $keyField, $valueField = null)
+function array_to_hashmap($arr, $keyField, $valueField = null)
 {
     $ret = array();
     if ($valueField) {
@@ -88,7 +88,7 @@ function array_to_hashmap(& $arr, $keyField, $valueField = null)
  *
  * @return array
  */
-function array_group_by(& $arr, $keyField)
+function array_group_by($arr, $keyField)
 {
     $ret = array();
     foreach ($arr as $row) {
@@ -148,7 +148,7 @@ function array_to_tree($arr, $fid, $fparent = 'parent_id', $fchildrens = 'childr
  *
  * @return array
  */
-function tree_to_array(& $node, $fchildrens = 'childrens')
+function tree_to_array($node, $fchildrens = 'childrens')
 {
     $ret = array();
     if (isset($node[$fchildrens]) && is_array($node[$fchildrens])) {

@@ -36,6 +36,7 @@ abstract class QUI_Control
     /**
      * 实例化一个控件
      *
+     * @param QView_Adapter_Abstract $view_adapter
      * @param string $type
      * @param string $id
      * @param array $attribs
@@ -44,7 +45,7 @@ abstract class QUI_Control
      *
      * @return QUI_Control_Abstract
      */
-    static function instance($type, $id, array $attribs = null, $namespace = null, $module = null)
+    static function instance(QView_Adapter_Abstract $view_adapter, $type, $id, array $attribs = null, $namespace = null, $module = null)
     {
         $id = strtolower($id);
         if (isset(self::$controls[$id])) {
@@ -56,7 +57,7 @@ abstract class QUI_Control
         if (!class_exists($class_name, false)) {
             self::loadControl($type, $namespace, $module);
         }
-        $control = new $class_name($id, $attribs);
+        $control = new $class_name($view_adapter, $id, $attribs);
         /* @var $control QUI_Control_Abstract */
         $control->namespace = $namespace;
         $control->module = $module;
