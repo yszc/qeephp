@@ -30,6 +30,13 @@ abstract class QDB_Select_Abstract
     protected $table;
 
     /**
+     * 字段的别名
+     *
+     * @var array
+     */
+    protected $fields2alias = array();
+
+    /**
      * SELECT 子句后要查询的内容
      *
      * @var string
@@ -144,6 +151,19 @@ abstract class QDB_Select_Abstract
             list($sql, ) = $this->table->parseSQLInternal($where, $args);
             $this->where[] = $sql;
         }
+    }
+
+    /**
+     * 将查询结果中的特定字段转换为别名
+     *
+     * @param array $fields2alias
+     *
+     * @return QDB_Select_Abstract
+     */
+    function alias(array $fields2alias)
+    {
+        $this->fields2alias = $fields2alias;
+        return $this;
     }
 
     /**
@@ -444,7 +464,7 @@ abstract class QDB_Select_Abstract
             if (!empty($row) && $this->as_object) {
                 return new $this->as_object($row);
             } else {
-                return $row;
+                return $this->mappingToAlias($row);
             }
         } else {
             if (!empty($rowset) && $this->as_object) {
@@ -454,9 +474,32 @@ abstract class QDB_Select_Abstract
                 }
                 return $objects;
             } else {
+                foreach (array_keys($rowset) as $offset) {
+                    $rowset[$offset] = $this->mappingToAlias($rowset[$offset]);
+                }
                 return $rowset;
             }
         }
+    }
+
+    /**
+     * 将数组中的字段名转换为别名
+     *
+     * @param array $row
+     *
+     * @return array
+     */
+    function mappingToAlias($row)
+    {
+        if (!is_array($row)) { return $row; }
+        foreach ($this->fields2alias as $f => $a) {
+            if ($f == $a || !isset($row[$f])) {
+                continue;
+            }
+            $row[$a] = $row[$f];
+            unset($row[$f]);
+        }
+        return $row;
     }
 
     /**
