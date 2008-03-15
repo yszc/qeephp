@@ -85,7 +85,7 @@ class QDB_ActiveRecord_Select extends QDB_Select_Abstract
             $this->table->getLink($define['alias'])->init();
         }
         $this->links = $this->table->getAllLinks();
-        $this->as_object($class);
+        $this->asObject($class);
     }
 
     /**

@@ -70,13 +70,21 @@ abstract class QUI_Control_Abstract
     public $viewdata = null;
 
     /**
+     * 视图适配器
+     *
+     * @var QView_Adapter_Abstract
+     */
+    public $view_adapter;
+
+    /**
      * 构造函数
      *
      * @param string $id
      * @param array $attribs
      */
-    function __construct($id, array $attribs = null)
+    function __construct(QView_Adapter_Abstract $view_adapter, $id, array $attribs = null)
     {
+        $this->view_adapter = $view_adapter;
         $this->id = $id;
         $this->attribs = (array)$attribs;
     }

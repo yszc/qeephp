@@ -28,5 +28,5 @@ deploy:
     host:       localhost
     login:      username
     password:   password
-    database:   %APP_NAME%
+    database:   %APP_NAME%_db
     charset:    utf8

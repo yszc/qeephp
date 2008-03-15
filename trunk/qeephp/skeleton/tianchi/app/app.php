@@ -47,3 +47,13 @@ class App extends QApplication_Abstract
         QException::dump($ex);
     }
 }
+
+/**
+ * AppException 封装应用程序运行过程中产生的异常
+ *
+ * @package app
+ */
+class AppException extends QException
+{
+
+}

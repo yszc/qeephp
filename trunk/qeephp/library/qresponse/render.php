@@ -65,17 +65,31 @@ class QResponse_Render
     public $layouts;
 
     /**
+     * 视图渲染适配器
+     *
+     * @var QView_Adapter_Abstract
+     */
+    public $view_adapter;
+
+    /**
      * 构造函数
      *
+     * @param QController_Abstract $controller
      * @param string $viewname
      * @param string $namespace
      * @param module
      */
-    function __construct($viewname, $namespace = null, $module = null)
+    function __construct(QController_Abstract $controller, $viewname, $namespace = null, $module = null)
     {
+        $this->controller = $controller;
+        $this->controller->response = $this;
         $this->viewname = $viewname;
         $this->namespace = $namespace;
         $this->module = $module;
+
+        $class_name = Q::getIni('view_adapter');
+        Q::loadClass($class_name);
+        $this->view_adapter = new $class_name($this);
     }
 
     /**
@@ -83,22 +97,18 @@ class QResponse_Render
      */
     function run()
     {
-        $class_name = Q::getIni('view_adapter');
-        Q::loadClass($class_name);
-        $adapter = new $class_name($this);
-        /* @var $adapter QView_Adapter_Abstract */
-        $adapter->module = $this->module;
-        $adapter->namespace = $this->namespace;
-        $adapter->filters[] = new QFilter_View_Macros();
-        $adapter->assign($this->data);
+        $this->view_adapter->module = $this->module;
+        $this->view_adapter->namespace = $this->namespace;
+        $this->view_adapter->filters[] = new QFilter_View_Macros();
+        $this->view_adapter->assign($this->data);
 
         $layouts = '_layouts/' . $this->layouts . '_layout';
-        if ($adapter->exists($layouts)) {
-            $content_for_layouts = $adapter->fetch($this->viewname);
-            $adapter->assign('contents_for_layouts', $content_for_layouts);
-            $adapter->display($layouts);
+        if ($this->view_adapter->exists($layouts)) {
+            $content_for_layouts = $this->view_adapter->fetch($this->viewname);
+            $this->view_adapter->assign('contents_for_layouts', $content_for_layouts);
+            $this->view_adapter->display($layouts);
         } else {
-            $adapter->display($this->viewname);
+            $this->view_adapter->display($this->viewname);
         }
     }
 }

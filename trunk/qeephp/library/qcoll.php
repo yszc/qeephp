@@ -100,6 +100,9 @@ class QColl implements Iterator, ArrayAccess, Countable
      */
     function offsetSet($offset, $value)
     {
+        if (is_null($offset)) {
+            $offset = count($this->coll);
+        }
         if (is_array($value)) {
             foreach (array_keys($value) as $key) {
                 $this->checkType($value[$key]);

@@ -59,6 +59,13 @@ abstract class QController_Abstract
     public $view = array();
 
     /**
+     * 控制器动作执行完毕后的响应对象
+     *
+     * @var QResponse_Interface
+     */
+    public $response;
+
+    /**
      * 构造函数
      */
     function __construct(QApplication_Abstract $app)
