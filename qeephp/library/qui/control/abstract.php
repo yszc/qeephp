@@ -171,12 +171,13 @@ abstract class QUI_Control_Abstract
      * 尝试获得特定属性的值
      *
      * @param string $attr
+     * @param mixed $default
      *
      * @return mixed
      */
-    protected function attr($attr)
+    protected function attr($attr, $default = null)
     {
-        $value = isset($this->attribs[$attr]) ? $this->attribs[$attr] : null;
+        $value = isset($this->attribs[$attr]) ? $this->attribs[$attr] : $default;
         unset($this->attribs[$attr]);
         return $value;
     }

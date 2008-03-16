@@ -70,7 +70,7 @@ class QDB_ActiveRecord_Select extends QDB_Select_Abstract
                 break;
             case QDB_Table::belongs_to:
                 if (empty($link['main_key'])) {
-                    $link['main_key'] = strtolower($define['clsas']) . '_id';
+                    $link['main_key'] = strtolower($define['class']) . '_id';
                 }
                 break;
             case QDB_Table::many_to_many:

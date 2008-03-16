@@ -129,7 +129,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      *
      * @param string $mode
      */
-    function validate($mode = 'general')
+    function doValidate($mode = 'general')
     {
         $this->__doCallbacks(self::before_validation);
         if ($mode == 'create') {
@@ -335,6 +335,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
             if (!isset($row[$field]) && $define['assoc'] == false) {
                 $row[$field] = self::$__ref[$this->__class]['attribs'][$field]['default'];
             }
+            $a = isset($alias[$field]) ? $alias[$field] : $field;
 
             if ($define['readonly'] || !$define['public'] || $define['assoc']) {
                 if ($define['assoc']) {
@@ -344,25 +345,23 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
                         throw new QDB_ActiveRecord_Exception(__($msg, "\$row[{$field}]", 'array', gettype($row[$field])));
                     } else {
                         if ($define['assoc'] == 'has_one' ||  $define['assoc'] == 'belongs_to') {
-                            $this->__props[$field] = new $define['class']($row[$field][0]);
+                            $this->__props[$a] = new $define['class']($row[$field]);
                         } else {
                             $coll = new QColl($define['class']);
-                            $this->__props[$field] = $coll;
+                            $this->__props[$a] = $coll;
                             foreach ($row[$field] as $assoc_row) {
                                 $coll[] = new $define['class']($assoc_row);
                             }
                         }
                     }
-                    $this->__all_props[$field] =& $this->__props[$field];
+                    $this->__all_props[$a] =& $this->__props[$a];
                 } else {
-                    $af = $alias[$field];
-                    $this->__props[$af] = $row[$field];
-                    $this->__all_props[$af] =& $this->__props[$af];
+                    $this->__props[$a] = $row[$field];
+                    $this->__all_props[$a] =& $this->__props[$a];
                 }
             } else {
-                $af = $alias[$field];
-                $this->{$af} = $row[$field];
-                $this->__all_props[$af] =& $this->{$af};
+                $this->{$a} = $row[$field];
+                $this->__all_props[$a] =& $this->{$a};
             }
         }
     }
@@ -374,7 +373,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     {
         $table = self::$__ref[$this->__class]['table'];
         /* @var $table QDB_Table */
-        $this->validate('create');
+        $this->doValidate('create');
         $this->__doCallbacks(self::before_create);
         $id = $table->create($this->toArray());
         $this->__all_props[$this->idname()] = $id;
@@ -388,7 +387,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     {
         $table = self::$__ref[$this->__class]['table'];
         /* @var $table QDB_Table */
-        $this->validate('update');
+        $this->doValidate('update');
         $this->__doCallbacks(self::before_update);
         $table->update($this->toArray());
         $this->__doCallbacks(self::after_update);
@@ -418,6 +417,25 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
             call_user_func_array(array($select, 'where'), $args);
         }
         return $select;
+    }
+
+    /**
+     * 对数据进行验证，返回所有未通过验证数据的名称错误信息
+     *
+     * @param array $data
+     *
+     * @return array
+     */
+    protected static function __validate($class, array $data)
+    {
+        self::__init($class);
+        $validation = !empty(self::$__ref[$class]['validation']) ? self::$__ref[$class]['validation'] : null;
+        if (!empty($validation)) {
+            $v = new QValidate();
+            return $v->groupCheck($data, $validation);
+        } else {
+            return null;
+        }
     }
 
     /**

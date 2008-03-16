@@ -65,6 +65,34 @@ abstract class QDB_Select_Abstract
     protected $page_base = 1;
 
     /**
+     * 分页查询时，每页包含的记录数
+     *
+     * @var int
+     */
+    protected $page_size = 20;
+
+    /**
+     * 当前查询的页
+     *
+     * @var int
+     */
+    protected $page = 1;
+
+    /**
+     * 分页信息
+     *
+     * @var array
+     */
+    protected $pager = null;
+
+    /**
+     * 指示是否是分页查询
+     *
+     * @var boolean
+     */
+    protected $page_query = false;
+
+    /**
      * 添加 GROUP BY 子句
      *
      * @var string
@@ -291,11 +319,26 @@ abstract class QDB_Select_Abstract
      */
     function limitPage($page, $page_size = 20, $base = 1)
     {
+        if ($base < 0) { $base = 0; }
         if ($page < $base) { $page = $base; }
         $this->page_base = $base;
-        $page -= $base;
-        $this->limit = array($page_size, $page * $page_size);
+        $this->page_size = $page_size;
+        $this->page = $page;
+        $this->pager = null;
+        $this->page_query = true;
         return $this;
+    }
+
+    /**
+     * 获得分页信息
+     *
+     * 必须先使用 limitPage() 指定有效分页参数。
+     *
+     * @return array
+     */
+    function getPager()
+    {
+        return $this->pager;
     }
 
     /**
@@ -395,6 +438,49 @@ abstract class QDB_Select_Abstract
      */
     function query($clean_up = true)
     {
+        if ($this->page_query) {
+            // 计算分页
+            $sql = 'SELECT ';
+            if ($this->distinct) {
+                $sql .= 'DISTINCT ';
+            }
+            $sql .= " COUNT(*) FROM {$this->table->qtable_name}";
+            $sql .= $this->toStringWhere();
+            $sql .= $this->toStringGroup();
+            $sql .= $this->toStringHaving();
+
+            $count = (int)$this->table->getConn()->getOne($sql);
+
+            $pager = array();
+            $pager['page_count'] = ceil($count / $this->page_size);
+            $pager['first'] = $this->page_base;
+            $pager['last'] = $pager['page_count'] + $this->page_base - 1;
+            if ($pager['last'] < $pager['first']) { $pager['last'] = $pager['first']; }
+
+            if ($this->page >= $pager['page_count'] + $this->page_base) {
+                $this->page = $pager['last'];
+            }
+            if ($this->page < $this->page_base) {
+                $this->page = $pager['first'];
+            }
+            if ($this->page < $pager['last'] - 1) {
+                $pager['next'] = $this->page + 1;
+            } else {
+                $pager['next'] = $pager['last'];
+            }
+            if ($this->page > $this->page_base) {
+                $pager['prev'] = $this->page - 1;
+            } else {
+                $pager['prev'] = $pager['first'];
+            }
+            $pager['current'] = $this->page;
+            $pager['page_size'] = $this->page_size;
+            $pager['page_base'] = $this->page_base;
+
+            $this->pager = $pager;
+            $this->limit = array($this->page_size, ($this->page - 1) * $this->page_size);
+        }
+
         if ($this->as_object) {
             Q::loadClass($this->as_object);
         }
@@ -423,7 +509,7 @@ abstract class QDB_Select_Abstract
             // 进行关联查询，并组装数据集
             foreach ($used_links as $mka => $link) {
                 /* @var $link QDB_Table_Link */
-                if ($link->assoc_table->qtable_name == $this->table->qtable_name) {
+                if ($link->assoc_table->qtable_name == $this->table->qtable_name || empty($refs_value[$mka])) {
                     continue;
                 }
 
@@ -574,28 +660,9 @@ abstract class QDB_Select_Abstract
         $sql = $this->toStringInternalCallback($sql);
 
         $sql .= " FROM {$this->table->qtable_name}";
-
-        $c = array();
-        foreach ($this->where as $where) {
-            if (empty($where)) { continue; }
-            $c[] = "({$where})";
-        }
-        if (!empty($c)) {
-            $sql .= ' WHERE ' . implode(' AND ', $c);
-        }
-
-        if ($this->group) {
-            $group = $this->table->parseSQL($this->group);
-            $sql .= " GROUP BY {$group}";
-        }
-
-        $c = array();
-        foreach ($this->having as $where) {
-            $c[] = '(' . $this->table->parseSQL($where) . ')';
-        }
-        if (!empty($c)) {
-            $sql .= ' HAVING ' . implode(' AND ', $c);
-        }
+        $sql .= $this->toStringWhere();
+        $sql .= $this->toStringGroup();
+        $sql .= $this->toStringHaving();
 
         if ($this->order) {
             $order = $this->table->parseSQL($this->order);
@@ -607,6 +674,59 @@ abstract class QDB_Select_Abstract
         }
 
         return array($sql, $used_links);
+    }
+
+    /**
+     * 构造 SQL 的 WHERE 子句
+     *
+     * @return string
+     */
+    protected function toStringWhere()
+    {
+        $c = array();
+        $sql = '';
+        foreach ($this->where as $where) {
+            if (empty($where)) { continue; }
+            $c[] = "({$where})";
+        }
+        if (!empty($c)) {
+            $sql .= ' WHERE ' . implode(' AND ', $c);
+        }
+        return $sql;
+    }
+
+
+    /**
+     * 构造 SQL 的 GROUP 子句
+     *
+     * @return string
+     */
+    protected function toStringGroup()
+    {
+        if ($this->group) {
+            $group = $this->table->parseSQL($this->group);
+            return " GROUP BY {$group}";
+        } else {
+            return '';
+        }
+    }
+
+    /**
+     * 构造 SQL 的 HAVING 子句
+     *
+     * @return string
+     */
+    protected function toStringHaving()
+    {
+        $c = array();
+        $sql = '';
+        foreach ($this->having as $where) {
+            $c[] = '(' . $this->table->parseSQL($where) . ')';
+        }
+        if (!empty($c)) {
+            $sql .= ' HAVING ' . implode(' AND ', $c);
+        }
+        return $sql;
     }
 
     /**

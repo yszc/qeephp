@@ -53,6 +53,29 @@ class QValidate
     }
 
     /**
+     * 对一组数据进行验证
+     *
+     * @param array $data
+     * @param array $rules
+     *
+     * @return array
+     */
+    function groupCheck(array $data, array $rules)
+    {
+        $result = array();
+        $v = new QValidate_Validator(null);
+
+        foreach ($data as $key => $value) {
+            $v->setData($value);
+            $r = $v->runRules($rules);
+            if (!empty($r)) {
+                $result[$key] = $r;
+            }
+        }
+        return $result;
+    }
+
+    /**
      * 返回所有检查总的验证结果
      *
      * @return boolean

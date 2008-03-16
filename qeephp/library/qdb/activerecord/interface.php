@@ -50,4 +50,13 @@ interface QDB_ActiveRecord_Interface
      * @return int
      */
     static function destroyWhere($where);
+
+    /**
+     * 对数据进行验证，返回所有未通过验证数据的名称错误信息
+     *
+     * @param array $data
+     *
+     * @return array
+     */
+    static function validate(array $data);
 }

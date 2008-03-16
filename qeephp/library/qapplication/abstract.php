@@ -133,7 +133,6 @@ abstract class QApplication_Abstract
         try {
             Q::loadClassFile($filename, array($dir), $class_name);
         } catch (Exception $ex) {
-            unset($ex);
             return call_user_func_array(Q::getIni('on_action_not_found'), $arr);
         }
 
