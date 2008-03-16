@@ -118,7 +118,7 @@ abstract class QApplication_Abstract
         }
 
         // 尝试载入控制器
-        $class_name = 'Controller_' . ucfirst($controller_name);
+        $class_name = 'Controller_' . ucfirst(str_replace('_', '', $controller_name));
         if ($module) {
             $dir = ROOT_DIR . DS . 'module' . DS . $module . DS . 'controller';
         } else {

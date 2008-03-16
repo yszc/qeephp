@@ -951,10 +951,10 @@ class QDB_Table
      */
     function parseSQLInternal($sql, array $args = null)
     {
-        if (empty($sql)) { return array(null, null, null); }
         if (is_int($sql)) {
             return array("{$this->qpk} = {$sql}", array(), null);
         }
+        if (empty($sql)) { return array(null, null, null); }
         if (is_null($args)) {
             $args = array();
         }
