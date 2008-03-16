@@ -84,8 +84,16 @@ class QResponse_Render
         $this->controller = $controller;
         $this->controller->response = $this;
         $this->viewname = $viewname;
-        $this->namespace = $namespace;
-        $this->module = $module;
+        if (is_null($namespace)) {
+            $this->namespace = $controller->request->getNamespace();
+        } else {
+            $this->namespace = $namespace;
+        }
+        if (is_null($module)) {
+            $this->module = $controller->request->getModuleName();
+        } else {
+            $this->module = $module;
+        }
 
         $class_name = Q::getIni('view_adapter');
         Q::loadClass($class_name);

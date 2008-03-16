@@ -159,9 +159,9 @@ if (empty($rules)) { continue; }
      *
      * @return array
      */
-    static function validate(array $data)
+    static function validate(array $data, $fields = null)
     {
-        return parent::__validate(__CLASS__, $data);
+        return parent::__validate(__CLASS__, $data, $fields);
     }
 
 /* -------------------------------------------------------------------- */

@@ -86,7 +86,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     function __construct(array $data = null)
     {
         $this->__class = get_class($this);
-        self::__init($this->__class);
+        self::reflection($this->__class);
 
         if (is_array($data)) {
             $this->attach($data);
@@ -505,6 +505,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         $ref['ralias'] = array_flip($ref['alias']);
         unset($ref['fields']);
 
+        self::$__ref[$class] = $ref;
         return $ref;
     }
 
@@ -600,7 +601,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     protected static function __find($class, array $args)
     {
-        self::__init($class);
+        self::reflection($class);
         $select = new QDB_ActiveRecord_Select(
             $class,
             self::$__ref[$class]['table'],
@@ -619,20 +620,17 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     /**
      * 对数据进行验证，返回所有未通过验证数据的名称错误信息
      *
+     * @param string $class
      * @param array $data
+     * @param array|string $fields
      *
      * @return array
      */
-    protected static function __validate($class, array $data)
+    protected static function __validate($class, array $data, $fields = null)
     {
-        self::__init($class);
-        $validation = !empty(self::$__ref[$class]['validation']) ? self::$__ref[$class]['validation'] : null;
-        if (!empty($validation)) {
-            $v = new QValidate();
-            return $v->groupCheck($data, $validation);
-        } else {
-            return null;
-        }
+        $ref = self::reflection($class);
+        $v = new QValidate();
+        return $v->groupCheck($data, $ref['validation'], $fields);
     }
 
     /**
@@ -644,16 +642,5 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         foreach (self::$__callbacks[$this->__class][$type] as $callback) {
             call_user_func_array($callback, array($this, $this->__all_props));
         }
-    }
-
-    /**
-     * 初始化指定 QDB_ActiveRecord_Abstract 继承类的定义
-     *
-     * @param string $class
-     */
-    private static function __init($class)
-    {
-        if (isset(self::$__ref[$class])) { return; }
-        self::$__ref[$class] = self::reflection($class);
     }
 }
