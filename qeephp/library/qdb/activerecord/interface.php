@@ -55,8 +55,9 @@ interface QDB_ActiveRecord_Interface
      * 对数据进行验证，返回所有未通过验证数据的名称错误信息
      *
      * @param array $data
+     * @param array|string $fields
      *
      * @return array
      */
-    static function validate(array $data);
+    static function validate(array $data, $fields = null);
 }

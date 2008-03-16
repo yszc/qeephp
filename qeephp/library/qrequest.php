@@ -194,8 +194,9 @@ class QRequest
      *
      * @return mixed
      */
-    function getQuery($key, $default = null)
+    function getQuery($key = null, $default = null)
     {
+        if (is_null($key)) { return $_GET; }
         return isset($_GET[$key]) ? $_GET[$key] : $default;
     }
 
@@ -207,8 +208,9 @@ class QRequest
      *
      * @return mixed
      */
-    function getPost($key, $default = null)
+    function getPost($key = null, $default = null)
     {
+        if (is_null($key)) { return $_POST; }
         return isset($_POST[$key]) ? $_POST[$key] : $default;
     }
 
@@ -222,6 +224,7 @@ class QRequest
      */
     function getCookie($key = null, $default = null)
     {
+        if (is_null($key)) { return $_COOKIE; }
         return isset($_COOKIE[$key]) ? $_COOKIE[$key] : $default;
     }
 
@@ -235,6 +238,7 @@ class QRequest
      */
     function getServer($key = null, $default = null)
     {
+        if (is_null($key)) { return $_SERVER; }
         return isset($_SERVER[$key]) ? $_SERVER[$key] : $default;
     }
 
@@ -248,6 +252,7 @@ class QRequest
      */
     function getEnv($key = null, $default = null)
     {
+        if (is_null($key)) { return $_ENV; }
         return isset($_ENV[$key]) ? $_ENV[$key] : $default;
     }
 

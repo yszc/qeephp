@@ -153,7 +153,7 @@ abstract class QController_Abstract
      * @param string $namespace
      * @param string $module
      */
-    protected function beforeExecute($action_name, $namespace, $module)
+    function beforeExecute($action_name, $namespace, $module)
     {
         return true;
     }
@@ -169,7 +169,7 @@ abstract class QController_Abstract
      *
      * @return mixed
      */
-    protected function afterExecute($action_name, $ret, $namespace, $module)
+    function afterExecute($action_name, $ret, $namespace = null, $module = null)
     {
         return $ret;
     }

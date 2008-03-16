@@ -57,15 +57,23 @@ class QValidate
      *
      * @param array $data
      * @param array $rules_group
+     * @param array|string $fields
      *
      * @return array
      */
-    function groupCheck(array $data, array $rules_group)
+    function groupCheck(array $data, array $rules_group, $fields = null)
     {
         $result = array();
         $v = new QValidate_Validator(null);
+        if (is_null($fields)) {
+            $fields = array_keys($rules_group);
+        } else {
+            $fields = Q::normalize($fields);
+        }
+        $fields = array_flip($fields);
 
         foreach ($rules_group as $field => $rules) {
+            if (!isset($fields[$field])) { continue; }
             $v->setData(isset($data[$field]) ? $data[$field]: null);
             $r = $v->runRules($rules);
             if (!empty($r)) {
