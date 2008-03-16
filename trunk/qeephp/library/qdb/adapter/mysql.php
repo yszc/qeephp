@@ -303,8 +303,8 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
             'mediumtext'    => 'x',
             'longblob'      => 'x',
             'longtext'      => 'x',
-            'enum'          => 'c',
-            'set'           => 'c',
+            'enum'          => 'e',
+            'set'           => 'e',
         );
 
         $table_name = $this->qtable($table_name, $schema);
