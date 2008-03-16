@@ -52,6 +52,13 @@ abstract class QController_Abstract
     public $view_layouts = 'default';
 
     /**
+     * 控制器要使用的视图
+     *
+     * @var string
+     */
+    public $viewname = null;
+
+    /**
      * 控制器动作要渲染的数据
      *
      * @var array
@@ -112,10 +119,14 @@ abstract class QController_Abstract
         if (is_null($dirs)) {
             $dirs = array(Q_DIR . '/qcontroller/helper');
             if ($this->request->module_name) {
-                $dirs[] = ROOT_DIR . '/module/' . $this->request->module_name . '/helper';
+                $dir = ROOT_DIR . '/module/' . $this->request->module_name . '/helper';
             } else {
-                $dirs[] = ROOT_DIR . '/app/helper';
+                $dir = ROOT_DIR . '/app/helper';
             }
+            if ($this->request->namespace) {
+                $dir .= '/' . $this->request->namespace;
+            }
+            $dirs[] = $dir;
         }
 
         $class_name = 'Helper_' . ucfirst($varname);

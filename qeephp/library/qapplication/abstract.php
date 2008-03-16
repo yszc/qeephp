@@ -147,7 +147,14 @@ abstract class QApplication_Abstract
         }
 
         if (is_array($controller->view)) {
-            $viewname = $controller_name . DS . $action_name;
+            if (!empty($controller->viewname)) {
+                $viewname = $controller->viewname;
+                if (strpos($viewname, '/') === false) {
+                    $viewname = $controller_name . '/' . $viewname;
+                }
+            } else {
+                $viewname = $controller_name . '/' . $action_name;
+            }
             $response = new QResponse_Render($controller, $viewname, $namespace, $module);
             $response->data = $controller->view;
             $response->layouts = $controller->view_layouts;
@@ -262,8 +269,8 @@ abstract class QApplication_Abstract
     {
         $user = $this->getUser();
         $key = Q::getIni('acl_roles_key');
-        $roles = isset($user[$key]) ? $user[$key] : '';
-        return explode(',', $roles);
+        $roles = isset($user[$key]) ? explode(',', $user[$key]) : '';
+        return Q::normalize($roles);
     }
 
     /**

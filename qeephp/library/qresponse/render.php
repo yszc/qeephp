@@ -103,11 +103,13 @@ class QResponse_Render
         $this->view_adapter->assign($this->data);
 
         $layouts = '_layouts/' . $this->layouts . '_layout';
-        if ($this->view_adapter->exists($layouts)) {
+        if ($this->layouts && $this->view_adapter->exists($layouts)) {
             if ($this->view_adapter->exists($this->viewname)) {
                 $content_for_layouts = $this->view_adapter->fetch($this->viewname);
-                $this->view_adapter->assign('contents_for_layouts', $content_for_layouts);
+            } else {
+                $content_for_layouts = '';
             }
+            $this->view_adapter->assign('contents_for_layouts', $content_for_layouts);
             $this->view_adapter->display($layouts);
         } else {
             $this->view_adapter->display($this->viewname);

@@ -56,20 +56,20 @@ class QValidate
      * 对一组数据进行验证
      *
      * @param array $data
-     * @param array $rules
+     * @param array $rules_group
      *
      * @return array
      */
-    function groupCheck(array $data, array $rules)
+    function groupCheck(array $data, array $rules_group)
     {
         $result = array();
         $v = new QValidate_Validator(null);
 
-        foreach ($data as $key => $value) {
-            $v->setData($value);
+        foreach ($rules_group as $field => $rules) {
+            $v->setData(isset($data[$field]) ? $data[$field]: null);
             $r = $v->runRules($rules);
             if (!empty($r)) {
-                $result[$key] = $r;
+                $result[$field] = $r;
             }
         }
         return $result;
