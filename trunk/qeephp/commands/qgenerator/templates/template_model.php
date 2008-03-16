@@ -17,6 +17,11 @@ class <?php echo $class_name; ?> extends QDB_ActiveRecord_Abstract
             // 指定该 ActiveRecord 要使用的行为插件
             'behaviors' => '',
 
+            // 指定行为插件的配置
+            'behaviors_settings' => array(
+                # '插件名' => array('选项' => 设置),
+            ),
+
 <?php if ($table_class): ?>
             // 用什么表数据入口处理对象的持久化
             'table_class' => '<?php echo $table_class; ?>',
@@ -53,8 +58,17 @@ class <?php echo $class_name; ?> extends QDB_ActiveRecord_Abstract
 
             ),
 
+            /**
+             * 指定在数据库中创建对象时，哪些字段的值不允许由外部提供
+             */
+            'create_reject' => '<?php echo implode(', ', $pk); ?>',
+
+            /**
+             * 指定更新数据库中的对象时，哪些字段的值不允许由外部提供
+             */
+            'update_reject' => '',
+
             // 在保存对象时，会按照下面指定的验证规则进行验证。验证失败会抛出异常。
-            // 也可以调用对象的 isValidate() 方法确认对象数据是否通过了验证。
             // 还可以通过对象的 ::validate() 静态方法对数组数据进行验证。
             'validation' => array(
 <?php

@@ -41,6 +41,10 @@ class Behavior_Tree implements QDB_ActiveRecord_Behavior_Interface
             array(self::after_destroy, array($this, 'afterDestroy')),
             array(self::custom_callback, array($this, 'createChild')),
             array(self::custom_callback, array($this, 'getSubNodes')),
+            array(self::custom_callback, array($this, 'getPath')),
+            array(self::custom_callback, array($this, 'getSubTree')),
+            array(self::custom_callback, array($this, 'getCurrentLevelNodes')),
+            array(self::custom_callback, array($this, 'allChildCount')),
         );
     }
 

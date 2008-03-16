@@ -54,7 +54,7 @@ class QDB_ActiveRecord_Select extends QDB_Select_Abstract
         foreach ($links as $define) {
             $mapping_name = $define['alias'];
             if ($this->table->existsLink($mapping_name)) { continue; }
-            $ref = QDB_ActiveRecord_Abstract::__reflection($define['class']);
+            $ref = QDB_ActiveRecord_Abstract::reflection($define['class']);
             $table = $ref['table'];
 
             $link = $define['assoc_options'];
