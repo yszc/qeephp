@@ -124,6 +124,7 @@ class Behavior_Acluser implements QDB_ActiveRecord_Behavior_Interface
         foreach ($acldata_fields as $f) {
             $data[$f] = $props[$f];
         }
+        $data['id'] = $props[$obj->idname()];
         return $data;
     }
 

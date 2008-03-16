@@ -94,6 +94,7 @@ abstract class QController_Abstract
     function execute($action_name, $namespace = null, $module = null)
     {
         $action_method = 'action' . ucfirst(strtolower($action_name));
+        $action_method = str_replace('_', '', $action_method);
         if (method_exists($this, $action_method)) {
             $this->beforeExecute($action_name, $namespace, $module);
             $ret = $this->{$action_method}();

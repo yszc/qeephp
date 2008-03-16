@@ -513,7 +513,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      *
      * @param array $row
      */
-    protected function attach(array $row)
+    function attach(array $row)
     {
         $alias = self::$__ref[$this->__class]['alias'];
         foreach (self::$__ref[$this->__class]['attribs'] as $field => $define) {
