@@ -7,18 +7,18 @@ require Q_DIR . '/qapplication/abstract.php';
  *
  * @package app
  */
-class App extends QApplication_Abstract
+class MyApp extends QApplication_Abstract
 {
     /**
      * 获得应用程序对象的唯一实例
      *
-     * @return QApplication_Abstract
+     * @return MyApp
      */
     static function instanc()
     {
         static $app;
         if (is_null($app)) {
-            $app = new App();
+            $app = new MyApp();
         }
         return $app;
     }
@@ -49,11 +49,11 @@ class App extends QApplication_Abstract
 }
 
 /**
- * AppException 封装应用程序运行过程中产生的异常
+ * MyAppException 封装应用程序运行过程中产生的异常
  *
  * @package app
  */
-class AppException extends QException
+class MyAppException extends QException
 {
 
 }
