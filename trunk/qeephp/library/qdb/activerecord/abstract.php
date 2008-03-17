@@ -324,6 +324,53 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     }
 
     /**
+     * 为一个 ActiveRecord 类定义一个关联
+     *
+     * @param string $class
+     * @param string $field
+     * @param array $options
+     */
+    static function link($class, $field, array $options)
+    {
+        self::reflection($class);
+
+        $define = array('public' => false);
+        $define['readonly'] = isset($options['readonly']) ? $options['readonly'] : false;
+        $define['alias']    = isset($options['alias'])    ? $options['alias']    : $field;
+        $define['getter']   = isset($options['getter'])   ? $options['getter']   : null;
+        $define['setter']   = isset($options['setter'])   ? $options['setter']   : null;
+        $define['default']  = null;
+
+        if (!empty($options['has_one'])) {
+            $define['assoc'] = 'has_one';
+            $define['class'] = $options['has_one'];
+        }
+        if (!empty($options['has_many'])) {
+            $define['assoc'] = 'has_many';
+            $define['class'] = $options['has_many'];
+        }
+        if (!empty($options['belongs_to'])) {
+            $define['assoc'] = 'belongs_to';
+            $define['class'] = $options['belongs_to'];
+        }
+        if (!empty($options['many_to_many'])) {
+            $define['assoc'] = 'many_to_many';
+            $define['class'] = $options['many_to_many'];
+        }
+
+        unset($options['readonly']);
+        unset($options['alias']);
+        unset($options['setter']);
+        unset($options['getter']);
+        $define['assoc_options'] = $options;
+
+        self::$__ref[$class]['attribs'][$field] = $define;
+        self::$__ref[$class]['alias'][$field] = $define['alias'];
+        self::$__ref[$class]['ralias'][$define['alias']] = $field;
+        self::$__ref[$class]['links'][$field] = $define;
+    }
+
+    /**
      * 获得一个模型类的反射信息
      *
      * @param string $class
@@ -516,7 +563,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      *
      * @param array $row
      */
-    function attach(array $row)
+    private function attach(array $row)
     {
         $alias = self::$__ref[$this->__class]['alias'];
         foreach (self::$__ref[$this->__class]['attribs'] as $field => $define) {
