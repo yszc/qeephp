@@ -27,7 +27,7 @@ class Behavior_Fakeuuid implements QDB_ActiveRecord_Behavior_Interface
      *
      * @var array
      */
-    public $seed = 'tlzypjwamdsgcuxqkhiboernfv';
+    public $seed = 't1MlGzPOy2WpUjTEBwN4aFR3mKdLs6gVcux89qSkCXh7iY5QbAJoeHIrDnfv0Z';
 
     /**
      * 种子长度
@@ -75,7 +75,7 @@ class Behavior_Fakeuuid implements QDB_ActiveRecord_Behavior_Interface
     function beforeCreate(QDB_ActiveRecord_Abstract $obj, array & $props)
     {
         $idname = $obj->idname();
-        $obj->{$idname} = $this->encodeID($obj->getTable()->nextID());
+        $props[$idname] = $this->encodeID($obj->getTable()->nextID());
     }
 
     /**
@@ -86,7 +86,7 @@ class Behavior_Fakeuuid implements QDB_ActiveRecord_Behavior_Interface
      *
      * @return string
      */
-    protected function encodeID($number, $len = 8)
+    protected function encodeID($number, $len = 6)
     {
         $number = intval($number);
         $offset = 0;

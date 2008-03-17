@@ -15,6 +15,27 @@
  * @version $Id$
  */
 
+// {{{ functions
+
+/**
+ * 记录一条日志的全局函数
+ *
+ * @param string $msg
+ * @param string $level
+ * @param string $title
+ */
+function log_message($msg, $level = 'log', $title = '')
+{
+    static $log;
+    if (is_null($log)) {
+        $log = Q::getSingleton('QLog');
+    }
+    /* @var $log QLog */
+    $log->append($msg, $level, $title);
+}
+
+// }}}
+
 /**
  * QLog 类提供基本的日志服务
  *
@@ -28,6 +49,13 @@ class QLog
      * @var string
      */
     protected $log = '';
+
+    /**
+     * 指示是否需要写入日志文件
+     *
+     * @var boolean
+     */
+    protected $need_write = false;
 
     /**
      * 日期格式
@@ -71,8 +99,8 @@ class QLog
         }
         $dir = rtrim(realpath($dir), '\\/');
         $this->files_dir = $dir;
-		$filename = Q::getIni('log_filename');
-		if(empty($filename)) $filename = 'qee.log';
+        $filename = Q::getIni('log_filename');
+        if(empty($filename)) $filename = 'qee.log';
         $this->filename = $this->files_dir . DS . $filename;
 
         $this->level = array_flip(Q::normalize(strtolower(Q::getIni('log_level'))));
@@ -112,18 +140,18 @@ class QLog
      */
     function append($msg, $level = 'log', $title = '')
     {
-        $level = strtolower($level);
         if (!isset($this->level[$level])) { return; }
 
         $output = str_replace("\n", "\\n", print_r($msg, true));
         if ($title != '') {
             $format = "[%s] [%s] [%s]: %s\n";
-			$msg = sprintf($format, date($this->date_format), $level, $title, $output);
+            $msg = sprintf($format, date($this->date_format), $level, $title, $output);
         } else {
             $format = "[%s] [%s]: %s\n";
-			$msg = sprintf($format, date($this->date_format), $level, $output);
+            $msg = sprintf($format, date($this->date_format), $level, $output);
         }
         $this->log .= $msg;
+        $this->need_write = true;
     }
 
     /**
@@ -131,11 +159,13 @@ class QLog
      */
     function __write()
     {
+        if (!$this->need_write) { return; }
         $fp = fopen($this->filename, 'a');
         if (!$fp) { return; }
-        flock($fp, LOCK_EX);
-        fwrite($fp, str_replace("\r", '', $this->log));
-        flock($fp, LOCK_UN);
+        if (flock($fp, LOCK_EX)) {
+            fwrite($fp, str_replace("\r", '', $this->log));
+            flock($fp, LOCK_UN);
+        }
         fclose($fp);
     }
 }

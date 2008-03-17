@@ -12,7 +12,7 @@
  * QeePHP 自带的用户界面控件库
  *
  * @package mvc
- * @version $Id$
+ * @version $Id: _standard.php 958 2008-03-17 00:56:12Z dualface $
  */
 
 /**
@@ -125,9 +125,10 @@ abstract class Control_CheckboxGroup_Abstract extends QUI_Control_Abstract
             $this->setDisabled();
             $out .= '/>';
             if ($caption) {
-                $out .= ctl_Label(null, array(
+                $ctl = QUI_Control::instance($this->view_adapter, 'label', "{$this->id}_{$id_index}_label", array(
                     'for' => "{$this->id}_{$id_index}", 'caption' => $caption
                 ));
+                $out .= $ctl->render(true);
             }
 
             if ($ix < $max) {

@@ -12,7 +12,7 @@
  * 定义 QUI_Control_Abstract 类
  *
  * @package mvc
- * @version $Id$
+ * @version $Id: abstract.php 955 2008-03-16 23:52:44Z dualface $
  */
 
 /**

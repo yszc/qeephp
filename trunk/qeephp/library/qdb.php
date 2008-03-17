@@ -12,7 +12,7 @@
  * 定义 QDB 类
  *
  * @package database
- * @version $Id$
+ * @version $Id: qdb.php 955 2008-03-16 23:52:44Z dualface $
  */
 
 /**

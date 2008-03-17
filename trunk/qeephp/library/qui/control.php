@@ -12,7 +12,7 @@
  * 定义 QUI_Control 类
  *
  * @package mvc
- * @version $Id$
+ * @version $Id: control.php 969 2008-03-17 09:10:11Z dualface $
  */
 
 // {{{ includes
@@ -55,7 +55,7 @@ abstract class QUI_Control
 
         $class_name = 'Control_' . ucfirst(strtolower($type));
         if (!class_exists($class_name, false)) {
-            self::loadControl($type, $namespace, $module);
+            self::loadControl($type, $class_name, $namespace, $module);
         }
         $control = new $class_name($view_adapter, $id, $attribs);
         /* @var $control QUI_Control_Abstract */
@@ -69,27 +69,27 @@ abstract class QUI_Control
      * 载入指定控件类型的定义文件
      *
      * @param string $type
+     * @param string $class_name
      * @param string $namespace
      * @param string $module
      */
-    static private function loadControl($type, $namespace, $module)
+    static private function loadControl($type, $class_name, $namespace, $module)
     {
         $filename = strtolower($type) . '_control.php';
+        $dirs = array();
         if ($module) {
-            $root = ROOT_DIR . '/module/' . $module . '/ui/';
-        } else {
-            $root = ROOT_DIR . '/app/ui/';
+            $root = ROOT_DIR . '/module/' . $module . '/ui';
+            $dirs[] = $root;
+            if ($namespace) {
+                $dirs[] = $root . '/' . $namespace;
+            }
         }
+        $root = ROOT_DIR . '/app/ui';
+        $dirs[] = $root;
         if ($namespace) {
-            $root .= $namespace . '/';
+            $dirs[] = $root .'/' . $namespace;
         }
-        $path = $root . $filename;
-        if (Q::isReadable($path)) {
-            require $path;
-        } else {
-            // LC_MSG: 指定类型 "%s" 控件的定义文件 "%s" 没有找到.
-            throw new QException(__('指定类型 "%s" 控件的定义文件 "%s" 没有找到.', $type, $filename));
-        }
+        Q::loadClassFile($filename, $dirs, $class_name);
     }
 
 }

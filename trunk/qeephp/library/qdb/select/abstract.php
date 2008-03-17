@@ -637,29 +637,47 @@ abstract class QDB_Select_Abstract
         }
 
         if ($this->recursion_link) {
-            $dbo = $this->recursion_link->assoc_table->getConn();
-            $sql .= $dbo->qfield($this->recursion_link->assoc_key) .
+            $conn = $this->recursion_link->assoc_table->getConn();
+            $sql .= $conn->qfield($this->recursion_link->assoc_key) .
                     ' AS ' .
-                    $dbo->qfield($this->recursion_link->main_key_alias) . ', ';
+                    $conn->qfield($this->recursion_link->main_key_alias) . ', ';
         }
 
         $sql .= $this->toStringPart($this->select);
 
         $used_links = array();
+        $join = array();
+        $conn = $this->table->getConn();
         if ($use_links && $this->recursion > 0) {
             foreach ((array)$this->links as $link) {
                 /* @var $link QDB_Table_Link */
                 if (!$link->enabled || $link->on_find == 'skip') { continue; }
                 $link->init();
                 if ($link->assoc_table === $this->recursion_link) { continue; }
-                $sql .= ', ' . $this->table->getConn()->qfield($link->main_key) . ' AS ' . $link->main_key_alias;
-                $used_links[$link->main_key_alias] = $link;
+
+                if ($link->type != QDB_Table::many_to_many) {
+                    $sql .= ', ' . $conn->qfield($link->main_key, $this->table->full_table_name) .
+                            " AS {$link->main_key_alias}";
+                    $used_links[$link->main_key_alias] = $link;
+                    continue;
+                }
+
+                // 多对多要单独处理
+                if (empty($link->mid_on_find_fields)) {
+                    $sql .= ', ' . $conn->qfield($link->mid_assoc_key, $link->mid_table->full_table_name) .
+                            " AS {$link->main_key_alias}";
+                    $join[] = "LEFT JOIN {$link->mid_table->qtable_name} ON " .
+                              $conn->qfield($link->mid_main_key, $link->mid_table->full_table_name) .
+                              ' = ' . $conn->qfield($link->main_key, $this->table->full_table_name);
+                    $used_links[$link->main_key_alias] = $link;
+                }
             }
         }
 
         $sql = $this->toStringInternalCallback($sql);
 
         $sql .= " FROM {$this->table->qtable_name}";
+        $sql .= implode(' ', $join);
         $sql .= $this->toStringWhere();
         $sql .= $this->toStringGroup();
         $sql .= $this->toStringHaving();

@@ -12,7 +12,7 @@
  * 该文件定义了一些用户简化文件系统操作的函数和对象
  *
  * @package vendor
- * @version $Id$
+ * @version $Id: filesys.php 955 2008-03-16 23:52:44Z dualface $
  */
 
 /**

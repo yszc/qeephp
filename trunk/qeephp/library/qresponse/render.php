@@ -12,7 +12,7 @@
  * 定义 QResponse_Render 类
  *
  * @package mvc
- * @version $Id$
+ * @version $Id: render.php 955 2008-03-16 23:52:44Z dualface $
  */
 
 /**

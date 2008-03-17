@@ -12,7 +12,7 @@
  * 定义 QGenerator_Controller 类
  *
  * @package generator
- * @version $Id$
+ * @version $Id: controller.php 955 2008-03-16 23:52:44Z dualface $
  */
 
 /**

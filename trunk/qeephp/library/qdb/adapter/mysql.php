@@ -12,7 +12,7 @@
  * 定义 QDB_Mysql 类
  *
  * @package database
- * @version $Id: mysql.php 177 2008-03-01 03:40:36Z dualface $
+ * @version $Id: mysql.php 969 2008-03-17 09:10:11Z dualface $
  */
 
 /**
@@ -192,6 +192,7 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
     function execute($sql, $inputarr = null)
     {
         $this->query_count++;
+        log_message($sql, 'sql');
         if ($this->log_query) {
             $this->log[] = $sql;
         }
@@ -212,7 +213,6 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
             $this->last_err = mysql_error($this->conn);
             $this->last_err_code = mysql_errno($this->conn);
             $this->has_failed_query = true;
-            QDebug::dump($sql, 'error sql');
             throw new QDB_Exception($sql, $this->last_err, $this->last_err_code);
         }
     }

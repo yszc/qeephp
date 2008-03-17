@@ -12,7 +12,7 @@
  * 定义 Image 类
  *
  * @package vendor
- * @version $Id$
+ * @version $Id: image.php 955 2008-03-16 23:52:44Z dualface $
  */
 
 /**

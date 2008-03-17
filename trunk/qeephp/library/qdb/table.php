@@ -172,6 +172,7 @@ class QDB_Table
                 $this->table_name = $this->full_table_name;
             }
         }
+        log_message('Construction TableDataGateway: ' . $this->table_name, 'debug');
         if (!empty($params['pk'])) {
             $this->pk = $params['pk'];
         }
@@ -446,8 +447,11 @@ class QDB_Table
         // 填充当前时间
         $this->fillFieldsWithCurrentTime($row, $this->created_time_fields);
         // 创建 INSERT 语句并执行
-        $sql = $this->dbo->getInsertSQL($row, $this->full_table_name, $this->schema);
-        $this->dbo->execute($sql, $row);
+        list($sql, $values) = $this->dbo->getInsertSQL($row,
+                                                       $this->full_table_name,
+                                                       $this->schema,
+                                                       self::$tables_meta[$this->cache_id]);
+        $this->dbo->execute($sql, $values);
 
         // 创建主表的记录成功后，尝试获取新记录的主键值
         if (!isset($insert_id)) {
@@ -520,9 +524,12 @@ class QDB_Table
         // TODO: update() 实现对关联的处理
         // TODO: update() 实现对复合主键的处理
         $this->fillFieldsWithCurrentTime($row, $this->updated_time_fields);
-        $sql = $this->dbo->getUpdateSQL($row, $this->pk, $this->full_table_name, $this->schema);
-        unset($row[$this->pk]);
-        $this->dbo->execute($sql, $row);
+        list($sql, $values) = $this->dbo->getUpdateSQL($row,
+                                                       $this->pk,
+                                                       $this->full_table_name,
+                                                       $this->schema,
+                                                       self::$tables_meta[$this->cache_id]);
+        $this->dbo->execute($sql, $values);
         return $this->dbo->affectedRows();
     }
 
@@ -1048,6 +1055,10 @@ class QDB_Table
      */
     protected function parseSQLString($where, array $args = null)
     {
+        // 替换宏
+        if (!$this->is_cpk) {
+            $where = str_replace('%PK%', '[' . $this->pk . ']', $where);
+        }
         $matches = array();
         preg_match_all('/\[[a-z][a-z0-9_\.]*\]/i', $where, $matches, PREG_OFFSET_CAPTURE);
         $matches = reset($matches);
@@ -1214,6 +1225,7 @@ class QDB_Table
      */
     private function prepareMeta()
     {
+        if (isset(self::$tables_meta[$this->cache_id])) { return; }
         $cached = Q::getIni('db_meta_cached');
 
         if ($cached) {

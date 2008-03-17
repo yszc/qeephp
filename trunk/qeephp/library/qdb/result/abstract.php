@@ -12,7 +12,7 @@
  * 定义 QDB_Result_Abstract 类
  *
  * @package database
- * @version $Id$
+ * @version $Id: abstract.php 955 2008-03-16 23:52:44Z dualface $
  */
 
 /**

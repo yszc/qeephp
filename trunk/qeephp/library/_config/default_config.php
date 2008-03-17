@@ -219,7 +219,7 @@ return array(
     /**
      * 指示哪些级别的错误要保存到日志中
      */
-    'log_level'                 => 'notice, debug, warning, error, exception, log',
+    'log_level'                 => 'notice, debug, warning, error, exception, log, sql',
 
     /**
      * 指示是否显示错误信息

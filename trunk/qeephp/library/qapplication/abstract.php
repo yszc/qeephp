@@ -84,6 +84,8 @@ abstract class QApplication_Abstract
         if (Q::getIni('auto_response_header')) {
             header('Content-Type: text/html; charset=' . Q::getIni('response_charset'));
         }
+
+        log_message('Application init', 'debug');
     }
 
     /**
