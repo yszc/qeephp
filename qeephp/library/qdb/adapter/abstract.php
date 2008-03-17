@@ -12,7 +12,7 @@
  * 定义 QDB_Adapter_Abstract 类
  *
  * @package database
- * @version $Id: abstract.php 177 2008-03-01 03:40:36Z dualface $
+ * @version $Id: abstract.php 962 2008-03-17 02:43:30Z dualface $
  */
 
 /**
@@ -863,17 +863,23 @@ abstract class QDB_Adapter_Abstract
      * @param array $row
      * @param string $table 要插入的数据表
      * @param string $schema
+     * @param array $meta
      *
      * @return string
      */
-    function getInsertSQL(array $row, $table, $schema = null)
+    function getInsertSQL(array $row, $table, $schema = null, array $meta = null)
     {
-        list($holders, $values) = $this->getPlaceholder($row);
+        if (!is_null($meta)) {
+            $fields = array_keys($meta);
+        } else {
+            $fields = null;
+        }
+        list($holders, $values) = $this->getPlaceholder($row, $fields);
         $holders = implode(',', $holders);
         $fields = $this->qfields(array_keys($values));
         $table = $this->qtable($table, $schema);
         $sql = "INSERT INTO {$table} ({$fields}) VALUES ({$holders})";
-        return $sql;
+        return array($sql, $values);
     }
 
     /**
@@ -882,20 +888,26 @@ abstract class QDB_Adapter_Abstract
      * @param array $row
      * @param string $table 要插入的数据表
      * @param string $schema
+     * @param array $meta
      *
      * @return string
      */
-    function getUpdateSQL(array $row, $pk, $table, $schema = null)
+    function getUpdateSQL(array $row, $pk, $table, $schema = null, array $meta = null)
     {
         $pkv = $row[$pk];
         unset($row[$pk]);
-        list($pairs, ) = $this->getPlaceholderPairs($row);
+        if (!is_null($meta)) {
+            $fields = array_keys($meta);
+        } else {
+            $fields = null;
+        }
+        list($pairs, $values) = $this->getPlaceholderPairs($row, $fields);
         $row[$pk] = $pkv;
         $pairs = implode(',', $pairs);
         $table = $this->qtable($table, $schema);
         $pk = $this->qfield($pk);
         $sql = "UPDATE {$table} SET {$pairs} WHERE {$pk} = " . $this->qstr($pkv);
-        return $sql;
+        return array($sql, $values);
     }
 
     /**
@@ -914,7 +926,7 @@ abstract class QDB_Adapter_Abstract
         $fields = $this->qfields(array_keys($values));
         $table = $this->qtable($table, $schema);
         $sql = "REPLACE INTO {$table} ({$fields}) VALUES ({$holders})";
-        return $sql;
+        return array($sql, $values);
     }
 
     /**

@@ -69,6 +69,18 @@ class Behavior_Acluser implements QDB_ActiveRecord_Behavior_Interface
         if (!empty($settings['password_field'])) {
             $this->settings['password_field'] = $settings['password_field'];
         }
+        if (!empty($settings['register_ip_field'])) {
+            $this->settings['register_ip_field'] = $settings['register_ip_field'];
+        }
+        if (!empty($settings['roles_field'])) {
+            $this->settings['roles_field'] = $settings['roles_field'];
+        }
+        if (!empty($settings['rolename_field'])) {
+            $this->settings['rolename_field'] = $settings['rolename_field'];
+        }
+        if (!empty($settings['acldata_fields'])) {
+            $this->settings['acldata_fields'] = $settings['acldata_fields'];
+        }
     }
 
     /**
@@ -122,7 +134,9 @@ class Behavior_Acluser implements QDB_ActiveRecord_Behavior_Interface
         $acldata_fields = Q::normalize($acldata_fields);
         $data = array();
         foreach ($acldata_fields as $f) {
-            $data[$f] = $props[$f];
+            if (isset($props[$f])) {
+                $data[$f] = $props[$f];
+            }
         }
         $data['id'] = $props[$obj->idname()];
         return $data;
@@ -147,6 +161,9 @@ class Behavior_Acluser implements QDB_ActiveRecord_Behavior_Interface
             $rolename_field = $this->settings['rolename_field'];
         }
         $roles = array();
+        if (empty($props[$roles_field])) {
+            return array();
+        }
         foreach ($props[$roles_field] as $role) {
             $roles[] = $role->{$rolename_field};
         }
@@ -169,7 +186,7 @@ class Behavior_Acluser implements QDB_ActiveRecord_Behavior_Interface
             return md5($password) == $props['password'];
         case 'crypt':
         default:
-            return crypt($password) == $props['password'];
+            return crypt($password, $props['password']) == rtrim($props['password']);
         }
     }
 }

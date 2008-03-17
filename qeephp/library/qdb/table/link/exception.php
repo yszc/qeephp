@@ -12,7 +12,7 @@
  * 定义 QDB_Table_Link_Exception 异常
  *
  * @package database
- * @version $Id$
+ * @version $Id: exception.php 955 2008-03-16 23:52:44Z dualface $
  */
 
 /**

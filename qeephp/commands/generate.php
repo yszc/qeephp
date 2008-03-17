@@ -12,7 +12,7 @@
  * 代码生成器的命令行启动脚本
  *
  * @package commands
- * @version $Id$
+ * @version $Id: generate.php 955 2008-03-16 23:52:44Z dualface $
  */
 
 Q::import(dirname(__FILE__));

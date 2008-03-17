@@ -12,7 +12,7 @@
  * 定义 QUI_Exception 异常
  *
  * @package mvc
- * @version $Id$
+ * @version $Id: exception.php 955 2008-03-16 23:52:44Z dualface $
  */
 
 /**

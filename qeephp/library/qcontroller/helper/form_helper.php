@@ -12,7 +12,7 @@
  * 定义 Helper_Form 类
  *
  * @package helper
- * @version $Id$
+ * @version $Id: form_helper.php 955 2008-03-16 23:52:44Z dualface $
  */
 
 /**

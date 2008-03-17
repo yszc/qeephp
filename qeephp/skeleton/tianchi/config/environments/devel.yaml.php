@@ -36,7 +36,7 @@ log_filename:           devel-debug.log
 log_file_maxsize:       4096
 
 # 指示哪些级别的错误要保存到日志中
-log_level:              notice, debug, warning, error, exception, log
+log_level:              notice, debug, warning, error, exception, log, sql
 
 # 指示是否显示错误信息
 display_errors:         true

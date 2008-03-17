@@ -12,7 +12,7 @@
  * 定义 QDB_Exception 类
  *
  * @package database
- * @version $Id: exception.php 177 2008-03-01 03:40:36Z dualface $
+ * @version $Id: exception.php 955 2008-03-16 23:52:44Z dualface $
  */
 
 /**

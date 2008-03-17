@@ -12,7 +12,7 @@
  * 定义了一系列用于简化数组操作的函数
  *
  * @package vendor
- * @version $Id$
+ * @version $Id: array.php 955 2008-03-16 23:52:44Z dualface $
  */
 
 /**

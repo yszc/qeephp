@@ -12,7 +12,7 @@
  * 定义 QDB_ActiveRecord_Events 接口
  *
  * @package database
- * @version $Id$
+ * @version $Id: events.php 955 2008-03-16 23:52:44Z dualface $
  */
 
 /**

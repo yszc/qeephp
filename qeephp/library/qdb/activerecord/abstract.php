@@ -336,6 +336,8 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
             return self::$__ref[$class];
         }
 
+        log_message('reflection of class: '. $class, 'debug');
+        Q::loadClass($class);
         $ref = call_user_func(array($class, '__define'));
         if (empty($ref['fields']) || !is_array($ref['fields'])) {
             $ref['fields'] = array();
@@ -521,6 +523,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
             if (!isset($row[$field]) && $define['assoc'] == false) {
                 $row[$field] = self::$__ref[$this->__class]['attribs'][$field]['default'];
             }
+
             $a = isset($alias[$field]) ? $alias[$field] : $field;
 
             if ($define['readonly'] || !$define['public'] || $define['assoc']) {
