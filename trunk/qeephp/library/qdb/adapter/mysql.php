@@ -12,7 +12,7 @@
  * 定义 QDB_Mysql 类
  *
  * @package database
- * @version $Id: mysql.php 969 2008-03-17 09:10:11Z dualface $
+ * @version $Id: mysql.php 969M 2008-03-19 14:38:35Z (local) $
  */
 
 /**
@@ -192,7 +192,6 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
     function execute($sql, $inputarr = null)
     {
         $this->query_count++;
-        log_message($sql, 'sql');
         if ($this->log_query) {
             $this->log[] = $sql;
         }
