@@ -172,7 +172,6 @@ class QDB_Table
                 $this->table_name = $this->full_table_name;
             }
         }
-        log_message('Construction TableDataGateway: ' . $this->table_name, 'debug');
         if (!empty($params['pk'])) {
             $this->pk = $params['pk'];
         }

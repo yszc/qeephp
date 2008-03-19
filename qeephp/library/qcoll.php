@@ -185,6 +185,20 @@ class QColl implements Iterator, ArrayAccess, Countable
     }
 
     /**
+     * 将所有内部元素返回为对象
+     *
+     * @return array
+     */
+    function toArray()
+    {
+        $arr = array();
+        foreach ($this->coll as $obj) {
+            $arr[] = $obj->toArray();
+        }
+        return $arr;
+    }
+
+    /**
      * 检查值是否符合类型要求
      *
      * @param mixed $value
