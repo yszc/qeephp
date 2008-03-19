@@ -89,9 +89,9 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         self::reflection($this->__class);
 
         if (is_array($data)) {
-            $this->attach($data);
+            $this->__attach($data);
         } else {
-            $this->attach(array());
+            $this->__attach(array());
         }
         $this->__doCallbacks(self::after_initialize);
     }
@@ -103,6 +103,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     function save($force_create = false)
     {
+        self::__bindAll($this->__class);
         $this->__doCallbacks(self::before_save);
         $id = $this->id();
         if (empty($id) || $force_create) {
@@ -121,7 +122,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     function reload($recursion = 0)
     {
         $arr = $this->getTable()->find(array($this->idname() => $this->id()))->recursion($recursion)->asArray()->query();
-        $this->attach($arr);
+        $this->__attach($arr);
     }
 
     /**
@@ -330,7 +331,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      * @param string $field
      * @param array $options
      */
-    static function link($class, $field, array $options)
+    static function bind($class, $field, array $options)
     {
         self::reflection($class);
 
@@ -383,7 +384,6 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
             return self::$__ref[$class];
         }
 
-        log_message('reflection of class: '. $class, 'debug');
         Q::loadClass($class);
         $ref = call_user_func(array($class, '__define'));
         if (empty($ref['fields']) || !is_array($ref['fields'])) {
@@ -559,11 +559,57 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     }
 
     /**
+     * 完成对象间的关联
+     *
+     * @param string $class
+     */
+    private static function __bindAll($class)
+    {
+        self::reflection($class);
+        $table = self::$__ref[$class]['table'];
+        /* @var $table QDB_Table */
+        foreach (self::$__ref[$class]['links'] as $define) {
+            $mapping_name = $define['alias'];
+            if ($table->existsLink($mapping_name)) { continue; }
+            $ref = QDB_ActiveRecord_Abstract::reflection($define['class']);
+            $assoc_table = $ref['table'];
+
+            $link = $define['assoc_options'];
+            $link['table_obj'] = $assoc_table;
+            $link['mapping_name'] = $define['alias'];
+
+            switch ($define['assoc']) {
+            case QDB_Table::has_one:
+            case QDB_Table::has_many:
+                if (empty($link['assoc_key'])) {
+                    $link['assoc_key'] = strtolower($class) . '_id';
+                }
+                break;
+            case QDB_Table::belongs_to:
+                if (empty($link['main_key'])) {
+                    $link['main_key'] = strtolower($define['class']) . '_id';
+                }
+                break;
+            case QDB_Table::many_to_many:
+                if (empty($link['mid_main_key'])) {
+                    $link['mid_main_key'] = strtolower($class) . '_id';
+                }
+                if (empty($link['mid_assoc_key'])) {
+                    $link['mid_assoc_key'] = strtolower($define['class']) . '_id';
+                }
+            }
+
+            $table->createLinks($link, $define['assoc']);
+            $table->getLink($define['alias'])->init();
+        }
+    }
+
+    /**
      * 将对象附着到一个包含对象属性的数组，等同于将数组的属性值复制到对象
      *
      * @param array $row
      */
-    private function attach(array $row)
+    private function __attach(array $row)
     {
         $alias = self::$__ref[$this->__class]['alias'];
         foreach (self::$__ref[$this->__class]['attribs'] as $field => $define) {
@@ -651,7 +697,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     protected static function __find($class, array $args)
     {
-        self::reflection($class);
+        self::__bindAll($class);
         $select = new QDB_ActiveRecord_Select(
             $class,
             self::$__ref[$class]['table'],
