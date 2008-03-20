@@ -12,7 +12,7 @@
  * 定义 QDB_Mysql 类
  *
  * @package database
- * @version $Id: mysql.php 969M 2008-03-19 14:38:35Z (local) $
+ * @version $Id: mysql.php 976 2008-03-20 00:28:23Z dualface $
  */
 
 /**
