@@ -12,7 +12,7 @@
  * 定义 QGenerator_Runner_Cli 类
  *
  * @package generator
- * @version $Id: cli.php 955 2008-03-16 23:52:44Z dualface $
+ * @version $Id: cli.php 976 2008-03-20 00:28:23Z dualface $
  */
 
 /**
@@ -79,19 +79,19 @@ class QGenerator_Runner_Cli extends QGenerator_Runner_Abstract
 scripts/generator <type> <....>
 
 syntax:
-    php scripts/generate.php controller <[namespace::]controller name> [-m module]
-    php scripts/generate.php table <database table name> [table class name] [-m module]
-    php scripts/generate.php model <class name> <database table name | table class name> [-m module]
+    php script/generate.php controller <[namespace::]controller name> [-m module]
+    php script/generate.php table <database table name> [table class name] [-m module]
+    php script/generate.php model <class name> <database table name | table class name> [-m module]
 
 examples:
-    php scripts/generate.php controller posts
-    php scripts/generate.php controller admin::posts
+    php script/generate.php controller posts
+    php script/generate.php controller admin::posts
 
-    php scripts/generate.php table posts
-    php scripts/generate.php table q_contents Table_Contents
+    php script/generate.php table posts
+    php script/generate.php table q_contents Table_Contents
 
-    php scripts/generate.php model post posts
-    php scripts/generate.php model post Table_Posts
+    php script/generate.php model post posts
+    php script/generate.php model post Table_Posts
 
 
 EOT;
