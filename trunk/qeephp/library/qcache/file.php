@@ -134,7 +134,7 @@ class QCache_File
             fclose($fp);
         } else {
             // LC_MSG: Unable to write cache file "%s".
-            throw new Cache_Exception('Unable to write cache file "%s".',  $root . $filename);
+            throw new QCache_Exception(__('Unable to write cache file "%s".',  $root . $filename));
         }
     }
 

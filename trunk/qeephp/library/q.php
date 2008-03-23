@@ -516,6 +516,20 @@ abstract class Q
      * $data = Q::loadYAML('myData.yaml');
      * </code>
      *
+     * 注意：为了安全起见，不要将 yaml 文件置于浏览器能够访问的目录中。
+     * 或者将 YAML 文件的扩展名设置为 .yaml.php，并且在每一个 YAML 文件开头添加“exit()”。
+     * 例如：
+     * <code>
+     * # <?php exit(); ?>
+     *
+     * invoice: 34843
+     * date   : 2001-01-23
+     * bill-to: &id001
+     * ......
+     * </code>
+     *
+     * 这样可以确保即便浏览器直接访问该 .yaml.php 文件，也无法看到内容。
+     *
      * @param string $filename
      * @param array $replace 对于 YAML 内容要进行自动替换的字符串对
      *

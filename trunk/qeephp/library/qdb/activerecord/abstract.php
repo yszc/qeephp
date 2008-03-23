@@ -94,6 +94,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
             $this->__attach(array());
         }
         $this->__doCallbacks(self::after_initialize);
+        $this->after_initialize();
     }
 
     /**
@@ -104,6 +105,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     function save($force_create = false)
     {
         self::__bindAll($this->__class);
+        $this->before_save();
         $this->__doCallbacks(self::before_save);
         $id = $this->id();
         if (empty($id) || $force_create) {
@@ -112,6 +114,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
             $this->update();
         }
         $this->__doCallbacks(self::after_save);
+        $this->after_save();
     }
 
     /**
@@ -165,11 +168,13 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     function destroy()
     {
+        $this->before_destroy();
+        $this->__doCallbacks(self::before_destroy);
         $table = self::$__ref[$this->__class]['table'];
         /* @var $table QDB_Table */
-        $this->__doCallbacks(self::before_destroy);
-        $table->remove($this->id());
+        $table->remove(array($this->idname() => $this->id()));
         $this->__doCallbacks(self::after_destroy);
+        $this->after_destroy();
     }
 
     /**
@@ -676,17 +681,27 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     protected function create()
     {
-        $table = self::$__ref[$this->__class]['table'];
         /* @var $table QDB_Table */
+        foreach (self::$__ref[$this->__class]['create_reject'] as $f) {
+            $this->__all_props[$f] = null;
+        }
+
         $this->doValidate('create');
+        $this->before_create();
         $this->__doCallbacks(self::before_create);
+
         $row = $this->toArray();
         foreach (self::$__ref[$this->__class]['create_reject'] as $f) {
-            unset($row[$f]);
+            if ($this->__all_props[$f] === null) {
+                unset($row[$f]);
+            }
         }
+        $table = self::$__ref[$this->__class]['table'];
         $id = $table->create($row);
+
         $this->__all_props[$this->idname()] = $id;
         $this->__doCallbacks(self::after_create);
+        $this->after_create();
     }
 
     /**
@@ -694,16 +709,26 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     protected function update()
     {
-        $table = self::$__ref[$this->__class]['table'];
+        foreach (self::$__ref[$this->__class]['update_reject'] as $f) {
+            $this->__all_props[$f] = null;
+        }
+
         /* @var $table QDB_Table */
         $this->doValidate('update');
+        $this->before_update();
         $this->__doCallbacks(self::before_update);
+
         $row = $this->toArray();
         foreach (self::$__ref[$this->__class]['update_reject'] as $f) {
-            unset($row[$f]);
+            if ($this->__all_props[$f] === null) {
+                unset($row[$f]);
+            }
         }
+        $table = self::$__ref[$this->__class]['table'];
         $table->update($row);
+
         $this->__doCallbacks(self::after_update);
+        $this->after_update();
     }
 
     /**
@@ -798,6 +823,76 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      * 事件回调：验证完成之后
      */
     protected function after_validation()
+    {
+    }
+
+    /**
+     * 事件回调：保存记录之前
+     */
+    protected function before_save()
+    {
+    }
+
+    /**
+     * 事件回调：保存记录之后
+     */
+    protected function after_save()
+    {
+    }
+
+    /**
+     * 事件回调：创建记录之前
+     */
+    protected function before_create()
+    {
+    }
+
+    /**
+     * 事件回调：创建记录之后
+     */
+    protected function after_create()
+    {
+    }
+
+    /**
+     * 事件回调：更新记录之前
+     */
+    protected function before_update()
+    {
+    }
+
+    /**
+     * 事件回调：更新记录之后
+     */
+    protected function after_update()
+    {
+    }
+
+    /**
+     * 事件回调：删除记录之前
+     */
+    protected function before_destroy()
+    {
+    }
+
+    /**
+     * 事件回调：删除记录之后
+     */
+    protected function after_destroy()
+    {
+    }
+
+    /**
+     * 事件回调：查询出对象数据之后，构造对象之前
+     */
+    protected function after_find()
+    {
+    }
+
+    /**
+     * 事件回调：对象构造之后
+     */
+    protected function after_initialize()
     {
     }
 }
