@@ -132,15 +132,32 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     function doValidate($mode = 'general')
     {
+        $this->before_validation();
         $this->__doCallbacks(self::before_validation);
         if ($mode == 'create') {
+            $this->before_validation_on_create();
             $this->__doCallbacks(self::before_validation_on_create);
+        } elseif ($mode == 'update') {
+            $this->before_validation_on_update();
+            $this->__doCallbacks(self::before_validation_on_update);
+        }
+
+        // 进行验证
+        $v = new QValidate();
+        $error = $v->groupCheck($this->toArray(false), self::$__ref[$this->__class]['validation']);
+        if (!empty($error)) {
+            throw new QDB_ActiveRecord_Validate_Exception($this, $error);
+        }
+
+        if ($mode == 'create') {
+            $this->after_validation_on_create();
             $this->__doCallbacks(self::after_validation_on_create);
         } elseif ($mode == 'update') {
-            $this->__doCallbacks(self::before_validation_on_update);
+            $this->after_validation_on_update();
             $this->__doCallbacks(self::after_validation_on_update);
         }
         $this->__doCallbacks(self::after_validation);
+        $this->after_validation();
     }
 
     /**
@@ -179,9 +196,11 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     /**
      * 获得包含对象所有属性的数组
      *
+     * @param int $recursion
+     *
      * @return array
      */
-    function toArray()
+    function toArray($recursion = 99)
     {
         $row = array();
         $attribs = self::$__ref[$this->__class]['attribs'];
@@ -190,14 +209,14 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
 
         foreach (array_keys($this->__all_props) as $a) {
             $f = $ralias[$a];
-            if ($attribs[$f]['assoc']) {
+            if ($attribs[$f]['assoc'] && $recursion > 0) {
                 if (is_array($this->__props[$a]) || $this->__props[$a] instanceof Iterator) {
                     $row[$f] = array();
                     foreach ($this->__props[$a] as $obj) {
-                        $row[$f][] = $obj->toArray();
+                        $row[$f][] = $obj->toArray($recursion - 1);
                     }
                 } else {
-                    $row[$f] = $this->__props[$a]->toArray();
+                    $row[$f] = $this->__props[$a]->toArray($recursion - 1);
                 }
             } else {
                 $row[$f] = isset($this->__props[$a]) ? $this->__props[$a] : $this->{$a};
@@ -738,5 +757,47 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         foreach (self::$__callbacks[$this->__class][$type] as $callback) {
             call_user_func_array($callback, array($this, $this->__all_props));
         }
+    }
+
+    /**
+     * 事件回调：开始验证之前
+     */
+    protected function before_validation()
+    {
+    }
+
+    /**
+     * 事件回调：为创建记录进行的验证开始之前
+     */
+    protected function before_validation_on_create()
+    {
+    }
+
+    /**
+     * 事件回调：为创建记录进行的验证完成之后
+     */
+    protected function after_validation_on_create()
+    {
+    }
+
+    /**
+     * 事件回调：为更新记录进行的验证开始之前
+     */
+    protected function before_validation_on_update()
+    {
+    }
+
+    /**
+     * 事件回调：为更新记录进行的验证完成之后
+     */
+    protected function after_validation_on_update()
+    {
+    }
+
+    /**
+     * 事件回调：验证完成之后
+     */
+    protected function after_validation()
+    {
     }
 }
