@@ -44,13 +44,11 @@ class Behavior_Acluser implements QDB_ActiveRecord_Behavior_Interface
     function __callbacks()
     {
         return array(
-            // 新对象保存到数据库前调用
+            array(self::before_save,     array($this, 'beforeSave')),
             array(self::before_create,   array($this, 'beforeCreate')),
-            // 为 ActiveRecord 对象增加一个 checkPassword() 方法
             array(self::custom_callback, array($this, 'checkPassword')),
-            // 为 ActiveRecord 对象增加一个 getAclData() 方法
+            array(self::custom_callback, array($this, 'changePassword')),
             array(self::custom_callback, array($this, 'getAclData')),
-            // 为 ActiveRecord 对象增加一个 getAclRoles() 方法
             array(self::custom_callback, array($this, 'getAclRoles')),
         );
     }
@@ -102,15 +100,25 @@ class Behavior_Acluser implements QDB_ActiveRecord_Behavior_Interface
     }
 
     /**
-     * 在 ActiveRecord 保存到数据库前，填充 register_ip 属性
+     * 在 ActiveRecord 保存到数据库前，加密密码
+     *
+     * @param QDB_ActiveRecord_Abstract $obj
+     * @param array $props
+     */
+    function beforeSave(QDB_ActiveRecord_Abstract $obj, array & $props)
+    {
+        $f = $this->settings['password_field'];
+        $props[$f] = $this->encodePassword($props[$f]);
+    }
+
+    /**
+     * 在新建的 ActiveRecord 保存到数据库前，填充 register_ip 属性
      *
      * @param QDB_ActiveRecord_Abstract $obj
      * @param array $props
      */
     function beforeCreate(QDB_ActiveRecord_Abstract $obj, array & $props)
     {
-        $f = $this->settings['password_field'];
-        $props[$f] = $this->encodePassword($props[$f]);
         $f = $this->settings['register_ip_field'];
         if (array_key_exists($f, $props)) {
             $props[$f] = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'none';
