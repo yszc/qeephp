@@ -55,7 +55,7 @@ class QValidate_Validator
      *
      * @var boolean
      */
-    protected $skip = false;
+    protected $skip;
 
     /**
      * 构造函数
@@ -77,8 +77,9 @@ class QValidate_Validator
     function setData($value)
     {
         $this->value = $value;
-        $this->result = null;
+        $this->result = true;
         $this->failed = array();
+        $this->skip = false;
     }
 
     /**
@@ -133,30 +134,26 @@ class QValidate_Validator
     }
 
     /**
-     * 如果 $test 为空（空字符串或者 null），则跳过余下的验证
-     *
-     * @param mixed $test
+     * 如果为空（空字符串或者 null），则跳过余下的验证
      *
      * @return QValidate_Validator
      */
-    function skipEmpty($test)
+    function skipEmpty()
     {
-        if (!$this->skip && strlen($test) == 0) {
+        if (strlen($this->value) == 0) {
             $this->skip = true;
         }
         return $this;
     }
 
     /**
-     * 如果 $test 为 NULL，则跳过余下的验证
-     *
-     * @param mixed $test
+     * 如果为 NULL，则跳过余下的验证
      *
      * @return QValidate_Validator
      */
-    function skipNull($test)
+    function skipNull()
     {
-        if (!$this->skip && is_null($test)) {
+        if (is_null($this->value)) {
             $this->skip = true;
         }
         return $this;
@@ -698,9 +695,7 @@ class QValidate_Validator
      */
     protected function setResult($result, $check, $msg = '')
     {
-        if (is_null($this->result)) {
-            $this->result = true;
-        }
+        if ($this->skip) { return; }
         $this->result = $this->result && (boolean)$result;
         if (!$result) {
             $this->failed[$check] = $msg;

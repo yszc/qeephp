@@ -75,6 +75,7 @@ class QValidate
         foreach ($rules_group as $field => $rules) {
             if (!isset($fields[$field])) { continue; }
             $v->setData(isset($data[$field]) ? $data[$field]: null);
+            $v->id = $field;
             $r = $v->runRules($rules);
             if (!empty($r)) {
                 $result[$field] = $r;
