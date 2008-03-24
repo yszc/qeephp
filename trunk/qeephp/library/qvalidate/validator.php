@@ -51,6 +51,13 @@ class QValidate_Validator
     protected $failed;
 
     /**
+     * 指示是否跳过余下的验证
+     *
+     * @var boolean
+     */
+    protected $skip = false;
+
+    /**
      * 构造函数
      *
      * @param string $id
@@ -123,6 +130,36 @@ class QValidate_Validator
         } else {
             return $this->failed;
         }
+    }
+
+    /**
+     * 如果 $test 为空（空字符串或者 null），则跳过余下的验证
+     *
+     * @param mixed $test
+     *
+     * @return QValidate_Validator
+     */
+    function skipEmpty($test)
+    {
+        if (!$this->skip && strlen($test) == 0) {
+            $this->skip = true;
+        }
+        return $this;
+    }
+
+    /**
+     * 如果 $test 为 NULL，则跳过余下的验证
+     *
+     * @param mixed $test
+     *
+     * @return QValidate_Validator
+     */
+    function skipNull($test)
+    {
+        if (!$this->skip && is_null($test)) {
+            $this->skip = true;
+        }
+        return $this;
     }
 
     /**
