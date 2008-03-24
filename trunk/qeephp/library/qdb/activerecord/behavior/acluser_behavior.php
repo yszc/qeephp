@@ -20,14 +20,14 @@
  *
  * @package database
  */
-class Behavior_Acluser implements QDB_ActiveRecord_Behavior_Interface
+class Behavior_Acluser extends QDB_ActiveRecord_Behavior_Abstract
 {
     /**
      * 插件的设置信息
      *
      * @var array
      */
-    public $settings = array(
+    protected $settings = array(
         'encode_type'       => 'crypt',
         'password_field'    => 'password',
         'register_ip_field' => 'register_ip',
@@ -51,34 +51,6 @@ class Behavior_Acluser implements QDB_ActiveRecord_Behavior_Interface
             array(self::custom_callback, array($this, 'getAclData')),
             array(self::custom_callback, array($this, 'getAclRoles')),
         );
-    }
-
-    /**
-     * 构造函数
-     *
-     * @param string $class
-     * @param array $settings
-     */
-    function __construct($class, array $settings)
-    {
-        if (!empty($settings['encode_type'])) {
-            $this->settings['encode_type'] = $settings['encode_type'];
-        }
-        if (!empty($settings['password_field'])) {
-            $this->settings['password_field'] = $settings['password_field'];
-        }
-        if (!empty($settings['register_ip_field'])) {
-            $this->settings['register_ip_field'] = $settings['register_ip_field'];
-        }
-        if (!empty($settings['roles_field'])) {
-            $this->settings['roles_field'] = $settings['roles_field'];
-        }
-        if (!empty($settings['rolename_field'])) {
-            $this->settings['rolename_field'] = $settings['rolename_field'];
-        }
-        if (!empty($settings['acldata_fields'])) {
-            $this->settings['acldata_fields'] = $settings['acldata_fields'];
-        }
     }
 
     /**
