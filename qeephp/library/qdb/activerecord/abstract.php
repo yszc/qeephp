@@ -470,7 +470,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
                 $settings = array();
             }
             $behavior_obj = new $behavior_class($class, $settings);
-            /* @var $behavior_obj QDB_ActiveRecord_Behavior_Interface */
+            /* @var $behavior_obj QDB_ActiveRecord_Behavior_Abstract */
             $callbacks = $behavior_obj->__callbacks($class);
             self::$__behaviors[$behavior] = $behavior_obj;
 

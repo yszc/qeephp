@@ -20,14 +20,18 @@
  *
  * @package database
  */
-class Behavior_Tree implements QDB_ActiveRecord_Behavior_Interface
+class Behavior_Tree extends QDB_ActiveRecord_Behavior_Abstract
 {
     /**
      * 设置
      *
      * @var array
      */
-    protected $settings;
+    protected $settings = array(
+        'parent_id' => 'parent_id',
+        'left'      => 'lft',
+        'right'     => 'rgt',
+    );
 
     /**
      * 该方法返回行为插件定义的回调事件以及扩展的方法
@@ -37,26 +41,14 @@ class Behavior_Tree implements QDB_ActiveRecord_Behavior_Interface
     function __callbacks()
     {
         return array(
-            array(self::before_create, array($this, 'beforeCreate')),
-            array(self::after_destroy, array($this, 'afterDestroy')),
+            array(self::before_create,   array($this, 'beforeCreate')),
+            array(self::after_destroy,   array($this, 'afterDestroy')),
             array(self::custom_callback, array($this, 'createChild')),
             array(self::custom_callback, array($this, 'getSubNodes')),
             array(self::custom_callback, array($this, 'getPath')),
             array(self::custom_callback, array($this, 'getSubTree')),
             array(self::custom_callback, array($this, 'getCurrentLevelNodes')),
             array(self::custom_callback, array($this, 'allChildCount')),
-        );
-    }
-
-    /**
-     * 构造函数
-     */
-    function __construct()
-    {
-        $this->settings = array(
-            'parent_id' => 'parent_id',
-            'left'      => 'lft',
-            'right'     => 'rgt',
         );
     }
 

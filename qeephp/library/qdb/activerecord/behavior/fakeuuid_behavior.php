@@ -20,21 +20,21 @@
  *
  * @package database
  */
-class Behavior_Fakeuuid implements QDB_ActiveRecord_Behavior_Interface
+class Behavior_Fakeuuid extends QDB_ActiveRecord_Behavior_Abstract
 {
     /**
      * 种子
      *
      * @var array
      */
-    public $seed = 't1MlGzPOy2WpUjTEBwN4aFR3mKdLs6gVcux89qSkCXh7iY5QbAJoeHIrDnfv0Z';
+    protected $seed = 't1MlGzPOy2WpUjTEBwN4aFR3mKdLs6gVcux89qSkCXh7iY5QbAJoeHIrDnfv0Z';
 
     /**
      * 种子长度
      *
      * @var int
      */
-    public $base;
+    protected $base;
 
     /**
      * 编码后的种子
@@ -57,9 +57,13 @@ class Behavior_Fakeuuid implements QDB_ActiveRecord_Behavior_Interface
 
     /**
      * 构造函数
+     *
+     * @param string $class
+     * @param array $settings
      */
-    function __construct()
+    function __construct($class, array $settings)
     {
+        parent::__construct($class, $settings);
         $this->base = strlen($this->seed);
         for ($i = 0; $i < $this->base; $i++) {
             $this->code[$i] = substr($this->seed, $i, 1);
