@@ -212,6 +212,7 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
             $this->last_err = mysql_error($this->conn);
             $this->last_err_code = mysql_errno($this->conn);
             $this->has_failed_query = true;
+            QDebug::dump($sql, __METHOD__);
             throw new QDB_Exception($sql, $this->last_err, $this->last_err_code);
         }
     }

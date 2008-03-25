@@ -366,14 +366,13 @@ class QDB_Table
      *
      * @param string|array $where
      *
-     * @return QDB_Table_Select
+     * @return QDB_Select
      */
     function find($where = null)
     {
         $args = func_get_args();
         array_shift($args);
-        $select = new QDB_Table_Select($this, $where, $args, $this->links);
-        return $select;
+        return QDB_Select::beginSelectFromTable($this, $where, $args, $this->links);
     }
 
     /**

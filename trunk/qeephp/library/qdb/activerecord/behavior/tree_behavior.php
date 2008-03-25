@@ -97,7 +97,7 @@ class Behavior_Tree extends QDB_ActiveRecord_Behavior_Abstract
      * @param QDB_ActiveRecord_Abstract $obj
      * @param array $props
      */
-    function afterDestroy(QDB_ActiveRecord_Abstract $obj, array & $props)
+    function afterDestroy(QDB_ActiveRecord_Abstract $obj, array $props)
     {
         $table = $obj->getTable();
         $conn = $table->getConn();
@@ -121,7 +121,7 @@ class Behavior_Tree extends QDB_ActiveRecord_Behavior_Abstract
      *
      * @return QDB_ActiveRecord_Abstract
      */
-    function createChild(QDB_ActiveRecord_Abstract $obj, array & $props)
+    function createChild(QDB_ActiveRecord_Abstract $obj, array $props)
     {
         $this->testNode($obj);
         $class = get_class($obj);
@@ -137,7 +137,7 @@ class Behavior_Tree extends QDB_ActiveRecord_Behavior_Abstract
      *
      * @return QColl|array
      */
-    function getPath(QDB_ActiveRecord_Abstract $obj, array & $props, $asArray = false)
+    function getPath(QDB_ActiveRecord_Abstract $obj, array $props, $asArray = false)
     {
         $rgt = $this->settings['right'];
         $lft = $this->settings['left'];
@@ -163,7 +163,7 @@ class Behavior_Tree extends QDB_ActiveRecord_Behavior_Abstract
      *
      * @return QColl|array
      */
-    function getSubNodes(QDB_ActiveRecord_Abstract $obj, array & $props, $asArray = false)
+    function getSubNodes(QDB_ActiveRecord_Abstract $obj, array $props, $asArray = false)
     {
         $select = $obj->getTable()
                       ->find("[{$this->settings['parent_id']}] = ?", $obj->id())
@@ -186,7 +186,7 @@ class Behavior_Tree extends QDB_ActiveRecord_Behavior_Abstract
      *
      * @return QColl|array
      */
-    function getSubTree(QDB_ActiveRecord_Abstract $obj, array & $props, $asArray = false)
+    function getSubTree(QDB_ActiveRecord_Abstract $obj, array $props, $asArray = false)
     {
         $rgt = $this->settings['right'];
         $lft = $this->settings['left'];
@@ -212,7 +212,7 @@ class Behavior_Tree extends QDB_ActiveRecord_Behavior_Abstract
      *
      * @return QColl|array
      */
-    function getCurrentLevelNodes(QDB_ActiveRecord_Abstract $obj, array & $props, $asArray = false)
+    function getCurrentLevelNodes(QDB_ActiveRecord_Abstract $obj, array $props, $asArray = false)
     {
         $pid = $this->settings['parent_id'];
 
@@ -236,7 +236,7 @@ class Behavior_Tree extends QDB_ActiveRecord_Behavior_Abstract
      *
      * @return int
      */
-    function allChildCount(QDB_ActiveRecord_Abstract $obj, array & $props)
+    function allChildCount(QDB_ActiveRecord_Abstract $obj, array $props)
     {
         return intval(($props[$this->settings['right']] - $props[$this->settings['left']] - 1) / 2);
     }

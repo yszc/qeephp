@@ -9,18 +9,18 @@
 /////////////////////////////////////////////////////////////////////////////
 
 /**
- * 定义 QDB_Select_Abstract 类
+ * 定义 QDB_Select 类
  *
  * @package database
- * @version $Id$
+ * @version $Id: select.php 955 2008-03-16 23:52:44Z dualface $
  */
 
 /**
- * QDB_Select_Abstract 实现了一个通用的数据查找接口
+ * QDB_Select 利用方法链，实现灵活的查询构造
  *
  * @package database
  */
-abstract class QDB_Select_Abstract
+class QDB_Select
 {
     /**
      * 查询使用的表数据入口对象
@@ -163,6 +163,48 @@ abstract class QDB_Select_Abstract
     protected $group_result = null;
 
     /**
+     * 查询中是否使用了统计函数
+     *
+     * @var boolean
+     */
+    protected $is_stat = false;
+
+    /**
+     * 统计记录数
+     *
+     * @var string
+     */
+    protected $count = null;
+
+    /**
+     * 统计平均值
+     *
+     * @var string
+     */
+    protected $avg = null;
+
+    /**
+     * 统计最大值
+     *
+     * @var string
+     */
+    protected $max = null;
+
+    /**
+     * 统计最小值
+     *
+     * @var string
+     */
+    protected $min = null;
+
+    /**
+     * 统计合计
+     *
+     * @var string
+     */
+    protected $sum = null;
+
+    /**
      * 构造函数
      *
      * @param QDB_Table $table
@@ -170,7 +212,7 @@ abstract class QDB_Select_Abstract
      * @param array $args
      * @param array $links
      */
-    function __construct(QDB_Table $table, $where = null, array $args = null, array $links = null)
+    protected function __construct(QDB_Table $table, $where = null, array $args = null, array $links = null)
     {
         $this->table = $table;
         if (!is_array($links)) { $links = array(); }
@@ -179,6 +221,40 @@ abstract class QDB_Select_Abstract
             list($sql, ) = $this->table->parseSQLInternal($where, $args);
             $this->where[] = $sql;
         }
+    }
+
+    /**
+     * 发起一个来自表数据入口的查询
+     *
+     * @param QDB_Table $table
+     * @param array|string $where
+     * @param array $args
+     * @param array $links
+     *
+     * @return QDB_Select
+     */
+    static function beginSelectFromTable(QDB_Table $table, $where = null, array $args = null, array $links = null)
+    {
+        return new QDB_Select($table, $where, $args, $links);
+    }
+
+    /**
+     * 发起一个来自 ActiveRecord 的查询
+     *
+     * @param unknown_type $class
+     * @param QDB_Table $table
+     *
+     * @return QDB_Select
+     */
+    static function beginSelectFromActiveRecord($class, QDB_Table $table)
+    {
+        $select = new QDB_Select($table);
+        $select->class = $class;
+        $select->table->connect();
+        $select->links = $select->table->getAllLinks();
+        $select->asObject($class);
+
+        return $select;
     }
 
     /**
@@ -392,6 +468,82 @@ abstract class QDB_Select_Abstract
         return $this;
     }
 
+
+    /**
+     * 统计符合条件的记录数
+     *
+     * @param string $expr
+     * @param string $alias
+     *
+     * @return QDB_Select
+     */
+    function count($expr = '*', $alias = 'row_count')
+    {
+        $this->count = array($expr, $alias);
+        $this->is_stat = true;
+        return $this;
+    }
+
+    /**
+     * 统计平均值
+     *
+     * @param string $expr
+     * @param string $alias
+     *
+     * @return QDB_Select
+     */
+    function avg($expr, $alias = 'avg_value')
+    {
+        $this->avg = array($expr, $alias);
+        $this->is_stat = true;
+        return $this;
+    }
+
+    /**
+     * 统计最大值
+     *
+     * @param string $expr
+     * @param string $alias
+     *
+     * @return QDB_Select
+     */
+    function max($expr, $alias = 'max_value')
+    {
+        $this->max = array($expr, $alias);
+        $this->is_stat = true;
+        return $this;
+    }
+
+    /**
+     * 统计最小值
+     *
+     * @param string $expr
+     * @param string $alias
+     *
+     * @return QDB_Select
+     */
+    function min($expr, $alias = 'min_value')
+    {
+        $this->min = array($expr, $alias);
+        $this->is_stat = true;
+        return $this;
+    }
+
+    /**
+     * 统计合计
+     *
+     * @param string $expr
+     * @param string $alias
+     *
+     * @return QDB_Select
+     */
+    function sum($expr, $alias = 'sum_value')
+    {
+        $this->sum = array($expr, $alias);
+        $this->is_stat = true;
+        return $this;
+    }
+
     /**
      * 指示将查询结果封装为特定的 ActiveRecord 对象
      *
@@ -439,54 +591,12 @@ abstract class QDB_Select_Abstract
     function query($clean_up = true)
     {
         if ($this->page_query) {
-            // 计算分页
-            $sql = 'SELECT ';
-            if ($this->distinct) {
-                $sql .= 'DISTINCT ';
-            }
-            $sql .= " COUNT(*) FROM {$this->table->qtable_name}";
-            $sql .= $this->toStringWhere();
-            $sql .= $this->toStringGroup();
-            $sql .= $this->toStringHaving();
-
-            $count = (int)$this->table->getConn()->getOne($sql);
-
-            $pager = array();
-            $pager['page_count'] = ceil($count / $this->page_size);
-            $pager['first'] = $this->page_base;
-            $pager['last'] = $pager['page_count'] + $this->page_base - 1;
-            if ($pager['last'] < $pager['first']) { $pager['last'] = $pager['first']; }
-
-            if ($this->page >= $pager['page_count'] + $this->page_base) {
-                $this->page = $pager['last'];
-            }
-            if ($this->page < $this->page_base) {
-                $this->page = $pager['first'];
-            }
-            if ($this->page < $pager['last'] - 1) {
-                $pager['next'] = $this->page + 1;
-            } else {
-                $pager['next'] = $pager['last'];
-            }
-            if ($this->page > $this->page_base) {
-                $pager['prev'] = $this->page - 1;
-            } else {
-                $pager['prev'] = $pager['first'];
-            }
-            $pager['current'] = $this->page;
-            $pager['page_size'] = $this->page_size;
-            $pager['page_base'] = $this->page_base;
-
-            $this->pager = $pager;
-            $this->limit = array($this->page_size, ($this->page - 1) * $this->page_size);
-        }
-
-        if ($this->as_object) {
-            Q::loadClass($this->as_object);
+            $this->preparePagedQuery();
         }
 
         list($sql, $used_links) = $this->toStringInternal();
 
+        // 对主表进行查询
         if (!is_array($this->limit)) {
             if (is_null($this->limit)) {
                 $handle = $this->table->getConn()->execute($sql);
@@ -497,10 +607,10 @@ abstract class QDB_Select_Abstract
             list($count, $offset) = $this->limit;
             $handle = $this->table->getConn()->selectLimit($sql, $count, $offset);
         }
-
         /* @var $handle QDB_Result_Abstract */
 
         if ($this->recursion > 0) {
+            // 对关联表进行查询，并组装数据
             $refs_value = null;
             $refs = null;
             $used_alias = array_keys($used_links);
@@ -556,6 +666,7 @@ abstract class QDB_Select_Abstract
                 $row = reset($rowset);
             }
         } else {
+            // 非关联查询
             unset($row);
             if ($this->limit == 1) {
                 $row = $handle->fetchRow();
@@ -564,14 +675,18 @@ abstract class QDB_Select_Abstract
             }
         }
 
+        if ($this->as_object) {
+            Q::loadClass($this->as_object);
+        }
+
         if (isset($row)) {
-            if (!empty($row) && $this->as_object) {
+            if (is_array($row) && $this->as_object) {
                 return new $this->as_object($row, false);
             } else {
                 return $row;
             }
         } else {
-            if (!empty($rowset) && $this->as_object) {
+            if (is_array($rowset) && $this->as_object) {
                 $objects = array();
                 if (!empty($this->group_result)) {
                     foreach (array_keys($rowset) as $offset) {
@@ -636,45 +751,88 @@ abstract class QDB_Select_Abstract
             $sql .= 'DISTINCT ';
         }
 
-        if ($this->recursion_link) {
-            $conn = $this->recursion_link->assoc_table->getConn();
-            $sql .= $conn->qfield($this->recursion_link->assoc_key) .
-                    ' AS ' .
-                    $conn->qfield($this->recursion_link->main_key_alias) . ', ';
-        }
-
-        $sql .= $this->toStringPart($this->select);
-
         $used_links = array();
         $join = array();
-        $conn = $this->table->getConn();
-        if ($use_links && $this->recursion > 0) {
-            foreach ((array)$this->links as $link) {
-                /* @var $link QDB_Table_Link */
-                if (!$link->enabled || $link->on_find == 'skip') { continue; }
-                $link->init();
-                if ($link->assoc_table === $this->recursion_link) { continue; }
+        $next_select = '';
+        if (!$this->is_stat) {
+            if ($this->recursion_link) {
+                $conn = $this->recursion_link->assoc_table->getConn();
+                $sql .= $conn->qfield($this->recursion_link->assoc_key) .
+                        ' AS ' .
+                        $conn->qfield($this->recursion_link->main_key_alias) . ', ';
+            }
 
-                if ($link->type != QDB_Table::many_to_many) {
-                    $sql .= ', ' . $conn->qfield($link->main_key, $this->table->full_table_name) .
-                            " AS {$link->main_key_alias}";
-                    $used_links[$link->main_key_alias] = $link;
-                    continue;
-                }
+            $sql .= $this->toStringPart($this->select);
+            $next_select = ', ';
 
-                // 多对多要单独处理
-                if (empty($link->mid_on_find_fields)) {
-                    $sql .= ', ' . $conn->qfield($link->mid_assoc_key, $link->mid_table->full_table_name) .
-                            " AS {$link->main_key_alias}";
-                    $join[] = "LEFT JOIN {$link->mid_table->qtable_name} ON " .
-                              $conn->qfield($link->mid_main_key, $link->mid_table->full_table_name) .
-                              ' = ' . $conn->qfield($link->main_key, $this->table->full_table_name);
-                    $used_links[$link->main_key_alias] = $link;
+            $conn = $this->table->getConn();
+            if ($use_links && $this->recursion > 0) {
+                foreach ((array)$this->links as $link) {
+                    /* @var $link QDB_Table_Link */
+                    if (!$link->enabled || $link->on_find == 'skip') { continue; }
+                    $link->init();
+                    if ($link->assoc_table === $this->recursion_link) { continue; }
+
+                    if ($link->type != QDB_Table::many_to_many) {
+                        $sql .= ', ' . $conn->qfield($link->main_key, $this->table->full_table_name) .
+                                " AS {$link->main_key_alias}";
+                        $used_links[$link->main_key_alias] = $link;
+                        continue;
+                    }
+
+                    // 多对多要单独处理
+                    if (empty($link->mid_on_find_fields)) {
+                        $sql .= ', ' . $conn->qfield($link->mid_assoc_key, $link->mid_table->full_table_name) .
+                                " AS {$link->main_key_alias}";
+                        $join[] = "LEFT JOIN {$link->mid_table->qtable_name} ON " .
+                                  $conn->qfield($link->mid_main_key, $link->mid_table->full_table_name) .
+                                  ' = ' . $conn->qfield($link->main_key, $this->table->full_table_name);
+                        $used_links[$link->main_key_alias] = $link;
+                    }
                 }
             }
         }
 
-        $sql = $this->toStringInternalCallback($sql);
+        // 如果使用了统计函数，则不允许使用 asObject() 和关联查询操作
+        if ($this->is_stat) {
+            if ($this->as_object || !empty($used_links)) {
+                // LC_MSG: Mixing of GROUP columns with asObject() or linked tables.
+                throw new QDB_Select_Exception(__('Mixing of GROUP columns with asObject() or linked tables.'));
+            }
+        }
+
+        if ($this->count) {
+            list($expr, $alias) = $this->count;
+            if ($expr != '*') {
+                $expr = $this->toStringPart($expr);
+            }
+            $sql .= "{$next_select}COUNT({$expr}) AS {$alias}";
+            $next_select = ', ';
+        }
+        if ($this->avg) {
+            list($expr, $alias) = $this->avg;
+            $expr = $this->toStringPart($expr);
+            $sql .= "{$next_select}AVG({$expr}) AS {$alias} ";
+            $next_select = ', ';
+        }
+        if ($this->max) {
+            list($expr, $alias) = $this->max;
+            $expr = $this->toStringPart($expr);
+            $sql .= "{$next_select}MAX({$expr}) AS {$alias} ";
+            $next_select = ', ';
+        }
+        if ($this->min) {
+            list($expr, $alias) = $this->min;
+            $expr = $this->toStringPart($expr);
+            $sql .= "{$next_select}MIN({$expr}) AS {$alias} ";
+            $next_select = ', ';
+        }
+        if ($this->sum) {
+            list($expr, $alias) = $this->sum;
+            $expr = $this->toStringPart($expr);
+            $sql .= "{$next_select}SUM({$expr}) AS {$alias} ";
+            $next_select = ', ';
+        }
 
         $sql .= " FROM {$this->table->qtable_name}";
         $sql .= implode(' ', $join);
@@ -748,11 +906,49 @@ abstract class QDB_Select_Abstract
     }
 
     /**
-     * 继承类应该重写此方法，以便对 SQL 构造过程进行控制
-     *
-     * @param string $sql
-     *
-     * @return $sql
+     * 为准备分页查询获得分页数据
      */
-    abstract protected function toStringInternalCallback($sql);
+    protected function preparePagedQuery()
+    {
+        $sql = 'SELECT ';
+        if ($this->distinct) {
+            $sql .= 'DISTINCT ';
+        }
+        $sql .= " COUNT(*) FROM {$this->table->qtable_name}";
+        $sql .= $this->toStringWhere();
+        $sql .= $this->toStringGroup();
+        $sql .= $this->toStringHaving();
+
+        $count = (int)$this->table->getConn()->getOne($sql);
+
+        $pager = array();
+        $pager['page_count'] = ceil($count / $this->page_size);
+        $pager['first'] = $this->page_base;
+        $pager['last'] = $pager['page_count'] + $this->page_base - 1;
+        if ($pager['last'] < $pager['first']) { $pager['last'] = $pager['first']; }
+
+        if ($this->page >= $pager['page_count'] + $this->page_base) {
+            $this->page = $pager['last'];
+        }
+        if ($this->page < $this->page_base) {
+            $this->page = $pager['first'];
+        }
+        if ($this->page < $pager['last'] - 1) {
+            $pager['next'] = $this->page + 1;
+        } else {
+            $pager['next'] = $pager['last'];
+        }
+        if ($this->page > $this->page_base) {
+            $pager['prev'] = $this->page - 1;
+        } else {
+            $pager['prev'] = $pager['first'];
+        }
+        $pager['current'] = $this->page;
+        $pager['page_size'] = $this->page_size;
+        $pager['page_base'] = $this->page_base;
+
+        $this->pager = $pager;
+        $this->limit = array($this->page_size, ($this->page - 1) * $this->page_size);
+    }
+
 }
