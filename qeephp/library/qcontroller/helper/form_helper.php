@@ -63,6 +63,7 @@ class Helper_Form
                 $form[$a] = null;
             }
         }
+        $form['_pk'] = $pk;
         return $form;
     }
 }

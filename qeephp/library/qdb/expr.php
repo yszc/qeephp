@@ -22,13 +22,28 @@
  */
 class QDB_Expr
 {
+    /**
+     * 封装的表达式
+     *
+     * @var string
+     */
     protected $expr;
 
+    /**
+     * 构造函数
+     *
+     * @param string $expr
+     */
     function __construct($expr)
     {
         $this->expr = $expr;
     }
 
+    /**
+     * 返回表达式的字符串表示
+     *
+     * @return string
+     */
     function toString()
     {
         return $this->expr;

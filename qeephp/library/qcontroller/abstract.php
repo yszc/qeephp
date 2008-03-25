@@ -26,7 +26,7 @@ abstract class QController_Abstract
     /**
      * 应用程序对象
      *
-     * @var QApplication_Abstract
+     * @var MyApp
      */
     public $app;
 

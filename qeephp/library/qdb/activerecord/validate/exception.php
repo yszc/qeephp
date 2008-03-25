@@ -47,4 +47,20 @@ class QDB_ActiveRecord_Validate_Exception extends QException
         $this->validate_error = $error;
         $this->validate_obj = $obj;
     }
+
+    /**
+     * 格式化错误信息
+     *
+     * @param string $key
+     *
+     * @return string
+     */
+    function formatToString($key)
+    {
+        if (isset($this->validate_error[$key])) {
+            return implode(', ', $this->validate_error[$key]);
+        } else {
+            return '';
+        }
+    }
 }

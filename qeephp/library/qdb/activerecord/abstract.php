@@ -20,8 +20,46 @@
  *
  * @package database
  */
-abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB_ActiveRecord_Interface
+abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
 {
+    /**
+     * 预定义的事件
+     */
+    const after_find                  = 'after_find';                   // 查询后
+    const after_initialize            = 'after_initialize';             // 初始化后
+
+    const before_save                 = 'before_save';                  // 保存之前
+    const after_save                  = 'after_save';                   // 保存之后
+
+    const before_create               = 'before_create';                // 创建之前
+    const after_create                = 'after_create';                 // 创建之后
+
+    const before_update               = 'before_update';                // 更新之前
+    const after_update                = 'after_update';                 // 更新之后
+
+    const before_validation           = 'before_validation';            // 验证之前
+    const after_validation            = 'after_validation';             // 验证之后
+
+    const before_validation_on_create = 'before_validation_on_create';  // 创建记录验证之前
+    const after_validation_on_create  = 'after_validation_on_create';   // 创建记录验证之后
+
+    const before_validation_on_update = 'before_validation_on_update';  // 更新记录验证之前
+    const after_validation_on_update  = 'after_validation_on_update';   // 更新记录验证之后
+
+    const before_destroy              = 'before_destroy';               // 销毁之前
+    const after_destroy               = 'after_destroy';                // 销毁之后
+
+    /**
+     * 其他类型 callback
+     */
+    const custom_callback             = 'custom_callback';              // 行为插件自定义方法
+
+    /**
+     * 属性方法
+     */
+    const getter                      = 'getter';                       // 读属性
+    const setter                      = 'setter';                       // 写属性
+
     /**
      * 当前对象的类名
      *
@@ -65,13 +103,6 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     private static $__methods = array();
 
     /**
-     * 行为插件对象的实例
-     *
-     * @var array
-     */
-    private static $__behaviors = array();
-
-    /**
      * 所有用到的 ActiveRecord 对象的定义
      *
      * @var array
@@ -94,7 +125,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
             $this->__attach(array());
         }
         $this->__doCallbacks(self::after_initialize);
-        $this->after_initialize();
+        $this->afterInitialize();
     }
 
     /**
@@ -105,7 +136,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     function save($force_create = false)
     {
         self::__bindAll($this->__class);
-        $this->before_save();
+        $this->beforeSave();
         $this->__doCallbacks(self::before_save);
         $id = $this->id();
         if (empty($id) || $force_create) {
@@ -114,7 +145,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
             $this->update();
         }
         $this->__doCallbacks(self::after_save);
-        $this->after_save();
+        $this->afterSave();
     }
 
     /**
@@ -124,7 +155,11 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     function reload($recursion = 0)
     {
-        $arr = $this->getTable()->find(array($this->idname() => $this->id()))->recursion($recursion)->asArray()->query();
+        $arr = $this->getTable()
+                    ->find(array($this->idname() => $this->id()))
+                    ->recursion($recursion)
+                    ->asArray()
+                    ->query();
         $this->__attach($arr);
     }
 
@@ -135,13 +170,13 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     function doValidate($mode = 'general')
     {
-        $this->before_validation();
+        $this->beforeValidation();
         $this->__doCallbacks(self::before_validation);
         if ($mode == 'create') {
-            $this->before_validation_on_create();
+            $this->beforeValidationOnCreate();
             $this->__doCallbacks(self::before_validation_on_create);
         } elseif ($mode == 'update') {
-            $this->before_validation_on_update();
+            $this->beforeValidationOnUpdate();
             $this->__doCallbacks(self::before_validation_on_update);
         }
 
@@ -153,14 +188,14 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         }
 
         if ($mode == 'create') {
-            $this->after_validation_on_create();
+            $this->afterValidationOnCreate();
             $this->__doCallbacks(self::after_validation_on_create);
         } elseif ($mode == 'update') {
-            $this->after_validation_on_update();
+            $this->afterValidationOnUpdate();
             $this->__doCallbacks(self::after_validation_on_update);
         }
         $this->__doCallbacks(self::after_validation);
-        $this->after_validation();
+        $this->afterValidation();
     }
 
     /**
@@ -168,13 +203,13 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     function destroy()
     {
-        $this->before_destroy();
+        $this->beforeDestroy();
         $this->__doCallbacks(self::before_destroy);
         $table = self::$__ref[$this->__class]['table'];
         /* @var $table QDB_Table */
         $table->remove(array($this->idname() => $this->id()));
         $this->__doCallbacks(self::after_destroy);
-        $this->after_destroy();
+        $this->afterDestroy();
     }
 
     /**
@@ -455,14 +490,18 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
         self::$__methods[$class] = array();
 
         $behaviors = isset($ref['behaviors']) ? Q::normalize($ref['behaviors']) : array();
+        $dirs = array(
+            Q_DIR . '/qdb/activerecord/behavior',
+            ROOT_DIR . '/app/model/behavior',
+        );
+        $behaviors_objs = array();
         foreach ($behaviors as $behavior) {
             $behavior = strtolower($behavior);
             $behavior_class = 'Behavior_' . ucfirst($behavior);
 
             if (!class_exists($behavior_class, false)) {
-                $dir = Q_DIR . '/qdb/activerecord/behavior';
                 $filename = $behavior . '_behavior.php';
-                Q::loadFile($filename, true, array($dir));
+                Q::loadClassFile($filename, $dirs, $behavior_class);
             }
             if (!empty($ref['behaviors_settings'][$behavior])) {
                 $settings = $ref['behaviors_settings'][$behavior];
@@ -472,7 +511,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
             $behavior_obj = new $behavior_class($class, $settings);
             /* @var $behavior_obj QDB_ActiveRecord_Behavior_Abstract */
             $callbacks = $behavior_obj->__callbacks($class);
-            self::$__behaviors[$behavior] = $behavior_obj;
+            $behaviors_objs[] = $behavior_obj;
 
             foreach ($callbacks as $call) {
                 list($type, $method) = $call;
@@ -574,11 +613,18 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
                 );
             }
         }
+        $ref['meta'] = $meta;
         $ref['attribs'] = $attribs;
+        // ralias 是别名 => 字段名的映射
         $ref['ralias'] = array_flip($ref['alias']);
         unset($ref['fields']);
 
         self::$__ref[$class] = $ref;
+
+        foreach ($behaviors_objs as $behavior_obj) {
+            /* @var $behavior_obj QDB_ActiveRecord_Behavior_Abstract */
+            $behavior_obj->__bindFinished($ref);
+        }
         return $ref;
     }
 
@@ -681,27 +727,29 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     protected function create()
     {
-        /* @var $table QDB_Table */
+        $keys = array();
         foreach (self::$__ref[$this->__class]['create_reject'] as $f) {
+            $keys[$f] = self::$__ref[$this->__class]['ralias'][$f];
             $this->__all_props[$f] = null;
         }
 
         $this->doValidate('create');
-        $this->before_create();
+        $this->beforeCreate();
         $this->__doCallbacks(self::before_create);
 
         $row = $this->toArray();
         foreach (self::$__ref[$this->__class]['create_reject'] as $f) {
-            if ($this->__all_props[$f] === null) {
-                unset($row[$f]);
+            if (is_null($this->__all_props[$f])) {
+                unset($row[$keys[$f]]);
             }
         }
         $table = self::$__ref[$this->__class]['table'];
+        /* @var $table QDB_Table */
         $id = $table->create($row);
 
         $this->__all_props[$this->idname()] = $id;
         $this->__doCallbacks(self::after_create);
-        $this->after_create();
+        $this->afterCreate();
     }
 
     /**
@@ -709,26 +757,52 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      */
     protected function update()
     {
+        $keys = array();
         foreach (self::$__ref[$this->__class]['update_reject'] as $f) {
+            $keys[$f] = self::$__ref[$this->__class]['ralias'][$f];
             $this->__all_props[$f] = null;
         }
 
         /* @var $table QDB_Table */
         $this->doValidate('update');
-        $this->before_update();
+        $this->beforeUpdate();
         $this->__doCallbacks(self::before_update);
 
         $row = $this->toArray();
         foreach (self::$__ref[$this->__class]['update_reject'] as $f) {
             if ($this->__all_props[$f] === null) {
-                unset($row[$f]);
+                unset($row[$keys[$f]]);
             }
         }
         $table = self::$__ref[$this->__class]['table'];
         $table->update($row);
 
         $this->__doCallbacks(self::after_update);
-        $this->after_update();
+        $this->afterUpdate();
+    }
+
+    /**
+     * 取得字段名的别名
+     *
+     * @param string $field
+     *
+     * @return string
+     */
+    protected function alias_name($field)
+    {
+        return self::$__ref[$this->__class]['alias'][$field];
+    }
+
+    /**
+     * 取得别名对应的字段名
+     *
+     * @param string $alias
+     *
+     * @return string
+     */
+    protected function field_name($alias)
+    {
+        return self::$__ref[$this->__class]['ralias'][$alias];
     }
 
     /**
@@ -737,17 +811,12 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
      * @param string $class
      * @param array $args
      *
-     * @return QDB_ActiveRecord_Select
+     * @return QDB_Select
      */
     protected static function __find($class, array $args)
     {
         self::__bindAll($class);
-        $select = new QDB_ActiveRecord_Select(
-            $class,
-            self::$__ref[$class]['table'],
-            self::$__ref[$class]['attribs'],
-            self::$__ref[$class]['links']
-        );
+        $select = QDB_Select::beginSelectFromActiveRecord($class, self::$__ref[$class]['table']);
         if (!empty(self::$__callbacks[$class][self::after_find])) {
             $select->bindCallbacks(self::$__callbacks[$class][self::after_find]);
         }
@@ -787,112 +856,112 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Events, QDB
     /**
      * 事件回调：开始验证之前
      */
-    protected function before_validation()
+    protected function beforeValidation()
     {
     }
 
     /**
      * 事件回调：为创建记录进行的验证开始之前
      */
-    protected function before_validation_on_create()
+    protected function beforeValidationOnCreate()
     {
     }
 
     /**
      * 事件回调：为创建记录进行的验证完成之后
      */
-    protected function after_validation_on_create()
+    protected function afterValidationOnCreate()
     {
     }
 
     /**
      * 事件回调：为更新记录进行的验证开始之前
      */
-    protected function before_validation_on_update()
+    protected function beforeValidationOnUpdate()
     {
     }
 
     /**
      * 事件回调：为更新记录进行的验证完成之后
      */
-    protected function after_validation_on_update()
+    protected function afterValidationOnUpdate()
     {
     }
 
     /**
      * 事件回调：验证完成之后
      */
-    protected function after_validation()
+    protected function afterValidation()
     {
     }
 
     /**
      * 事件回调：保存记录之前
      */
-    protected function before_save()
+    protected function beforeSave()
     {
     }
 
     /**
      * 事件回调：保存记录之后
      */
-    protected function after_save()
+    protected function afterSave()
     {
     }
 
     /**
      * 事件回调：创建记录之前
      */
-    protected function before_create()
+    protected function beforeCreate()
     {
     }
 
     /**
      * 事件回调：创建记录之后
      */
-    protected function after_create()
+    protected function afterCreate()
     {
     }
 
     /**
      * 事件回调：更新记录之前
      */
-    protected function before_update()
+    protected function beforeUpdate()
     {
     }
 
     /**
      * 事件回调：更新记录之后
      */
-    protected function after_update()
+    protected function afterUpdate()
     {
     }
 
     /**
      * 事件回调：删除记录之前
      */
-    protected function before_destroy()
+    protected function beforeDestroy()
     {
     }
 
     /**
      * 事件回调：删除记录之后
      */
-    protected function after_destroy()
+    protected function afterDestroy()
     {
     }
 
     /**
      * 事件回调：查询出对象数据之后，构造对象之前
      */
-    protected function after_find()
+    protected function afterFind()
     {
     }
 
     /**
      * 事件回调：对象构造之后
      */
-    protected function after_initialize()
+    protected function afterInitialize()
     {
     }
 }

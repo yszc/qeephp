@@ -99,7 +99,7 @@ case 't': // 时间
 case 'c'; // 字符串
 case 'x'; // 大字符串
     if (!empty($f['length']) && $f['length'] > 0) {
-        if ($f['has_default'] == false) {
+        if ($f['has_default'] == false && $f['not_null'] = true) {
             $rules[] = "array('not_empty', '{$desc}不能为空'),";
         }
         $rules[] = "array('max_length', {$f['length']}, '{$desc}不能超过 {$f['length']} 个字符'),";
@@ -128,7 +128,7 @@ if (empty($rules)) { continue; }
      *
      * @static
      *
-     * @return QDB_ActiveRecord_Select
+     * @return QDB_Select
      */
     static function find()
     {
