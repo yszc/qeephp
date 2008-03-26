@@ -106,12 +106,12 @@ class QValidate
      *
      * @return array
      */
-    function isFailed($only_first_msg = false)
+    function getFailed($only_first_msg = false)
     {
         $failed = array();
         foreach ($this->validators as $validator) {
             /* @var $validator QValidate_Validator */
-            $f = $validator->isFailed($only_first_msg);
+            $f = $validator->getFailed($only_first_msg);
             if (empty($f)) { continue; }
             $failed[$validator->id] = $f;
         }

@@ -129,6 +129,23 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
     }
 
     /**
+     * 批量设置对象的属性值（忽略只读的属性）
+     *
+     * @param array $props
+     */
+    function setProps(array $props)
+    {
+        $row = array();
+        foreach (self::$__ref[$this->__class]['attribs'] as $field => $attr) {
+            if ($attr['readonly'] || !array_key_exists($attr['alias'], $props)) { continue; }
+            $row[$field] = $props[$attr['alias']];
+        }
+        if (!empty($row)) {
+            $this->__attach($row);
+        }
+    }
+
+    /**
      * 保存对象到数据库
      *
      * @param boolean $force_create 是否强制创建新记录
@@ -181,8 +198,27 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
         }
 
         // 进行验证
-        $v = new QValidate();
-        $error = $v->groupCheck($this->toArray(false), self::$__ref[$this->__class]['validation']);
+        $error = array();
+        $v = new QValidate_Validator(null);
+        foreach (self::$__ref[$this->__class]['validation'] as $prop => $rules) {
+            $v->setData($this->__all_props[$prop]);
+            foreach ($rules as $rule) {
+                $check = $rule[0];
+                if (is_array($check)) {
+                    $rule[0] = $this->__all_props[$prop];
+                    $check = reset($check);
+                    if (!call_user_func_array(array($this, $check), $rule)) {
+                        $error[$prop][$check] = $rule[count($rule) - 1];
+                    }
+                } else {
+                    $v->runRule($rule);
+                }
+            }
+            if (!$v->isPassed()) {
+                $error[$prop] = $v->getFailed();
+            }
+        }
+
         if (!empty($error)) {
             throw new QDB_ActiveRecord_Validate_Exception($this, $error);
         }
@@ -305,7 +341,14 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
             }
             return call_user_func($attr['getter'], $varname);
         }
-        return $this->__props[$varname];
+        if (!empty($attr['class']) && !is_object($this->__props[$varname])) {
+            $obj = new $attr['class'];
+            $this->{$varname} = $obj;
+            $this->__all_props[$varname] =& $this->{$varname};
+            return $obj;
+        } else {
+            return $this->__props[$varname];
+        }
     }
 
     /**
@@ -371,8 +414,11 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
      *
      * @return mixed
      */
-    function __call($method, $args)
+    function __call($method, $args = array())
     {
+        if (!is_array($args)) {
+            $args = array();
+        }
         if (isset(self::$__methods[$this->__class][$method])) {
             array_unshift($args, $this->__all_props);
             array_unshift($args, $this);
@@ -460,6 +506,12 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
             $ref['update_reject'] = Q::normalize($ref['update_reject']);
         } else {
             $ref['update_reject'] = array();
+        }
+        if (empty($ref['create_autofill']) || is_array($ref['create_autofill'])) {
+            $ref['create_autofill'] = array();
+        }
+        if (empty($ref['update_autofill']) || is_array($ref['update_autofill'])) {
+            $ref['update_autofill'] = array();
         }
 
         // 构造表数据入口
@@ -732,6 +784,13 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
             $keys[$f] = self::$__ref[$this->__class]['ralias'][$f];
             $this->__all_props[$f] = null;
         }
+        foreach (self::$__ref[$this->__class]['create_autofill'] as $f => $fill) {
+            if (is_array($fill)) {
+                $this->__all_props[$f] = call_user_func(array($this, reset($fill)));
+            } else {
+                $this->__all_props[$f] = $fill;
+            }
+        }
 
         $this->doValidate('create');
         $this->beforeCreate();
@@ -762,6 +821,13 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
             $keys[$f] = self::$__ref[$this->__class]['ralias'][$f];
             $this->__all_props[$f] = null;
         }
+        foreach (self::$__ref[$this->__class]['update_autofill'] as $f => $fill) {
+            if (is_array($fill)) {
+                $this->__all_props[$f] = call_user_func(array($this, reset($fill)));
+            } else {
+                $this->__all_props[$f] = $fill;
+            }
+        }
 
         /* @var $table QDB_Table */
         $this->doValidate('update');
@@ -769,6 +835,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
         $this->__doCallbacks(self::before_update);
 
         $row = $this->toArray();
+
         foreach (self::$__ref[$this->__class]['update_reject'] as $f) {
             if ($this->__all_props[$f] === null) {
                 unset($row[$keys[$f]]);
