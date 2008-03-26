@@ -429,19 +429,6 @@ class QDB_Table
             }
         }
 
-        /**
-         * 将 $row 包含的关联表数据提取出来单独处理
-         */
-        if ($recursion > 0) {
-            $used_links = array();
-            foreach (array_keys($row) as $field) {
-                if (isset($this->links[$field])) {
-                    $used_links[$field] = $row[$field];
-                    unset($row[$field]);
-                }
-            }
-        }
-
         // 填充当前时间
         $this->fillFieldsWithCurrentTime($row, $this->created_time_fields);
         // 创建 INSERT 语句并执行
@@ -460,9 +447,11 @@ class QDB_Table
             }
         }
 
-        if ($recursion > 0 && !empty($used_links)) {
-            foreach ($used_links as $link_name => $link_data) {
-                $link = $this->links[$link_name];
+
+        if ($recursion > 0) {
+            foreach (array_keys($row) as $field) {
+                if (!isset($this->links[$field])) { continue; }
+                $link = $this->links[$field];
                 /* @var $link QDB_Table_Link */
                 $link->init();
 
@@ -472,7 +461,7 @@ class QDB_Table
                                                           $link->name));
                 }
 
-                $link->saveAssocData($link_data, $row[$link->main_key], $recursion - 1);
+                $link->saveAssocData($row[$field], $row[$link->main_key], $recursion - 1);
             }
         }
 
@@ -500,7 +489,7 @@ class QDB_Table
      *
      * @return array
      */
-    function createRowset(array $rowset, $recursion = 1)
+    function createRowset(array $rowset, $recursion = 99)
     {
         $return = array();
         foreach (array_keys($rowset) as $offset) {
@@ -517,7 +506,7 @@ class QDB_Table
      *
      * @return int
      */
-    function update(array $row, $recursion = 1)
+    function update(array $row, $recursion = 99)
     {
         // TODO: update() 实现对复合主键的处理
 
@@ -559,7 +548,7 @@ class QDB_Table
      *
      * @return int
      */
-    function updateRowset(array $rowset, $recursion = 1)
+    function updateRowset(array $rowset, $recursion = 99)
     {
         $update_count = 0;
         foreach (array_keys($rowset) as $offset) {
@@ -654,7 +643,7 @@ class QDB_Table
      *
      * @return mixed
      */
-    function save(array $row, $recursion = 1, $method = 'save')
+    function save(array $row, $recursion = 99, $method = 'save')
     {
         if ($this->is_cpk) {
             // 如果是复合主键，并且需要自动判断使用 create() 或 update()，则抛出异常
@@ -687,7 +676,7 @@ class QDB_Table
      *
      * @return array
      */
-    function saveRowset(array $rowset, $recursion = 1, $method = 'save')
+    function saveRowset(array $rowset, $recursion = 99, $method = 'save')
     {
         $return = array();
         foreach (array_keys($rowset) as $offset) {

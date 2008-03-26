@@ -129,19 +129,15 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
     }
 
     /**
-     * 批量设置对象的属性值（忽略只读的属性）
+     * 批量设置对象的属性值（忽略只读的属性和关联对象）
      *
      * @param array $props
      */
     function setProps(array $props)
     {
-        $row = array();
         foreach (self::$__ref[$this->__class]['attribs'] as $field => $attr) {
-            if ($attr['readonly'] || !array_key_exists($attr['alias'], $props)) { continue; }
-            $row[$field] = $props[$attr['alias']];
-        }
-        if (!empty($row)) {
-            $this->__attach($row);
+            if ($attr['readonly'] || $attr['assoc'] || !array_key_exists($attr['alias'], $props)) { continue; }
+            $this->{$field} = $props[$attr['alias']];
         }
     }
 
@@ -149,17 +145,18 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
      * 保存对象到数据库
      *
      * @param boolean $force_create 是否强制创建新记录
+     * @param int $recursion
      */
-    function save($force_create = false)
+    function save($force_create = false, $recursion = 99)
     {
         self::__bindAll($this->__class);
         $this->beforeSave();
         $this->__doCallbacks(self::before_save);
         $id = $this->id();
         if (empty($id) || $force_create) {
-            $this->create();
+            $this->create($recursion);
         } else {
-            $this->update();
+            $this->update($recursion);
         }
         $this->__doCallbacks(self::after_save);
         $this->afterSave();
@@ -170,7 +167,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
      *
      * @param int $recursion
      */
-    function reload($recursion = 0)
+    function reload($recursion = 1)
     {
         $arr = $this->getTable()
                     ->find(array($this->idname() => $this->id()))
@@ -342,10 +339,14 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
             return call_user_func($attr['getter'], $varname);
         }
         if (!empty($attr['class']) && !is_object($this->__props[$varname])) {
-            $obj = new $attr['class'];
-            $this->{$varname} = $obj;
-            $this->__all_props[$varname] =& $this->{$varname};
-            return $obj;
+            if ($attr['assoc'] == 'has_many' || $attr['assoc'] == 'many_to_many') {
+                $this->{$varname} = array();
+                return array();
+            } else {
+                $obj = new $attr['class'];
+                $this->{$varname} = $obj;
+                return $obj;
+            }
         } else {
             return $this->__props[$varname];
         }
@@ -369,14 +370,18 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
             throw new QException(__('Property "%s" is readonly.', $varname));
         }
         if (isset($attr['setter'])) {
-            $this->__all_props[$varname] = call_user_func($attr['setter'], $value);
+            $this->__props[$varname] = call_user_func($attr['setter'], $value);
+            $this->__all_props[$varname] =& $this->__props[$varname];
             return;
         }
+
         if (!$attr['assoc']) {
             if (isset($this->__props[$varname])) {
                 $this->__props[$varname] = $value;
+                $this->__all_props[$varname] =& $this->__props[$varname];
             } else {
                 $this->{$varname} = $value;
+                $this->__all_props[$varname] =& $this->{$varname};
             }
             return;
         }
@@ -404,6 +409,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
             }
             $this->__props[$varname] = $value;
         }
+        $this->__all_props[$varname] =& $this->__props[$varname];
     }
 
     /**
@@ -427,6 +433,11 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
             // LC_MSG: Call to undefined method "%s::%s()".
             throw new QDB_ActiveRecord_Exception(__('Call to undefined method "%s::%s()".', $this->__class, $method));
         }
+    }
+
+    static function newInstance($class, array $data = null)
+    {
+        return new $class($data);
     }
 
     /**
@@ -776,8 +787,10 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
 
     /**
      * 在数据库中创建对象
+     *
+     * @param int $recursion
      */
-    protected function create()
+    protected function create($recursion = 99)
     {
         $keys = array();
         foreach (self::$__ref[$this->__class]['create_reject'] as $f) {
@@ -796,7 +809,8 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
         $this->beforeCreate();
         $this->__doCallbacks(self::before_create);
 
-        $row = $this->toArray();
+        $row = $this->toArray($recursion);
+
         foreach (self::$__ref[$this->__class]['create_reject'] as $f) {
             if (is_null($this->__all_props[$f])) {
                 unset($row[$keys[$f]]);
@@ -804,7 +818,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
         }
         $table = self::$__ref[$this->__class]['table'];
         /* @var $table QDB_Table */
-        $id = $table->create($row);
+        $id = $table->create($row, $recursion);
 
         $this->__all_props[$this->idname()] = $id;
         $this->__doCallbacks(self::after_create);
@@ -813,8 +827,10 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
 
     /**
      * 更新对象到数据库
+     *
+     * @param int $recursion
      */
-    protected function update()
+    protected function update($recursion = 99)
     {
         $keys = array();
         foreach (self::$__ref[$this->__class]['update_reject'] as $f) {
@@ -834,7 +850,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
         $this->beforeUpdate();
         $this->__doCallbacks(self::before_update);
 
-        $row = $this->toArray();
+        $row = $this->toArray($recursion);
 
         foreach (self::$__ref[$this->__class]['update_reject'] as $f) {
             if ($this->__all_props[$f] === null) {
@@ -842,7 +858,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
             }
         }
         $table = self::$__ref[$this->__class]['table'];
-        $table->update($row);
+        $table->update($row, $recursion);
 
         $this->__doCallbacks(self::after_update);
         $this->afterUpdate();

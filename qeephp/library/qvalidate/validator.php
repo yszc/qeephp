@@ -579,6 +579,22 @@ class QValidate_Validator
     }
 
     /**
+     * 是否是一个 time() 函数返回的整数
+     *
+     * @param string $msg
+     *
+     * @return QValidate_Validator
+     */
+    function isPHPTimeStamp($msg = '')
+    {
+        $int = intval($this->value);
+        if ($int != $this->value || $int <= 0) {
+            $this->setResult(false, __FUNCTION__, $msg);
+        }
+        return $this;
+    }
+
+    /**
      * 是否是时间（hh:mm:ss）
      *
      * @param string $msg
