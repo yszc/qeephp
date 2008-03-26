@@ -123,7 +123,12 @@ class QValidate_Validator
     {
         $check = array_shift($rule);
         $func = str_replace('_', '', $check);
-        call_user_func_array(array($this, $func), $rule);
+        if (!method_exists($this, $func)) {
+            // LC_MSG: Invalid validation function: "%s" for data "%s".
+            throw new QValidate_Exception(__('Invalid validation function: "%s" for data "%s".', $check, $this->id));
+        } else {
+            call_user_func_array(array($this, $func), $rule);
+        }
     }
 
     /**
@@ -204,6 +209,20 @@ class QValidate_Validator
     function same($test, $msg = '')
     {
         $this->setResult($this->value === $test, __FUNCTION__, $msg);
+        return $this;
+    }
+
+    /**
+     * 是否与指定值不完全一致
+     *
+     * @param mixed $test
+     * @param string $msg
+     *
+     * @return QValidate_Validator
+     */
+    function notSame($test, $msg = '')
+    {
+        $this->setResult($this->value !== $test, __FUNCTION__, $msg);
         return $this;
     }
 
@@ -629,8 +648,18 @@ class QValidate_Validator
      */
     function isInt($msg = '')
     {
-        $test = intval($this->value) . '' == $this->value;
-        $this->setResult($test !== -1 && $test !== false, __FUNCTION__, $msg);
+        static $locale;
+
+        if (is_null($locale)) {
+            $locale = localeconv();
+        }
+
+        $filtered = str_replace($locale['decimal_point'], '.', $this->value);
+        $filtered = str_replace($locale['thousands_sep'], '', $filtered);
+
+        if (strval(intval($filtered)) != $filtered) {
+            $this->setResult(false, __FUNCTION__, $msg);
+        }
         return $this;
     }
 
@@ -641,17 +670,18 @@ class QValidate_Validator
      */
     function isFloat($msg = '')
     {
-        $value = floatval($this->value);
-        if ($value == 0) {
-            if ($value === 0 && $this->value === '0') {
-                $test = true;
-            } else {
-                $test = false;
-            }
-        } else {
-            $test = true;
+        static $locale;
+
+        if (is_null($locale)) {
+            $locale = localeconv();
         }
-        $this->setResult($test !== -1 && $test !== false, __FUNCTION__, $msg);
+
+        $filtered = str_replace($locale['decimal_point'], '.', $this->value);
+        $filtered = str_replace($locale['thousands_sep'], '', $filtered);
+
+        if (strval(floatval($filtered)) != $filtered) {
+            $this->setResult(false, __FUNCTION__, $msg);
+        }
         return $this;
     }
 
