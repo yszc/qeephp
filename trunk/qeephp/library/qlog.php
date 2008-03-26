@@ -163,7 +163,7 @@ class QLog
         $fp = fopen($this->filename, 'a');
         if (!$fp) { return; }
         if (flock($fp, LOCK_EX)) {
-            fwrite($fp, str_replace("\r", '', $this->log));
+            fwrite($fp, $this->log);
             flock($fp, LOCK_UN);
         }
         fclose($fp);
