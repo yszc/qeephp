@@ -262,7 +262,7 @@ class QDB_Select
      *
      * @param array|string|QDB_Expr $expr
      *
-     * @return QDB_Select_Abstract
+     * @return QDB_Select
      */
     function select($expr = '*')
     {
@@ -276,7 +276,7 @@ class QDB_Select
      * @param int $recursion
      * @param QDB_Table_Link $link
      *
-     * @return QDB_Select_Abstract
+     * @return QDB_Select
      */
     function recursion($recursion, QDB_Table_Link $link = null)
     {
@@ -292,7 +292,7 @@ class QDB_Select
      *
      * @param array|string $links
      *
-     * @return QDB_Select_Abstract
+     * @return QDB_Select
      */
     function links($links)
     {
@@ -316,7 +316,7 @@ class QDB_Select
      *
      * @param array|string $where
      *
-     * @return QDB_Select_Abstract
+     * @return QDB_Select
      */
     function where($where)
     {
@@ -335,7 +335,7 @@ class QDB_Select
      * @param array|string $where
      * @param array $args
      *
-     * @return QDB_Select_Abstract
+     * @return QDB_Select
      */
     function whereArgs($where, array $args)
     {
@@ -351,7 +351,7 @@ class QDB_Select
      *
      * @param string $expr
      *
-     * @return QDB_Select_Abstract
+     * @return QDB_Select
      */
     function order($expr)
     {
@@ -362,7 +362,7 @@ class QDB_Select
     /**
      * 指示查询所有符合条件的记录
      *
-     * @return QDB_Select_Abstract
+     * @return QDB_Select
      */
     function all()
     {
@@ -376,7 +376,7 @@ class QDB_Select
      * @param int $count
      * @param int $offset
      *
-     * @return QDB_Select_Abstract
+     * @return QDB_Select
      */
     function limit($count, $offset = 0)
     {
@@ -391,7 +391,7 @@ class QDB_Select
      * @param int $page_size
      * @param int $base
      *
-     * @return QDB_Select_Abstract
+     * @return QDB_Select
      */
     function limitPage($page, $page_size = 20, $base = 1)
     {
@@ -422,7 +422,7 @@ class QDB_Select
      *
      * @param string $expr
      *
-     * @return QDB_Select_Abstract
+     * @return QDB_Select
      */
     function group($expr)
     {
@@ -435,7 +435,7 @@ class QDB_Select
      * @param array|string $where
      * @param array $args
      *
-     * @return QDB_Select_Abstract
+     * @return QDB_Select
      */
     function having($where, array $args = null)
     {
@@ -447,7 +447,7 @@ class QDB_Select
      *
      * @param boolean $flag
      *
-     * @return QDB_Select_Abstract
+     * @return QDB_Select
      */
     function forUpdate($flag = true)
     {
@@ -460,7 +460,7 @@ class QDB_Select
      *
      * @param boolean $flag
      *
-     * @return QDB_Select_Abstract
+     * @return QDB_Select
      */
     function distinct($flag = true)
     {
@@ -549,7 +549,7 @@ class QDB_Select
      *
      * @param string $class_name
      *
-     * @return QDB_Select_Abstract
+     * @return QDB_Select
      */
     function asObject($class_name)
     {
@@ -560,7 +560,7 @@ class QDB_Select
     /**
      * 指示将查询结果返回为数组
      *
-     * @return QDB_Select_Abstract
+     * @return QDB_Select
      */
     function asArray()
     {
@@ -573,7 +573,7 @@ class QDB_Select
      *
      * @param string $group_result
      *
-     * @return QDB_Select_Abstract
+     * @return QDB_Select
      */
     function groupResult($group_result)
     {

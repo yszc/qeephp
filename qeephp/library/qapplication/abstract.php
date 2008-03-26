@@ -80,10 +80,6 @@ abstract class QApplication_Abstract
         Q::setIni('on_action_not_found', array($this, 'onActionNotFound'));
         Q::setIni('current_namespace', $this->request->namespace);
         Q::setIni('current_module', $this->request->module_name);
-
-        if (Q::getIni('auto_response_header')) {
-            header('Content-Type: text/html; charset=' . Q::getIni('response_charset'));
-        }
     }
 
     /**
@@ -140,6 +136,10 @@ abstract class QApplication_Abstract
         /* @var $controller QController_Abstract */
 
         $ret = $controller->execute($action_name, $namespace, $module);
+
+        if (!headers_sent() && Q::getIni('auto_response_header')) {
+            header('Content-Type: text/html; charset=' . Q::getIni('response_charset'));
+        }
 
         if (is_object($ret) && ($ret instanceof QResponse_Interface)) {
             $ret->controller = $controller;

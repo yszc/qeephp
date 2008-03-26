@@ -99,7 +99,7 @@ class QValidate_Validator
      *
      * @return array
      */
-    function isFailed($only_first_msg = false)
+    function getFailed($only_first_msg = false)
     {
         return $only_first_msg ? reset($this->failed) : $this->failed;
     }
@@ -115,22 +115,28 @@ class QValidate_Validator
     }
 
     /**
+     * 运行一个验证
+     *
+     * @param array $rule
+     */
+    function runRule(array $rule)
+    {
+        $check = array_shift($rule);
+        $func = str_replace('_', '', $check);
+        call_user_func_array(array($this, $func), $rule);
+    }
+
+    /**
      * 对数据进行一系列验证
      *
      * @param array $rules
      */
     function runRules(array $rules)
     {
-        foreach ($rules as $args) {
-            $rule = array_shift($args);
-            $func = str_replace('_', '', $rule);
-            call_user_func_array(array($this, $func), $args);
+        foreach ($rules as $rule) {
+            $this->runRule($rule);
         }
-        if ($this->result) {
-            return null;
-        } else {
-            return $this->failed;
-        }
+        return ($this->result) ? null : $this->failed;
     }
 
     /**

@@ -519,8 +519,8 @@ class QDB_Table
      */
     function update(array $row, $recursion = 1)
     {
-        // TODO: update() 实现对关联的处理
         // TODO: update() 实现对复合主键的处理
+
         $this->fillFieldsWithCurrentTime($row, $this->updated_time_fields);
         list($sql, $values) = $this->dbo->getUpdateSQL($row,
                                                        $this->pk,
@@ -528,6 +528,26 @@ class QDB_Table
                                                        $this->schema,
                                                        self::$tables_meta[$this->cache_id]);
         $this->dbo->execute($sql, $values);
+
+        if ($recursion > 0) {
+            foreach (array_keys($row) as $field) {
+                if (!isset($this->links[$field])) { continue; }
+
+                $link = $this->links[$field];
+                /* @var $link QDB_Table_Link */
+                $link->init();
+
+                if (empty($row[$link->main_key])) {
+                    throw new QDB_Table_Link_Exception(__('Link "%s" expected "%s" field value in $row.',
+                                                          $link->main_key,
+                                                          $link->name));
+                }
+
+                $link->saveAssocData($row[$field], $row[$link->main_key], $recursion - 1);
+            }
+        }
+
+
         return $this->dbo->affectedRows();
     }
 
@@ -558,7 +578,6 @@ class QDB_Table
      */
     function updateWhere(array $pairs, $where)
     {
-        // TODO: updateWhere() 实现对关联的处理
         $args = func_get_args();
         array_shift($args);
         array_shift($args);
@@ -722,6 +741,11 @@ class QDB_Table
         $pkv = $this->dbo->qstr($pkv);
         $sql = "DELETE FROM {$this->qtable_name} WHERE {$this->qpk} = {$pkv}";
         $this->dbo->execute($sql);
+
+        foreach ($this->links as $link) {
+            /* @var $link QDB_Table_Link */
+        }
+
         return $this->dbo->affectedRows();
     }
 

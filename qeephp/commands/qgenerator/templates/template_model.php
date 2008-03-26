@@ -31,7 +31,7 @@ class <?php echo $class_name; ?> extends QDB_ActiveRecord_Abstract
 <?php endif; ?>
 
             // 指定数据表记录字段与对象属性之间的映射关系
-            // 没有在此处指定的字段，QeePHP 会自动设置将字段映射为对象的可读写属性
+            // 没有在此处指定的属性，QeePHP 会自动设置将属性映射为对象的可读写属性
             'fields' => array(
                 // 主键应该是只读，确保领域对象的“不变量”
 <?php foreach ($pk as $p): ?>
@@ -59,14 +59,30 @@ class <?php echo $class_name; ?> extends QDB_ActiveRecord_Abstract
             ),
 
             /**
-             * 指定在数据库中创建对象时，哪些字段的值不允许由外部提供
+             * 指定在数据库中创建对象时，哪些属性的值不允许由外部提供
              */
             'create_reject' => '<?php echo implode(', ', $pk); ?>',
 
             /**
-             * 指定更新数据库中的对象时，哪些字段的值不允许由外部提供
+             * 指定更新数据库中的对象时，哪些属性的值不允许由外部提供
              */
             'update_reject' => '',
+
+            /**
+             * 指定在数据库中创建对象时，哪些属性的值由下面指定的内容进行覆盖
+             */
+            'create_autofill' => array(
+                # 属性名 => 填充值
+                # 'is_locked' => 0,
+                # 属性名 => 回调方法
+                # 'member_id' => array('$this', 'fillMemberId'),
+            ),
+
+            /**
+             * 指定更新数据库中的对象时，哪些属性的值由下面指定的内容进行覆盖
+             */
+            'update_autofill' => array(
+            ),
 
             // 在保存对象时，会按照下面指定的验证规则进行验证。验证失败会抛出异常。
             // 还可以通过对象的 ::validate() 静态方法对数组数据进行验证。
