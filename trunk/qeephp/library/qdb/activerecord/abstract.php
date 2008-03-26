@@ -220,7 +220,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
         $this->__doCallbacks(self::before_destroy);
         $table = self::$__ref[$this->__class]['table'];
         /* @var $table QDB_Table */
-        $table->remove(array($this->idname() => $this->id()));
+        $table->remove($this->id());
         $this->__doCallbacks(self::after_destroy);
         $this->afterDestroy();
     }
@@ -262,17 +262,18 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
 
         foreach (array_keys($this->__all_props) as $a) {
             $f = $ralias[$a];
-            if ($attribs[$f]['assoc'] && $recursion > 0) {
-                if (is_array($this->__props[$a]) || $this->__props[$a] instanceof Iterator) {
+            if ($attribs[$f]['assoc']) {
+                if ($recursion <= 0) { continue; }
+                if (is_array($this->__all_props[$a]) || $this->__all_props[$a] instanceof Iterator) {
                     $row[$f] = array();
-                    foreach ($this->__props[$a] as $obj) {
+                    foreach ($this->__all_props[$a] as $obj) {
                         $row[$f][] = $obj->toArray($recursion - 1);
                     }
                 } else {
-                    $row[$f] = $this->__props[$a]->toArray($recursion - 1);
+                    $row[$f] = $this->__all_props[$a]->toArray($recursion - 1);
                 }
             } else {
-                $row[$f] = isset($this->__props[$a]) ? $this->__props[$a] : $this->{$a};
+                $row[$f] = isset($this->__all_props[$a]) ? $this->__all_props[$a] : $this->{$a};
             }
         }
         return $row;
@@ -350,8 +351,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
             throw new QException(__('Property "%s" is readonly.', $varname));
         }
         if (isset($attr['setter'])) {
-            $this->__props[$varname] = call_user_func($attr['setter'], $value);
-            $this->__all_props[$varname] =& $this->__props[$varname];
+            call_user_func($attr['setter'], $value);
             return;
         }
 
@@ -368,19 +368,20 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
 
         if ($attr['assoc'] == 'has_many' || $attr['assoc'] == 'many_to_many') {
             // 聚合的对象，要求 $value 必须是一个包含特定类型对象的数组
-            if (!is_array($value)) {
+            if (!is_array($value) && !($value instanceof Iterator)) {
                 // LC_MSG: Property "%s" type mismatch. expected is "%s", actual is "%s".
                 $msg = 'Property "%s" type mismatch. expected is "%s", actual is "%s".';
                 throw new QDB_ActiveRecord_Exception(__($msg, $varname, 'array', gettype($value)));
             }
-            foreach (array_keys($value) as $key) {
-                if (!is_object($value[$key]) || !($value[$key] instanceof $attr['class'])) {
+            foreach ($value as $obj) {
+                if (!is_object($obj) || !($obj instanceof $attr['class'])) {
                     // LC_MSG: Property "%s[]" type mismatch. expected is "%s", actual is "%s".
                     $msg = 'Property "%s[]" type mismatch. expected is "%s", actual is "%s".';
-                    throw new QDB_ActiveRecord_Exception(__($msg, $varname, $attr['class'], gettype($value[$key])));
+                    throw new QDB_ActiveRecord_Exception(__($msg, $varname, $attr['class'], gettype($obj)));
                 }
             }
-            $this->__props[$varname] = $value;
+            $this->{$varname} = $value;
+            $this->__all_props[$varname] =& $this->{$varname};
         } else {
             if (!is_object($value) || !($value instanceof $attr['class'])) {
                 // LC_MSG: Property "%s" type mismatch. expected is "%s", actual is "%s".
@@ -388,8 +389,9 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
                 throw new QActiveRecord_Exception(__($msg, $varname, $attr['class'], gettype($value)));
             }
             $this->__props[$varname] = $value;
+            $this->__all_props[$varname] =& $this->__props[$varname];
         }
-        $this->__all_props[$varname] =& $this->__props[$varname];
+
     }
 
     /**
@@ -628,6 +630,9 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
                     }
                 }
 
+                // 根据 META 确定属性是否是虚拟属性
+                $define['virtual'] = empty($meta[$field]);
+
                 // 根据 META 确定属性的默认值
                 if (!empty($meta[$field]) && $meta[$field]['has_default']) {
                     $define['default'] = $meta[$field]['default'];
@@ -647,6 +652,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
                     'readonly'  => false,
                     'assoc'     => false,
                     'alias'     => $key,
+                    'virtual'   => false,
                     'default'   => ($field['has_default']) ? $field['default'] : null,
                 );
             }
@@ -721,6 +727,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
     {
         $alias = self::$__ref[$this->__class]['alias'];
         foreach (self::$__ref[$this->__class]['attribs'] as $field => $define) {
+            if ($define['virtual'] && !$define['assoc']) { continue; }
             if (!isset($row[$field]) && $define['assoc'] == false) {
                 $row[$field] = self::$__ref[$this->__class]['attribs'][$field]['default'];
             }
@@ -874,6 +881,20 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
             call_user_func_array(array($select, 'where'), $args);
         }
         return $select;
+    }
+
+    /**
+     * 实例化符合条件的对象，并调用对象的 destroy() 方法
+     *
+     * @param string $class
+     * @param array $args
+     */
+    protected static function __destroyWhere($class, array $args)
+    {
+        $objs = self::__find($class, $args)->all()->query();
+        foreach ($objs as $obj) {
+            $obj->destroy();
+        }
     }
 
     /**

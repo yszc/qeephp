@@ -156,15 +156,12 @@ if (empty($rules)) { continue; }
      *
      * @static
      *
-     * @param mixed $where
-     *
      * @return int
      */
-    static function destroyWhere($where)
+    static function destroyWhere()
     {
         $args = func_get_args();
-        array_shift($args);
-        return parent::__destroyWhere(__CLASS__, $where, $args);
+        return parent::__destroyWhere(__CLASS__, $args);
     }
 
     /**
