@@ -675,13 +675,17 @@ class QDB_Select
             }
         }
 
+        if ($this->is_stat && isset($rowset)) {
+            $row = reset($rowset);
+        }
+
         if ($this->as_object) {
             Q::loadClass($this->as_object);
         }
 
         if (isset($row)) {
             if (is_array($row) && $this->as_object) {
-                return new $this->as_object($row, false);
+                return new $this->as_object($row);
             } else {
                 return $row;
             }
@@ -795,7 +799,7 @@ class QDB_Select
 
         // 如果使用了统计函数，则不允许使用 asObject() 和关联查询操作
         if ($this->is_stat) {
-            if ($this->as_object || !empty($used_links)) {
+            if ($this->as_object) {
                 // LC_MSG: Mixing of GROUP columns with asObject() or linked tables.
                 throw new QDB_Select_Exception(__('Mixing of GROUP columns with asObject() or linked tables.'));
             }

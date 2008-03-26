@@ -470,7 +470,6 @@ class QDB_Table_Link
      */
     function saveAssocData(array $link_data, $assoc_key_value, $recursion)
     {
-        if ($this->on_save === false || $this->on_save == 'skip') { return; }
         switch ($this->type) {
         case QDB_Table::belongs_to:
         case QDB_Table::has_one:
@@ -496,6 +495,7 @@ class QDB_Table_Link
      */
     protected function saveOneToOne(array $link_data, $assoc_key_value, $recursion)
     {
+        if ($this->on_save === false || $this->on_save == 'skip') { return; }
         $link_data[$this->assoc_key] = $assoc_key_value;
         $this->assoc_table->save($link_data, $recursion, $this->on_save);
     }
@@ -509,6 +509,7 @@ class QDB_Table_Link
      */
     protected function saveOneToMany($link_data, $assoc_key_value, $recursion)
     {
+        if ($this->on_save === false || $this->on_save == 'skip') { return; }
         foreach (array_keys($link_data) as $offset) {
             $link_data[$offset][$this->assoc_key] = $assoc_key_value;
         }

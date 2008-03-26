@@ -191,14 +191,17 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
 
     function execute($sql, $inputarr = null)
     {
-        $this->query_count++;
-        if ($this->log_query) {
-            $this->log[] = $sql;
-        }
         if (is_array($inputarr)) {
             $sql = $this->fakebind($sql, $inputarr);
         }
         if (!$this->conn) { $this->connect(); }
+        if ($this->log_query) {
+            $this->log[] = $sql;
+        }
+        if ($this->log_message) {
+            log_message($sql, 'debug');
+        }
+        $this->query_count++;
         $result = mysql_query($sql, $this->conn);
 
         if (is_resource($result)) {
@@ -212,7 +215,6 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
             $this->last_err = mysql_error($this->conn);
             $this->last_err_code = mysql_errno($this->conn);
             $this->has_failed_query = true;
-            QDebug::dump($sql, __METHOD__);
             throw new QDB_Exception($sql, $this->last_err, $this->last_err_code);
         }
     }

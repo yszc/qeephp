@@ -174,6 +174,13 @@ abstract class QDB_Adapter_Abstract
     protected $log_query = false;
 
     /**
+     * 指示是否将查询语句写入日志
+     *
+     * @var boolean
+     */
+    protected $log_message = false;
+
+    /**
      * 指示是否将查询结果中的字段名转换为全小写
      *
      * @var boolean
@@ -190,6 +197,7 @@ abstract class QDB_Adapter_Abstract
     {
         $this->dsn = $dsn;
         $this->id = $id;
+        $this->log_message = function_exists('log_message');
     }
 
     /**
