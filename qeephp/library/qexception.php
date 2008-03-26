@@ -22,12 +22,12 @@
  */
 class QException extends Exception
 {
-	/**
-	 * 构造函数
-	 *
-	 * @param string $message
-	 * @param int $code
-	 */
+    /**
+     * 构造函数
+     *
+     * @param string $message
+     * @param int $code
+     */
     function __construct($message, $code = 0)
     {
         parent::__construct($message, intval($code));

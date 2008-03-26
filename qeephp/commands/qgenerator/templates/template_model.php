@@ -74,8 +74,6 @@ class <?php echo $class_name; ?> extends QDB_ActiveRecord_Abstract
             'create_autofill' => array(
                 # 属性名 => 填充值
                 # 'is_locked' => 0,
-                # 属性名 => 回调方法
-                # 'member_id' => array('$this', 'fillMemberId'),
             ),
 
             /**
@@ -86,6 +84,7 @@ class <?php echo $class_name; ?> extends QDB_ActiveRecord_Abstract
 
             // 在保存对象时，会按照下面指定的验证规则进行验证。验证失败会抛出异常。
             // 还可以通过对象的 ::validate() 静态方法对数组数据进行验证。
+            // 注意：验证是按照属性名进行的，因此如果为字段指定了别名，则应该使用别名进行验证
             'validation' => array(
 <?php
 foreach ($meta as $name => $f):
@@ -172,12 +171,13 @@ if (empty($rules)) { continue; }
      * 对数据进行验证，返回所有未通过验证数据的名称错误信息
      *
      * @param array $data
+     * @param array|string $props
      *
      * @return array
      */
-    static function validate(array $data, $fields = null)
+    static function validate(array $data, $props = null)
     {
-        return parent::__validate(__CLASS__, $data, $fields);
+        return parent::__validate(__CLASS__, $data, $props);
     }
 
 /* -------------------------------------------------------------------- */

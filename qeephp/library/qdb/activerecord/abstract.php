@@ -61,11 +61,18 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
     const setter                      = 'setter';                       // 写属性
 
     /**
+     * 对象所有属性的引用
+     *
+     * @var array
+     */
+    protected $__all_props;
+
+    /**
      * 当前对象的类名
      *
      * @var string
      */
-    private $__class;
+    protected $__class;
 
     /**
      * 对象不允许直接访问的属性
@@ -80,13 +87,6 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
      * @var array
      */
     private $__props_events;
-
-    /**
-     * 对象所有属性的引用
-     *
-     * @var array
-     */
-    private $__all_props;
 
     /**
      * 事件钩子
@@ -195,27 +195,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
         }
 
         // 进行验证
-        $error = array();
-        $v = new QValidate_Validator(null);
-        foreach (self::$__ref[$this->__class]['validation'] as $prop => $rules) {
-            $v->setData($this->__all_props[$prop]);
-            foreach ($rules as $rule) {
-                $check = $rule[0];
-                if (is_array($check)) {
-                    $rule[0] = $this->__all_props[$prop];
-                    $check = reset($check);
-                    if (!call_user_func_array(array($this, $check), $rule)) {
-                        $error[$prop][$check] = $rule[count($rule) - 1];
-                    }
-                } else {
-                    $v->runRule($rule);
-                }
-            }
-            if (!$v->isPassed()) {
-                $error[$prop] = $v->getFailed();
-            }
-        }
-
+        $error = self::__validate($this->__class, $this->__all_props);
         if (!empty($error)) {
             throw new QDB_ActiveRecord_Validate_Exception($this, $error);
         }
@@ -433,11 +413,6 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
             // LC_MSG: Call to undefined method "%s::%s()".
             throw new QDB_ActiveRecord_Exception(__('Call to undefined method "%s::%s()".', $this->__class, $method));
         }
-    }
-
-    static function newInstance($class, array $data = null)
-    {
-        return new $class($data);
     }
 
     /**
@@ -798,11 +773,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
             $this->__all_props[$f] = null;
         }
         foreach (self::$__ref[$this->__class]['create_autofill'] as $f => $fill) {
-            if (is_array($fill)) {
-                $this->__all_props[$f] = call_user_func(array($this, reset($fill)));
-            } else {
-                $this->__all_props[$f] = $fill;
-            }
+            $this->__all_props[$f] = $fill;
         }
 
         $this->doValidate('create');
@@ -838,11 +809,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
             $this->__all_props[$f] = null;
         }
         foreach (self::$__ref[$this->__class]['update_autofill'] as $f => $fill) {
-            if (is_array($fill)) {
-                $this->__all_props[$f] = call_user_func(array($this, reset($fill)));
-            } else {
-                $this->__all_props[$f] = $fill;
-            }
+            $this->__all_props[$f] = $fill;
         }
 
         /* @var $table QDB_Table */
@@ -914,15 +881,43 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
      *
      * @param string $class
      * @param array $data
-     * @param array|string $fields
+     * @param array|string $props
      *
      * @return array
      */
-    protected static function __validate($class, array $data, $fields = null)
+    protected static function __validate($class, array $data, $props = null)
     {
-        $ref = self::reflection($class);
-        $v = new QValidate();
-        return $v->groupCheck($data, $ref['validation'], $fields);
+        self::reflection($class);
+        if (!is_null($props)) {
+            $props = Q::normalize($props);
+            $props = array_flip($props);
+        } else {
+            $props = self::$__ref[$class]['ralias'];
+        }
+
+        $error = array();
+        $v = new QValidate_Validator(null);
+        foreach (self::$__ref[$class]['validation'] as $prop => $rules) {
+            if (!isset($props[$prop])) { continue; }
+            $v->setData($data[$prop]);
+            $v->id = $prop;
+            foreach ($rules as $rule) {
+                $check = $rule[0];
+                if (is_array($check)) {
+                    $rule[0] = $data[$prop];
+                    $check = reset($check);
+                    if (!call_user_func_array(array($class, $check), $rule)) {
+                        $error[$prop][$check] = $rule[count($rule) - 1];
+                    }
+                } else {
+                    $v->runRule($rule);
+                }
+            }
+            if (!$v->isPassed()) {
+                $error[$prop] = $v->getFailed();
+            }
+        }
+        return $error;
     }
 
     /**
