@@ -731,10 +731,6 @@ class QDB_Table
         $sql = "DELETE FROM {$this->qtable_name} WHERE {$this->qpk} = {$pkv}";
         $this->dbo->execute($sql);
 
-        foreach ($this->links as $link) {
-            /* @var $link QDB_Table_Link */
-        }
-
         return $this->dbo->affectedRows();
     }
 

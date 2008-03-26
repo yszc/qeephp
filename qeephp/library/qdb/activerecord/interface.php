@@ -45,11 +45,9 @@ interface QDB_ActiveRecord_Interface
      *
      * @static
      *
-     * @param mixed $where
-     *
      * @return int
      */
-    static function destroyWhere($where);
+    static function destroyWhere();
 
     /**
      * 对数据进行验证，返回所有未通过验证数据的名称错误信息
