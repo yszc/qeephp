@@ -116,7 +116,8 @@ class Behavior_Acluser extends QDB_ActiveRecord_Behavior_Abstract
         if ($this->settings['unique_email']) {
             $f = $this->settings['email_prop'];
             $email = $props[$f];
-            if ($obj->getTable()->find(array($this->field_name($f) => $email))->count()->query() > 0) {
+            $row = $obj->getTable()->find(array($this->field_name($f) => $email))->count()->query();
+            if (!empty($row) && $row['row_count'] > 0) {
                 // 找到相同的 EMAIL
                 throw new QACL_User_Exception(sprintf($this->settings['err_duplicate_email'], $email));
             }

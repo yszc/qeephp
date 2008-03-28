@@ -171,6 +171,20 @@ class QValidate_Validator
     }
 
     /**
+     * 使用正则表达式进行验证
+     *
+     * @param string $regxp
+     * @param string $msg
+     *
+     * @return QValidate_Validator
+     */
+    function regexp($regxp, $msg = '')
+    {
+        $this->setResult(preg_match($regxp, $this->value) > 0, __FUNCTION__, $msg);
+        return $this;
+    }
+
+    /**
      * 是否等于指定值
      *
      * @param mixed $test
