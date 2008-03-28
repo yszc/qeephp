@@ -619,7 +619,8 @@ class QDB_Select
             // 进行关联查询，并组装数据集
             foreach ($used_links as $mka => $link) {
                 /* @var $link QDB_Table_Link */
-                if ($link->assoc_table->qtable_name == $this->table->qtable_name || empty($refs_value[$mka])) {
+                if (empty($refs_value[$mka])) {
+                //if ($link->assoc_table->qtable_name == $this->table->qtable_name || empty($refs_value[$mka])) {
                     continue;
                 }
 
@@ -775,7 +776,7 @@ class QDB_Select
                     /* @var $link QDB_Table_Link */
                     if (!$link->enabled || $link->on_find == 'skip') { continue; }
                     $link->init();
-                    if ($link->assoc_table === $this->recursion_link) { continue; }
+                    // if ($link->assoc_table === $this->recursion_link) { continue; }
 
                     if ($link->type != QDB_Table::many_to_many) {
                         $sql .= ', ' . $conn->qfield($link->main_key, $this->table->full_table_name) .
