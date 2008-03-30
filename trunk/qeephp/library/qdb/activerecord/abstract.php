@@ -457,6 +457,7 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
         unset($options['setter']);
         unset($options['getter']);
         $define['assoc_options'] = $options;
+        $define['virtual'] = true;
 
         self::$__ref[$class]['attribs'][$field] = $define;
         self::$__ref[$class]['alias'][$field] = $define['alias'];

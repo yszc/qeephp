@@ -27,7 +27,7 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
     function __construct($dsn, $id)
     {
         if (!is_array($dsn)) {
-            $dsn = QDB_Adapter_Abstract::parseDSN($dsn);
+            $dsn = QDB::parseDSN($dsn);
         }
         parent::__construct($dsn, $id);
         $this->schema = $dsn['database'];

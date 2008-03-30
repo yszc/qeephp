@@ -508,7 +508,7 @@ class QRequest
      *
      * @return string
      */
-    public function getHeader($header)
+    function getHeader($header)
     {
         $temp = 'HTTP_' . strtoupper(str_replace('-', '_', $header));
         if (!empty($_SERVER[$temp])) {
@@ -523,6 +523,16 @@ class QRequest
         }
 
         return false;
+    }
+
+    /**
+     * 返回连接到当前页面的前一页地址
+     *
+     * @return string
+     */
+    function getReferer()
+    {
+        return $this->getHeader('REFERER');
     }
 
     /**
