@@ -826,12 +826,12 @@ abstract class QDB_Adapter_Abstract
      * - type:            字段类型
      * - ptype:           简单字段类型（与数据库无关）
      * - length:          最大长度
-     * - notNull:         是否不允许保存 NULL 值
+     * - not_null:        是否不允许保存 NULL 值
      * - pk:              是否是主键
-     * - autoIncr:        是否是自动增量字段
+     * - auto_incr:       是否是自动增量字段
      * - binary:          是否是二进制数据
      * - unsigned:        是否是无符号数值
-     * - hasDefault:      是否有默认值
+     * - has_default:     是否有默认值
      * - default:         默认值
      * - desc:            字段描述
      *

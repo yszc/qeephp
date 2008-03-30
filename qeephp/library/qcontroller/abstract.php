@@ -173,4 +173,28 @@ abstract class QController_Abstract
     {
         return $ret;
     }
+
+    /**
+     * 重定向浏览器
+     *
+     * @param string $url
+     * @param int $delay
+     */
+    protected function redirect($url, $delay = 0)
+    {
+        return new QResponse_Redirect($url, $delay);
+    }
+
+    /**
+     * 构造限於当前控制器的 URL
+     *
+     * @param string $action
+     * @param array $params
+     *
+     * @return string
+     */
+    protected function url($action, array $params = null)
+    {
+        return $this->url->make($this->request->getControllerName(), $action, $params);
+    }
 }
