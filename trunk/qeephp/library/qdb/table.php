@@ -423,6 +423,7 @@ class QDB_Table
                 unset($row[$this->pk]);
                 if (!self::$tables_meta[$this->cache_id][$this->pk]['auto_incr']) {
                     $row[$this->pk] = $this->nextID($this->pk);
+                    $insert_id = $row[$this->pk];
                 }
             } else {
                 $insert_id = $row[$this->pk];
@@ -764,7 +765,7 @@ class QDB_Table
      */
     function nextID($field_name = '')
     {
-        return $this->dbo->nextID($this->full_table_name, $field_name, $this->schemae);
+        return $this->dbo->nextID($this->full_table_name, $field_name, $this->schema);
     }
 
     /**
