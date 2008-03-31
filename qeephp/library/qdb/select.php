@@ -645,6 +645,7 @@ class QDB_Select
                     foreach (array_keys($assoc_rowset) as $offset) {
                         $v = $assoc_rowset[$offset][$mka];
                         unset($assoc_rowset[$offset][$mka]);
+
                         foreach (array_keys($refs[$mka][$v]) as $i) {
                             $refs[$mka][$v][$i][$link->mapping_name] = $assoc_rowset[$offset];
                             unset($refs[$mka][$v][$i][$mka]);
@@ -778,21 +779,26 @@ class QDB_Select
                     $link->init();
                     // if ($link->assoc_table === $this->recursion_link) { continue; }
 
-                    if ($link->type != QDB_Table::many_to_many) {
+
+                    switch ($link->type) {
+                    case QDB_Table::has_one:
+                    case QDB_Table::has_many:
+                    case QDB_Table::belongs_to:
                         $sql .= ', ' . $conn->qfield($link->main_key, $this->table->full_table_name) .
                                 " AS {$link->main_key_alias}";
                         $used_links[$link->main_key_alias] = $link;
-                        continue;
-                    }
-
-                    // 多对多要单独处理
-                    if (empty($link->mid_on_find_fields)) {
-                        $sql .= ', ' . $conn->qfield($link->mid_assoc_key, $link->mid_table->full_table_name) .
-                                " AS {$link->main_key_alias}";
-                        $join[] = "LEFT JOIN {$link->mid_table->qtable_name} ON " .
-                                  $conn->qfield($link->mid_main_key, $link->mid_table->full_table_name) .
-                                  ' = ' . $conn->qfield($link->main_key, $this->table->full_table_name);
-                        $used_links[$link->main_key_alias] = $link;
+                        break;
+                    case QDB_Table::many_to_many:
+                        if (empty($link->mid_on_find_fields)) {
+                            $sql .= ', ' . $conn->qfield($link->mid_assoc_key, $link->mid_table->full_table_name) .
+                                    " AS {$link->main_key_alias}";
+                            $join[] = "LEFT JOIN {$link->mid_table->qtable_name} ON " .
+                                      $conn->qfield($link->mid_main_key, $link->mid_table->full_table_name) .
+                                      ' = ' . $conn->qfield($link->main_key, $this->table->full_table_name);
+                            $used_links[$link->main_key_alias] = $link;
+                        } else {
+                            // 结果中要包含中间表的数据
+                        }
                     }
                 }
             }

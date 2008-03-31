@@ -31,6 +31,7 @@ class QDB_Exception extends QException
 
     function __construct($sql, $error, $errcode = 0)
     {
+        QDebug::dump($sql, 'ERROR SQL');
         $this->sql = $sql;
         parent::__construct($error, $errcode);
     }
