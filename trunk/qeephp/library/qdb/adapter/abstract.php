@@ -527,12 +527,14 @@ abstract class QDB_Adapter_Abstract
      *
      * 例如 $seq_name 为 posts，则存放该序列的表名称为 posts_seq。
      *
-     * @param string $seq_name
+     * @param string $tablename
+     * @param string $fieldname
+     * @param string $schema
      * @param string $start_value
      *
      * @return int
      */
-    abstract function nextID($seq_name = 'qdbo_global_seq', $start_value = 1);
+    abstract function nextID($tablename, $fieldname = null, $schema = null, $start_value = 1);
 
     /**
      * 创建一个新的序列，失败时抛出异常
@@ -540,17 +542,17 @@ abstract class QDB_Adapter_Abstract
      * 调用 nextID() 时，如果指定的序列不存在，则会自动调用 create_seq() 创建。
      * 开发者也可以自行调用 create_seq() 创建一个新序列。
      *
-     * @param string $seq_name
+     * @param string $seqname
      * @param int $start_value
      */
-    abstract function createSeq($seq_name = 'qdbo_global_seq', $start_value = 1);
+    abstract function createSeq($seqname, $start_value = 1);
 
     /**
      * 删除一个序列，失败时抛出异常
      *
-     * @param string $seq_name
+     * @param string $seqname
      */
-    abstract function dropSeq($seq_name = 'qdbo_global_seq');
+    abstract function dropSeq($seqname);
 
     /**
      * 获取自增字段的最后一个值或者 nextID() 方法产生的最后一个值
