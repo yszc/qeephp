@@ -422,7 +422,7 @@ class QDB_Table
             if (empty($row[$this->pk])) {
                 unset($row[$this->pk]);
                 if (!self::$tables_meta[$this->cache_id][$this->pk]['auto_incr']) {
-                    $row[$this->pk] = $this->nextID();
+                    $row[$this->pk] = $this->nextID($this->pk);
                 }
             } else {
                 $insert_id = $row[$this->pk];
@@ -758,12 +758,13 @@ class QDB_Table
     /**
      * 为当前数据表产生一个新的主键值
      *
+     * @param $field_name
+     *
      * @return mixed
      */
-    function nextID()
+    function nextID($field_name = '')
     {
-        $seqname = $this->dbo->qtable($this->full_table_name . '_seq', $this->schema);
-        return $this->dbo->nextID($seqname);
+        return $this->dbo->nextID($this->full_table_name, $field_name, $this->schemae);
     }
 
     /**

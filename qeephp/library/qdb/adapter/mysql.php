@@ -137,9 +137,11 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
         }
     }
 
-    function nextID($seqname = 'qdbo_global_seq', $start_value = 1)
+    function nextID($tablename, $fieldname = null, $schema = null, $start_value = 1)
     {
-        $next_sql = sprintf('UPDATE %s SET id = LAST_INSERT_ID(id + 1)', $seqname);
+        $full_tablename = $tablename . '_' . $fieldname . '_seq';
+        $qtable = $this->qtable($full_tablename, $schema);
+        $next_sql = sprintf('UPDATE %s SET id = LAST_INSERT_ID(id + 1)', $qtable);
 
         $successed = false;
         try {
@@ -151,13 +153,13 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
         } catch (QDB_Exception $ex) {
             // 产生序列值失败，创建序列表
             unset($ex);
-            $this->execute(sprintf('CREATE TABLE %s (id INT NOT NULL)', $seqname));
+            $this->execute(sprintf('CREATE TABLE %s (id INT NOT NULL)', $qtable));
         }
 
         if (!$successed) {
             // 没有更新任何记录或者新创建序列表，都需要插入初始的记录
-            if ($this->getOne(sprintf('SELECT COUNT(*) FROM %s', $seqname)) == 0) {
-                $sql = sprintf('INSERT INTO %s VALUES (%s)', $seqname, $start_value);
+            if ($this->getOne(sprintf('SELECT COUNT(*) FROM %s', $qtable)) == 0) {
+                $sql = sprintf('INSERT INTO %s VALUES (%s)', $qtable, $start_value);
                 $this->execute($sql);
             }
             $this->execute($next_sql);
@@ -167,16 +169,17 @@ class QDB_Adapter_Mysql extends QDB_Adapter_Abstract
         return $this->insert_id;
     }
 
-    function createSeq($seqname = 'qdbo_global_seq', $start_value = 1)
+    function createSeq($seqname, $start_value = 1)
     {
-        $this->execute(sprintf('CREATE TABLE %s (id INT NOT NULL)', $seqname));
-        $sql = sprintf('INSERT INTO %s VALUES (%s)', $seqname, $start_value);
+        $qtable = $this->qtable($seqname);
+        $this->execute(sprintf('CREATE TABLE %s (id INT NOT NULL)', $qtable));
+        $sql = sprintf('INSERT INTO %s VALUES (%s)', $qtable, $start_value);
         $this->execute($sql);
     }
 
-    function dropSeq($seqname = 'qdbo_global_seq')
+    function dropSeq($seqname)
     {
-        $this->execute(sprintf('DROP TABLE %s', $seqname));
+        $this->execute(sprintf('DROP TABLE %s', $this->qtable($seqname)));
     }
 
     function insertID()

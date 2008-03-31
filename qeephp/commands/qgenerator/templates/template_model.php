@@ -113,11 +113,13 @@ case 't': // 时间
     break;
 case 'c'; // 字符串
 case 'x'; // 大字符串
-    if (!empty($f['length']) && $f['length'] > 0) {
+    if (!empty($f['length'])) {
         if ($f['has_default'] == false && $f['not_null'] = true) {
             $rules[] = "array('not_empty', '{$desc}不能为空'),";
         }
-        $rules[] = "array('max_length', {$f['length']}, '{$desc}不能超过 {$f['length']} 个字符'),";
+        if ($f['length'] > 0) {
+            $rules[] = "array('max_length', {$f['length']}, '{$desc}不能超过 {$f['length']} 个字符'),";
+        }
     }
     break;
 
