@@ -400,6 +400,8 @@ class QDB_Table
      */
     function create(array $row, $recursion = 99)
     {
+        $tran = $this->dbo->beginTrans();
+
         /**
          * 处理主键字段
          *
@@ -448,21 +450,23 @@ class QDB_Table
             }
         }
 
-
         if ($recursion > 0) {
-            foreach (array_keys($row) as $field) {
-                if (!isset($this->links[$field])) { continue; }
-                $link = $this->links[$field];
+            foreach ($this->links as $link) {
                 /* @var $link QDB_Table_Link */
-                $link->init();
-
+                if (!isset($row[$link->mapping_name])) { continue; }
+                if (!is_array($row[$link->mapping_name])) {
+                    // LC_MSG: 关联操作要求 $row 数组中的 "%s" 字段必须是一个数组.
+                    throw new QDB_Table_Exception(__('关联操作要求 $row 数组中的 "%s" 字段必须是一个数组.',
+                                                     $link->mapping_name));
+                }
                 if (empty($row[$link->main_key])) {
-                    throw new QDB_Table_Link_Exception(__('Link "%s" expected "%s" field value in $row.',
-                                                          $link->main_key,
-                                                          $link->name));
+                    // LC_MSG: 保存关联记录 "%s" 需要 $row 数组中有名为 "%s" 的字段值.
+                    throw new QDB_Table_Link_Exception(__('保存关联记录 "%s" 需要 $row 数组中有名为 "%s" 的字段值.',
+                                                          $link->name,
+                                                          $link->main_key));
                 }
 
-                $link->saveAssocData($row[$field], $row[$link->main_key], $recursion - 1);
+                $link->saveAssocData($row[$link->mapping_name], $row[$link->main_key], $recursion - 1);
             }
         }
 
@@ -492,6 +496,7 @@ class QDB_Table
      */
     function createRowset(array $rowset, $recursion = 99)
     {
+        $tran = $this->dbo->beginTrans();
         $return = array();
         foreach (array_keys($rowset) as $offset) {
             $return[] = $this->create($rowset[$offset], $recursion);
@@ -509,6 +514,7 @@ class QDB_Table
      */
     function update(array $row, $recursion = 99)
     {
+        $tran = $this->dbo->beginTrans();
         // TODO: update() 实现对复合主键的处理
 
         $this->fillFieldsWithCurrentTime($row, $this->updated_time_fields);
@@ -520,23 +526,24 @@ class QDB_Table
         $this->dbo->execute($sql, $values);
 
         if ($recursion > 0) {
-            foreach (array_keys($row) as $field) {
-                if (!isset($this->links[$field])) { continue; }
-
-                $link = $this->links[$field];
+            foreach ($this->links as $link) {
                 /* @var $link QDB_Table_Link */
-                $link->init();
-
+                if (!isset($row[$link->mapping_name])) { continue; }
+                if (!is_array($row[$link->mapping_name])) {
+                    // LC_MSG: 关联操作要求 $row 数组中的 "%s" 字段必须是一个数组.
+                    throw new QDB_Table_Exception(__('关联操作要求 $row 数组中的 "%s" 字段必须是一个数组.',
+                                                     $link->mapping_name));
+                }
                 if (empty($row[$link->main_key])) {
-                    throw new QDB_Table_Link_Exception(__('Link "%s" expected "%s" field value in $row.',
-                                                          $link->main_key,
-                                                          $link->name));
+                    // LC_MSG: 保存关联记录 "%s" 需要 $row 数组中有名为 "%s" 的字段值.
+                    throw new QDB_Table_Link_Exception(__('保存关联记录 "%s" 需要 $row 数组中有名为 "%s" 的字段值.',
+                                                          $link->name,
+                                                          $link->main_key));
                 }
 
-                $link->saveAssocData($row[$field], $row[$link->main_key], $recursion - 1);
+                $link->saveAssocData($row[$link->mapping_name], $row[$link->main_key], $recursion - 1);
             }
         }
-
 
         return $this->dbo->affectedRows();
     }
@@ -551,6 +558,7 @@ class QDB_Table
      */
     function updateRowset(array $rowset, $recursion = 99)
     {
+        $tran = $this->dbo->beginTrans();
         $update_count = 0;
         foreach (array_keys($rowset) as $offset) {
             $update_count += (int)$this->update($rowset[$offset], $recursion);
@@ -646,11 +654,12 @@ class QDB_Table
      */
     function save(array $row, $recursion = 99, $method = 'save')
     {
+        $tran = $this->dbo->beginTrans();
         if ($this->is_cpk) {
             // 如果是复合主键，并且需要自动判断使用 create() 或 update()，则抛出异常
             if ($method == 'save' || $method == 'only_create' || $method == 'only_update') {
-                // LC_MSG: QDB_Table::save() with composite primary key not implemented.
-                throw new QDB_Table_Exception(__('QDB_Table::save() with composite primary key not implemented.'));
+                // LC_MSG: QDB_Table::save() 对复合主键的支持尚未实现.
+                throw new QDB_Table_Exception(__('QDB_Table::save() 对复合主键的支持尚未实现.'));
             }
         }
         if ($method == 'create') {
@@ -679,6 +688,7 @@ class QDB_Table
      */
     function saveRowset(array $rowset, $recursion = 99, $method = 'save')
     {
+        $tran = $this->dbo->beginTrans();
         $return = array();
         foreach (array_keys($rowset) as $offset) {
             $return[] = $this->save($rowset[$offset], $recursion, $method);
@@ -710,6 +720,7 @@ class QDB_Table
      */
     function replaceRowset(array $rowset)
     {
+        $tran = $this->dbo->beginTrans();
         $update_count = 0;
         foreach (array_keys($rowset) as $offset) {
             $update_count += (int)$this->replace($rowset[$offset], true);
@@ -721,17 +732,80 @@ class QDB_Table
      * 删除指定主键值的记录，返回被删除的记录总数
      *
      * @param mixed $pkv
+     * @param int $recursion
      *
      * @return int
      */
-    function remove($pkv)
+    function remove($pkv, $recursion = 99)
     {
         // TODO: remove() 实现对复合主键的处理
-        // TODO: remove() 实现对关联的处理
-        $pkv = $this->dbo->qstr($pkv);
-        $sql = "DELETE FROM {$this->qtable_name} WHERE {$this->qpk} = {$pkv}";
-        $this->dbo->execute($sql);
+        return $this->removeByField($this->pk, $pkv, $recursion);
+    }
 
+    /**
+     * 删除指定字段值的记录，返回被删除的记录总数
+     *
+     * @param string $field
+     * @param mixed $field_value
+     * @param int $recursion
+     *
+     * @return int
+     */
+    function removeByField($field, $field_value, $recursion = 99)
+    {
+        $tran = $this->dbo->beginTrans();
+        // TODO: removeByField() 实现对多个字段的处理
+
+        if (is_array($field_value)) {
+            $fvs = ' IN (' . implode(', ', array_map(array($this->dbo, 'qstr'), $field_value)) . ')';
+        } else {
+            $fvs = ' = ' . $this->dbo->qstr($field_value);
+        }
+
+        if ($recursion > 0 && is_array($this->links)) {
+            $used_fields = array();
+            foreach ($this->links as $name => $link) {
+                /* @var $link QDB_Table_Link */
+                $link->init();
+                if ($link->on_delete == 'reject') {
+                    // LC_MSG: 表数据入口 "%s" 的关联 "%s" 拒绝对数据表 "%s" 记录的删除操作.
+                    throw new QDB_Table_Exception(__('表数据入口 "%s" 的关联 "%s" 拒绝对数据表 "%s" 记录的删除操作.',
+                                                  $this->table_name, $link->name, $this->full_table_name));
+                }
+                if ($link->on_delete === false || $link->on_delete == 'skip') {
+                    continue;
+                }
+                if ($link->main_key == $field) {
+                    // 如果关联字段和指定字段相同，则无需查询关联字段值
+                    $link->removeAssocData($field_value, $recursion - 1);
+                } else {
+                    $used_fields[$name] = $link->main_key;
+                }
+            }
+
+            if (!empty($used_fields)) {
+                $sql = 'SELECT ' . $this->dbo->qfields($used_fields) . " FROM {$this->qtable_name} WHERE {$this->pk} {$fvs}";
+
+                // 查询出删除关联表记录需要的关联键值
+                $mkv = (array)$this->dbo->getAll($sql);
+                $akv = array();
+                foreach ($mkv as $row) {
+                    foreach ($used_fields as $name => $field) {
+                        if (is_null($row[$field])) { continue; }
+                        $akv[$name][] = $row[$field];
+                    }
+                }
+                foreach ($used_fields as $name => $field) {
+                    /* @var $link QDB_Table_Link */
+                    $link = $this->links[$name];
+                    $link->removeAssocData($akv[$name], $recursion - 1);
+                }
+            }
+        }
+
+        // 删除主表记录
+        $sql = "DELETE FROM {$this->qtable_name} WHERE {$fvs}";
+        $this->dbo->execute($sql);
         return $this->dbo->affectedRows();
     }
 
@@ -744,7 +818,6 @@ class QDB_Table
      */
     function removeWhere($where)
     {
-        // TODO: removeWhere() 实现对关联的处理
         $args = func_get_args();
         array_shift($args);
         list($where, ) = $this->parseSQLInternal($where, $args);

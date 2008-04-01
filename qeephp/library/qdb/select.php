@@ -617,10 +617,11 @@ class QDB_Select
             $rowset = $handle->fetchAllRefby($used_alias, $refs_value, $refs, $clean_up);
 
             // 进行关联查询，并组装数据集
-            foreach ($used_links as $mka => $link) {
+            foreach ($used_links as $link) {
                 /* @var $link QDB_Table_Link */
+                $aka = $link->assoc_key_alias;
+                $mka = $link->main_key_alias;
                 if (empty($refs_value[$mka])) {
-                //if ($link->assoc_table->qtable_name == $this->table->qtable_name || empty($refs_value[$mka])) {
                     continue;
                 }
 
@@ -636,26 +637,30 @@ class QDB_Select
                 }
 
                 $assoc_rowset = $select->query(false);
-                if (is_int($link->on_find) && $link->on_find == 1) {
+                if ($link->on_find === 1) {
                     $assoc_rowset = array($assoc_rowset);
                 }
 
                 // 组装数据集
                 if ($link->one_to_one) {
                     foreach (array_keys($assoc_rowset) as $offset) {
-                        $v = $assoc_rowset[$offset][$mka];
-                        unset($assoc_rowset[$offset][$mka]);
+                        $v = $assoc_rowset[$offset][$aka];
+                        unset($assoc_rowset[$offset][$aka]);
 
-                        foreach (array_keys($refs[$mka][$v]) as $i) {
+                        $i = 0;
+                        foreach ($refs[$mka][$v] as $row) {
                             $refs[$mka][$v][$i][$link->mapping_name] = $assoc_rowset[$offset];
                             unset($refs[$mka][$v][$i][$mka]);
+                            $i++;
                         }
                     }
                 } else {
                     foreach (array_keys($assoc_rowset) as $offset) {
-                        $v = $assoc_rowset[$offset][$mka];
-                        unset($assoc_rowset[$offset][$mka]);
-                        foreach (array_keys($refs[$mka][$v]) as $i) {
+                        $v = $assoc_rowset[$offset][$aka];
+                        unset($assoc_rowset[$offset][$aka]);
+
+                        $i = 0;
+                        foreach ($refs[$mka][$v] as $row) {
                             $refs[$mka][$v][$i][$link->mapping_name][] = $assoc_rowset[$offset];
                             unset($refs[$mka][$v][$i][$mka]);
                         }
@@ -663,6 +668,8 @@ class QDB_Select
                 }
             }
 
+            unset($refs);
+            unset($refs_value);
             unset($row);
             if ($this->limit == 1) {
                 $row = reset($rowset);
@@ -765,7 +772,7 @@ class QDB_Select
                 $conn = $this->recursion_link->assoc_table->getConn();
                 $sql .= $conn->qfield($this->recursion_link->assoc_key) .
                         ' AS ' .
-                        $conn->qfield($this->recursion_link->main_key_alias) . ', ';
+                        $conn->qfield($this->recursion_link->assoc_key_alias) . ', ';
             }
 
             $sql .= $this->toStringPart($this->select);

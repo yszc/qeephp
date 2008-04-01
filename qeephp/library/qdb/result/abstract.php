@@ -161,12 +161,12 @@ abstract class QDB_Result_Abstract
      * $handle = $dbo->execute($sql);
      *
      * $fields_value = array();
-     * $reference = array();
-     * $rowset = $handle->fetchAllRefby(array('post_id'), $fields_value, $reference);
+     * $ref = array();
+     * $rowset = $handle->fetchAllRefby(array('post_id'), $fields_value, $ref);
      * </code>
      *
      * 上述代码执行后，$rowset 包含 posts 表中的全部 4 条记录。
-     * 最后，$fields_value 和 $reference 是如下形式的数组：
+     * 最后，$fields_value 和 $ref 是如下形式的数组：
      *
      * <code>
      *
@@ -174,7 +174,7 @@ abstract class QDB_Result_Abstract
      *     'post_id' => array(1, 2, 7, 15),
      * );
      *
-     * $reference = array(
+     * $ref = array(
      *     'post_id' => array(
      *          1 => & array(array(...)),
      *          2 => & array(array(...), array(...)),
@@ -184,20 +184,20 @@ abstract class QDB_Result_Abstract
      * );
      * </code>
      *
-     * $reference 用 post_id 字段值作为索引值，并且指向 $rowset 中 post_id 值相同的记录。
-     * 由于是以引用方式构造的 $reference 数组，因此并不会占用双倍内存。
+     * $ref 用 post_id 字段值作为索引值，并且指向 $rowset 中 post_id 值相同的记录。
+     * 由于是以引用方式构造的 $ref 数组，因此并不会占用双倍内存。
      *
      * @param array $fields
      * @param array $fields_value
-     * @param array $reference
+     * @param array $ref
      * @param boolean $clean_up
      *
      * @return array
      */
-    function fetchAllRefby(array $fields, & $fields_value, & $reference, $clean_up)
+    function fetchAllRefby(array $fields, & $fields_value, & $ref, $clean_up)
     {
         $fields_value = array();
-        $reference = array();
+        $ref = array();
         $offset = 0;
         $data = array();
 
@@ -207,7 +207,7 @@ abstract class QDB_Result_Abstract
                 foreach ($fields as $field) {
                     $fieldValue = $row[$field];
                     $fields_value[$field][$offset] = $fieldValue;
-                    $reference[$field][$fieldValue][] =& $data[$offset];
+                    $ref[$field][$fieldValue][] =& $data[$offset];
                     unset($data[$offset][$field]);
                 }
                 $offset++;
@@ -218,7 +218,7 @@ abstract class QDB_Result_Abstract
                 foreach ($fields as $field) {
                     $fieldValue = $row[$field];
                     $fields_value[$field][$offset] = $fieldValue;
-                    $reference[$field][$fieldValue][] =& $data[$offset];
+                    $ref[$field][$fieldValue][] =& $data[$offset];
                 }
                 $offset++;
             }
