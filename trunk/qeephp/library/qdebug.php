@@ -11,14 +11,14 @@
 /**
  * 定义 QDebug 类
  *
- * @package debug
+ * @package core
  * @version $Id$
  */
 
 /**
  * QDebug 类提供了帮助调试应用程序的一些辅助方法
  *
- * @package debug
+ * @package core
  */
 class QDebug
 {

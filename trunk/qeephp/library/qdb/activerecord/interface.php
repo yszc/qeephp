@@ -11,14 +11,14 @@
 /**
  * 定义 QDB_ActiveRecord_Interface 接口
  *
- * @package core
+ * @package database
  * @version $Id$
  */
 
 /**
  * QDB_ActiveRecord_Interface 接口确定了所有 QDB_ActiveRecord_Abstract 继承类必须实现的静态方法
  *
- * @package core
+ * @package database
  */
 interface QDB_ActiveRecord_Interface
 {

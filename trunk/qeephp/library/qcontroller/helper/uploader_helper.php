@@ -13,7 +13,7 @@
  *
  * @copyright Copyright (c) 2005 - 2008 QeeYuan China Inc. (http://www.qeeyuan.com)
  * @author 起源科技 (www.qeeyuan.com)
- * @package core
+ * @package helper
  * @version $Id$
  */
 
@@ -42,7 +42,7 @@
  * }
  * </code>
  *
- * @package core
+ * @package helper
  * @author 起源科技 (www.qeeyuan.com)
  * @version 1.0
  */
@@ -174,7 +174,7 @@ class Uploader
 /**
  * 封装一个上传的文件
  *
- * @package core
+ * @package helper
  * @author 起源科技 (www.qeeyuan.com)
  * @version 1.0
  */
