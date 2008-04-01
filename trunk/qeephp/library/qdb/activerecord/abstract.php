@@ -213,14 +213,16 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
 
     /**
      * 销毁对象对应的数据库记录
+     *
+     * @param int $recursion
      */
-    function destroy()
+    function destroy($recursion = 99)
     {
         $this->beforeDestroy();
         $this->__doCallbacks(self::before_destroy);
         $table = self::$__ref[$this->__class]['table'];
         /* @var $table QDB_Table */
-        $table->remove($this->id());
+        $table->remove($this->id(), $recursion);
         $this->__doCallbacks(self::after_destroy);
         $this->afterDestroy();
     }
@@ -421,16 +423,16 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
      * 为一个 ActiveRecord 类定义一个关联
      *
      * @param string $class
-     * @param string $field
+     * @param string $mapping_name
      * @param array $options
      */
-    static function bind($class, $field, array $options)
+    static function bind($class, $mapping_name, array $options)
     {
         self::reflection($class);
 
         $define = array('public' => false);
         $define['readonly'] = isset($options['readonly']) ? $options['readonly'] : false;
-        $define['alias']    = isset($options['alias'])    ? $options['alias']    : $field;
+        $define['alias']    = isset($options['alias'])    ? $options['alias']    : $mapping_name;
         $define['getter']   = isset($options['getter'])   ? $options['getter']   : null;
         $define['setter']   = isset($options['setter'])   ? $options['setter']   : null;
         $define['default']  = null;
@@ -459,10 +461,25 @@ abstract class QDB_ActiveRecord_Abstract implements QDB_ActiveRecord_Interface
         $define['assoc_options'] = $options;
         $define['virtual'] = true;
 
-        self::$__ref[$class]['attribs'][$field] = $define;
-        self::$__ref[$class]['alias'][$field] = $define['alias'];
-        self::$__ref[$class]['ralias'][$define['alias']] = $field;
-        self::$__ref[$class]['links'][$field] = $define;
+        self::$__ref[$class]['attribs'][$mapping_name] = $define;
+        self::$__ref[$class]['alias'][$mapping_name] = $define['alias'];
+        self::$__ref[$class]['ralias'][$mapping_name['alias']] = $mapping_name;
+        self::$__ref[$class]['links'][$mapping_name] = $define;
+    }
+
+    /**
+     * 为一个 ActiveRecord 类定义一个关联
+     *
+     * @param string $class
+     * @param string $field
+     * @param array $options
+     */
+    static function unbind($class, $mapping_name)
+    {
+        unset(self::$__ref[$class]['attribs'][$mapping_name]);
+        unset(self::$__ref[$class]['alias'][$mapping_name]);
+        unset(self::$__ref[$class]['ralias'][$mapping_name]);
+        unset(self::$__ref[$class]['links'][$mapping_name]);
     }
 
     /**

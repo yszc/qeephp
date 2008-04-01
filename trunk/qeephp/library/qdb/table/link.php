@@ -171,6 +171,7 @@ class QDB_Table_Link
      * set_null  - 将关联记录的外键字段设置为 NULL
      * set_value - 将关联记录的外键字段设置为指定的值
      * skip      - 不处理关联记录
+     * reject    - 拒绝删除
      *
      * 对于 belongs to 和 many to many 关联，on_delete 的默认值是 skip
      * 对于 has many 和 has one 关联，默认值则是 cascade
@@ -351,7 +352,6 @@ class QDB_Table_Link
         if ($this->is_init) { return $this; }
 
         $this->main_table->connect();
-
         $p = $this->init_params;
         /**
          * table_obj
@@ -446,8 +446,12 @@ class QDB_Table_Link
             $this->on_save       = !empty($p['on_save'])       ? $p['on_save']       : 'skip';
             $this->one_to_one = false;
         }
-        $this->main_key_alias = !empty($p['main_key_alias']) ? $p['main_key_alias'] : 'm_k_a_' . self::$alias_index;
-        $this->assoc_key_alias = !empty($p['assoc_key_alias']) ? $p['assoc_key_alias'] : 'a_k_a_' . self::$alias_index;
+        $this->main_key_alias = !empty($p['main_key_alias'])
+                                ? $p['main_key_alias']
+                                : $this->mapping_name . '_m' . self::$alias_index;
+        $this->assoc_key_alias = !empty($p['assoc_key_alias'])
+                                 ? $p['assoc_key_alias']
+                                 : $this->mapping_name . '_a' . self::$alias_index;
         $this->on_find = !empty($p['on_find']) ? $p['on_find'] : 'all';
         $this->on_find_where = !empty($p['on_find_where']) ? $p['on_find_where'] : null;
         $this->on_find_fields = !empty($p['on_find_fields']) ? $p['on_find_fields'] : '*';
@@ -470,6 +474,7 @@ class QDB_Table_Link
      */
     function saveAssocData(array $link_data, $assoc_key_value, $recursion)
     {
+        if (!$this->is_init) { $this->init(); }
         switch ($this->type) {
         case QDB_Table::belongs_to:
         case QDB_Table::has_one:
@@ -481,9 +486,68 @@ class QDB_Table_Link
         case QDB_Table::many_to_many:
             $this->saveManyToMany($link_data, $assoc_key_value, $recursion);
             break;
+        default:
+            // LC_MSG: 无效的关联类型 "%s".
+            throw new QDB_Table_Link_Exception(__('无效的关联类型 "%s".', $this->type));
         }
 
         return $this;
+    }
+
+    /**
+     * 删除关联的数据
+     *
+     * @param mixed $assoc_key_value
+     * @param int $recursion
+     *
+     * @return QDB_Table_Link
+     */
+    function removeAssocData($assoc_key_value, $recursion)
+    {
+        if (!$this->is_init) { $this->init(); }
+        switch ($this->type) {
+        case QDB_Table::belongs_to:
+        case QDB_Table::has_one:
+        case QDB_Table::has_many:
+            $this->removeNotManyToMany($assoc_key_value, $recursion);
+            break;
+        case QDB_Table::many_to_many:
+            $this->removeManyToMany($assoc_key_value, $recursion);
+            break;
+        default:
+            // LC_MSG: 无效的关联类型 "%s".
+            throw new QDB_Table_Link_Exception(__('无效的关联类型 "%s".', $this->type));
+        }
+
+        return $this;
+    }
+
+    /**
+     * 删除非 many_to_many 关联的记录
+     *
+     * @param mixed $fvs
+     * @param int $recursion
+     */
+    protected function removeNotManyToMany($fvs, $recursion)
+    {
+        if ($this->on_delete === false || $this->on_delete == 'skip') { return; }
+        if ($this->on_delete == 'cascade') {
+            $this->assoc_table->removeByField($this->assoc_key, $fvs, $recursion);
+        } else {
+            $fill = ($this->on_delete == 'set_null') ? null : $this->on_delete_set_value;
+            $this->assoc_table->updateWhere(array($this->assoc_key => $fill), array($this->assoc_key => $fvs));
+        }
+    }
+
+    /**
+     * 删除 many_to_many 关联的记录
+     *
+     * @param mixed $fvs
+     * @param int $recursion
+     */
+    protected function removeManyToMany($fvs, $recursion)
+    {
+        $this->mid_table->removeByField($this->mid_main_key, $fvs, $recursion);
     }
 
     /**
