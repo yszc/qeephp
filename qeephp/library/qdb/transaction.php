@@ -16,7 +16,7 @@
  */
 
 /**
- * QDB_Transaction 类封装了数据库事务操作
+ * QDB_Transaction 类实现了一个异常安全的数据库事务机制
  *
  * @package database
  */
@@ -72,6 +72,13 @@ class QDB_Transaction
     private static $transactions_stack = array();
 
     /**
+     * 前一个异常处理例程
+     *
+     * @var mixed
+     */
+    private static $previously_exception_handler;
+
+    /**
      * 构造函数
      *
      * @param QDB_Adapter_Abstract $dbo
@@ -94,7 +101,7 @@ class QDB_Transaction
             $this->parent_transaction = $last;
         } else {
             // 只有构造堆栈中第一个事务对象时才设置异常处理函数
-            set_exception_handler(array(__CLASS__, '__exceptionHandler'));
+            self::$previously_exception_handler = set_exception_handler(array(__CLASS__, '__exceptionHandler'));
             if (self::$log_enabled) {
                 log_message("QDB_Transaction object - set_exception_handler().", 'debug');
             }
@@ -212,6 +219,11 @@ class QDB_Transaction
         }
 
         // 重新抛出异常
-        // throw $ex;
+        // 强烈鄙视 PHP 不能在异常处理例程中重新抛出异常！！
+        if (empty(self::$previously_exception_handler)) {
+            QException::dump($ex);
+        } else {
+            call_user_func(self::$previously_exception_handler, $ex);
+        }
     }
 }
