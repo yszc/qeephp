@@ -318,7 +318,7 @@ class Image
     /**
      * 销毁图像
      */
-    function destory()
+    function destroy()
     {
         imagedestroy($this->handle);
         $this->handle = null;
