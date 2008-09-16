@@ -1,0 +1,9 @@
+= 助手、行为插件、用户界面控件的命名方式 =
+
+
+|| *类型* || *类名称* || *对应文件名* ||
+|| 控制器助手 || Controller_Helper_Control || controller/helper/control.php ||
+|| 一般助手 || Helper_Array || helper/array.php ||
+|| 行为插件 || Model_Behavior_Tree || model/behavior/tree.php ||
+|| 用户界面控件 || Control_Pagination || control/pagination.php ||
+|| 用户界面控件模板 || 无 || view/_control/pagination.php ||
