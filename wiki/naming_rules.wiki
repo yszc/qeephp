@@ -6,5 +6,5 @@
 || 一般助手 || Helper_Array || helper/array.php ||
 || 行为插件 || Model_Behavior_Tree || model/behavior/tree.php ||
 || 用户界面控件 || Control_Pagination || control/pagination.php ||
-|| 用户界面控件模板 || 无 || view/_controls/pagination_control.php ||
-|| 用户界面元素 || 无 || view/_elements/header_element.php ||
+|| 用户界面控件模板 || 无 || view/__controls/pagination_control.php ||
+|| 用户界面元素 || 无 || view/__elements/header_element.php ||
