@@ -4,17 +4,9 @@
 
 {{{
 
-一般助手
-类名：Helper_Array
-对应文件：helper/array.php
-
-控制器助手
-类名：Controller_Helper_ACL
-对应文件：controller/helper/acl.php
-
-视图助手：
-类名：View_Helper_Html
-对应文件：view/helper/html.php
+一般助手、控制器助手、视图助手
+类名：Helper_Array、Helper_Uploader、Helper_Html
+对应文件：helper/array.php、helper/uploader.php、helper/html.php
 
 行为插件
 类名：Model_Behavior_Tree
